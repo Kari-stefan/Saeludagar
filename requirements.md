@@ -43,3 +43,7 @@ Séð hóparnar sem er skráður fyrir.
 Vil sjá hvað nemendur sjá.
 Hvaða nemendur sé skráður og hvort þau séu mætt eða ekki / skrá mætingu.
 Getur bætt við  nemanda.
+Geta sent email á hópnum.
+
+
+Gestur, Nemandi, Kennari, Afangastjori, Hver set atburði
