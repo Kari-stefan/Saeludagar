@@ -35,6 +35,11 @@
 
 
 ## User Stories
+    Sem kennari vill ég getað hvernig atburðin mín séu auglýst til nemendur.
+    Sem kennari vill ég getað bætt við nemendum eða hent þeim út. 
+    Sem kennari vill ég getað séð hvaða nemendur séu skráðir.
+    Sem kennari vill ég getað sent email á nemendunum í atburðinu mínu.
+    Sem kennari vill ég geta séð hver mæta og 
 
 
 
