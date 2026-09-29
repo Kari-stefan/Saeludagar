@@ -1,0 +1,77 @@
+Fólk:
+
+
+	Berglind
+	Kerfistjóri
+	Gögn gæji
+
+	Starfsbraut - Sigurður Fjalar
+	Rafmagnsbraut
+	Jarðfræðibraut
+	
+	Fyrir sér-atburður / ferða atburður
+
+
+
+Need: 
+
+  Gagnagrunnur sem inniheldur upplýsingar um nemendur.
+  
+  Heimasíðu sem sýnir öll atburðin.
+  Innskráning með kennitölu. ( Kerfi kíkir hvort hann sé nemandi eða ekki )
+  Sér svæði fyrir kennarar til að bæta við atburði.
+
+
+Should:
+
+  
+
+  
+
+Could:
+
+
+
+
+
+
+
+
+Hvað Notandinn á að geta gert
+FR-01: Fara á vefsíðuna og skrá sig inn með kennitölu.
+FR-02: Á að geta ýtt á takka til að getað síað atburðunum eftir braut.
+
+
+
+
+Hvað Kerfið á að geta gert
+FR-01: Athugað hvort að kennitala passar við nemanda í skólanum.
+
+
+
+
+
+User Stories:
+
+
+
+
+	
+
+Gögn: 
+	Færð frá Berglind - CSV skjal Kennitölur. Skjalið eyðir síðan út eftir að setja inn.
+	Ef hægt að fá brautar upplýsingar ->  Síun fyrir sæludagar atburði.
+
+
+
+
+
+Athugað - Réttur fjöldi tölustafa í kennitölu ( 10 tölur í kennitölu ). Kennitölur í strengi.
+
+
+
+
+Summary: Kerfi sem tekur inn upplýsingar um nemanda, atburði frá kennara.
+
+
+Verification code frá 
