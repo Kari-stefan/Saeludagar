@@ -2,50 +2,51 @@
 
 
 ## Tilgangur
-    Við erum að búa til vefsíðu fyrir skólann sem hjálpar nemendur við að skrá sig í atburði á Sæludegi með því að skrá sig inn með kennitölu og velja atburð með síun á braut ef til eru sá atburðir.
-
+    Vefsíða fyrir skólann sem auðveldar nemendum að skrá sig í atburði á Sæludegi. Nemendur geta skráð sig inn með kennitölu og valið þá atburði sem þeir vilja sækja. Ef atburðir eru ætlaðir ákveðnum brautum er hægt að sía framboðið til að auðvelda leitina.
 
 
 ## Aðalnotandi
-    Nemendur sem vilja skrá sig í atburði á sæludag til að losa við fjarvistastig.
+    - Aðalnotendur: Nemendur sem skrá sig í atburði.
+    - Auka/Stjórnendur: Kennarar sem búa til, kynna og stýra atburðum.
 
 
 
 ## Vandamál
-    Leysir erfiðleikan fyrir nemendur í að skrá sig á sæludag.
-    Leysir erfiðleikan fyrir kennarar í að fá atburðir sínar í ljós.
-
+    - Fyrir nemendur: Útrýmir erfiðleikum og ruglingi við skráningu á atburði Sæludaga.
+    - Fyrir kennara: Auðveldar kennurum að kynna atburði sína og halda utan um þátttöku nemenda.
 
 
 ## Functional Requirements
-    FR-01: Kerfið skilar innskráningarsíðu þar sem nemandi getur skráð sig inn með kennitölu.
-    FR-02: Kennarar geta skrá sig inn sem kennari með "Kennarakóða".
-    FR-03: Kerfið veitir nemendum möguleika á að sía atburði eftir braut.
-    FR-04: Ef kennitala passar ekki við skráðan nemanda í skólanum, sýnir kerfið villu.
-    FR-05: Kennarar geta sett inn atburði með: Titill, Veitandi, Braut (ef eru til sér atburðir), Upplýsingar, Fjöldi fólks, Gjald, Mynd.
-    FR-06: Kerfið á að geta sýnt "atburðaprófílinn" og fjöldi þátttakenda (hvort sé fullt eða ekki).
-    FR-07: Kerfið þarf að geta sannað að notandinn sé sá sem hann skráir sig inn sem.
-
+    FR-01: Kerfið býður upp á innskráningarsíðu þar sem nemandi skráir sig inn með kennitölu.
+    FR-02: Kennarar geta skráð sig inn í kennaraviðmót með sérstökum "Kennarakóða".
+    FR-03: Nemendur geta síað atburði eftir námsbraut.
+?   FR-04: Ef slegin er inn kennitala sem finnst ekki í gagnagrunni skólans birtir kerfið skýr villuboð.
+    FR-05: Kennarar geta stofnað nýja atburði með eftirfarandi upplýsingum: Titill, Mótshaldari/Veitandi, Námsbraut (ef við á), Lýsing/Upplýsingar, Hámarksfjöldi þátttakenda, Þátttökugjald, og Mynd.
+    FR-06: Kerfið sýnir upplýsingasíðu atburðar (atburðaprófíl) ásamt stöðu skráninga (fjöldi skráðra og hvort uppselt sé).
+?   FR-07: Kerfið staðfestir identity notanda við innskráningu (t.d. með kennitöluúttekt í gagnagrunni eða fastkóðuðum lykilorðum/pín-númerum).
+    FR-08: Nemendur geta skráð sig á atburð ef enn er laust pláss, og afskráð sig aftur ef þeir skipta um skoðun.
+    FR-09: Kennarar geta séð lista yfir alla skráða nemendur í sínum atburði, bætt nemendum við handvirkt, eða fjarlægt þá.
+    FR-10: Kennarar geta merkt við viðveru/mætingu nemenda á atburðinum.
 
 
 ## Non-Functional Requirements  
-    NFR-01: Kennitala nemanda á að vera kóðuð í gagnagrunninum.
-    NFR-02: Vefsíðan á að vera notendavæn á bæði tölvu og farsímá.
-    NFR-03: Vefsíðan á að virka í Chrome, Firefox og Safari.
-    NFR-04: Kerfið á að geta unnið með 1.000 samstiga notendur.
+?   NFR-01: Kennitölur nemenda skulu vera dulkóðaðar/hashed í gagnagrunninum.
+    NFR-02: Vefviðmótið á að vera fullkomlega viðbragðsfljótt (responsive) og notendavænt á bæði tölvum og farsímum.
+    NFR-03: Vefsíðan skal virka hnökralaust í Chrome, Firefox og Safari.
+    NFR-04: Kerfið á að geta þjónustað allt að 1.000 samtímanotendur (concurrent users).
 
 
 ## User Stories
-    Sem kennari vill ég getað séð hvernig atburðin mín séu auglýst til nemendur.
-    Sem kennari vill ég getað bætt við nemendum eða hent þeim út. 
-    Sem kennari vill ég getað séð hvaða nemendur séu skráðir.
-    Sem kennari vill ég getað sent email á nemendunum í atburðinu mínu.
-    Sem kennari vill ég geta skráð hver mæta / séð hver mæta af þeim sem skráðu.
+    Sem kennari vil ég geta séð hvernig atburðurinn minn birtist nemendum.
+    Sem kennari vil ég geta bætt nemendum handvirkt við atburð eða fjarlægt þá.
+    Sem kennari vil ég geta séð yfirlit yfir alla skráða nemendur í mínum atburði.
+    Sem kennari vil ég geta sent tölvupóst á alla skráða nemendur í mínum atburði.
+    Sem kennari vil ég geta skráð og séð mætingu nemenda á sjálfum deginum.
 
 
 ## Tæki
-    NodeJS
-    EJS
-    SCSS
-    SQL-Lite
-    JavaScript
+    Backend: NodeJS
+    Templating: EJS
+    styling: SCSS (fært yfir í CSS)
+    Database: SQL-Lite
+    Frontend Scripting: JavaScript
