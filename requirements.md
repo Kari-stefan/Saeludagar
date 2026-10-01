@@ -24,6 +24,7 @@
     FR-04: Ef kennitala passar ekki við skráðan nemanda í skólanum, sýnir kerfið villu.
     FR-05: Kennarar geta sett inn atburði með: Titill, Veitandi, Braut (ef eru til sér atburðir), Upplýsingar, Fjöldi fólks, Gjald, Mynd.
     FR-06: Kerfið á að geta sýnt "atburðaprófílinn" og fjöldi þátttakenda (hvort sé fullt eða ekki).
+    FR-07: Kerfið þarf að geta sannað að notandinn sé sá sem hann skráir sig inn sem.
 
 
 
