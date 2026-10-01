@@ -35,22 +35,16 @@
 
 
 ## User Stories
-    Sem kennari vill ég getað hvernig atburðin mín séu auglýst til nemendur.
+    Sem kennari vill ég getað séð hvernig atburðin mín séu auglýst til nemendur.
     Sem kennari vill ég getað bætt við nemendum eða hent þeim út. 
     Sem kennari vill ég getað séð hvaða nemendur séu skráðir.
     Sem kennari vill ég getað sent email á nemendunum í atburðinu mínu.
-    Sem kennari vill ég geta séð hver mæta og 
+    Sem kennari vill ég geta skráð hver mæta / séð hver mæta af þeim sem skráðu.
 
 
-
-Kennarar: 
-Séð hóparnar sem er skráður fyrir.
-Vil sjá hvað nemendur sjá.
-Hvaða nemendur sé skráður og hvort þau séu mætt eða ekki / skrá mætingu.
-Getur bætt við  nemanda.
-Geta sent email á hópnum.
-
-
-Gestur, Nemandi, Kennari, Afangastjori, Hver set atburði
-
-test
+## Tæki
+    NodeJS
+    EJS
+    SCSS
+    SQL-Lite
+    JavaScript
