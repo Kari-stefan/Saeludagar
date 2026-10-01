@@ -50,5 +50,4 @@ Hvaða nemendur sé skráður og hvort þau séu mætt eða ekki / skrá mæting
 Getur bætt við  nemanda.
 Geta sent email á hópnum.
 
-
 Gestur, Nemandi, Kennari, Afangastjori, Hver set atburði
