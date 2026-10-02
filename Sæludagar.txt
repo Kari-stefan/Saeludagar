@@ -12,7 +12,6 @@ Fólk:
 	Fyrir sér-atburður / ferða atburður
 
 
-
 Need: 
 
   Gagnagrunnur sem inniheldur upplýsingar um nemendur.
