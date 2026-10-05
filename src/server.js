@@ -19,7 +19,15 @@ try {
   process.exit(1);
 }
 
-const server = app.listen(config.port, () => {
+// Express 5 passes listen errors (such as a busy port) to this callback.
+const server = app.listen(config.port, (err) => {
+  if (err) {
+    console.error(err.code === 'EADDRINUSE'
+      ? `Port ${config.port} is already in use. Stop the other server, or set PORT in .env to a free port.`
+      : `Could not start the server: ${err.message}`);
+    db.close();
+    process.exit(1);
+  }
   console.log(`Sæludagar is running at http://localhost:${config.port}`);
 });
 
