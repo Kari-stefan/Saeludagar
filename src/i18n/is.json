@@ -1,0 +1,51 @@
+{
+  "site": {
+    "name": "Sæludagar",
+    "skipToContent": "Fara beint í efni"
+  },
+  "nav": {
+    "main": "Aðalvalmynd",
+    "login": "Innskráning"
+  },
+  "language": {
+    "label": "Tungumál",
+    "is": "Íslenska",
+    "en": "English"
+  },
+  "pages": {
+    "home": "Viðburðir á Sæludögum",
+    "event": "Viðburður",
+    "login": "Innskráning",
+    "newCode": "Fá nýjan kóða",
+    "myEvents": "Mínir viðburðir",
+    "teacherHome": "Kennarasvæði",
+    "eventNew": "Nýr viðburður",
+    "eventEdit": "Breyta viðburði",
+    "eventPreview": "Forskoðun viðburðar",
+    "eventManage": "Umsjón viðburðar",
+    "attendance": "Mæting",
+    "print": "Þátttakendalisti",
+    "message": "Senda póst á þátttakendur",
+    "adminHome": "Stjórnendasvæði",
+    "settings": "Dagsetningar og frestir",
+    "import": "Innflutningur nemenda",
+    "codes": "Senda kóða",
+    "teachers": "Kennarar",
+    "adminEvents": "Allir viðburðir",
+    "export": "Útflutningur fyrir skrifstofu",
+    "purge": "Hreinsun gagna",
+    "audit": "Aðgerðaskrá"
+  },
+  "errors": {
+    "forbiddenTitle": "Aðgangur ekki leyfður",
+    "forbiddenText": "Þú hefur ekki aðgang að þessari síðu.",
+    "notFoundTitle": "Síða fannst ekki",
+    "notFoundText": "Síðan sem þú leitaðir að er ekki til.",
+    "serverTitle": "Eitthvað fór úrskeiðis",
+    "serverText": "Villa kom upp. Reyndu aftur síðar.",
+    "backHome": "Fara á forsíðu"
+  },
+  "stub": {
+    "notImplemented": "Ekki tilbúið enn."
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "site": {
+    "name": "Sæludagar",
+    "skipToContent": "Skip to content"
+  },
+  "nav": {
+    "main": "Main menu",
+    "login": "Log in"
+  },
+  "language": {
+    "label": "Language",
+    "is": "Íslenska",
+    "en": "English"
+  },
+  "pages": {
+    "home": "Sæludagar events",
+    "event": "Event",
+    "login": "Log in",
+    "newCode": "Get a new code",
+    "myEvents": "My events",
+    "teacherHome": "Teacher area",
+    "eventNew": "New event",
+    "eventEdit": "Edit event",
+    "eventPreview": "Event preview",
+    "eventManage": "Manage event",
+    "attendance": "Attendance",
+    "print": "Participant list",
+    "message": "Email participants",
+    "adminHome": "Admin area",
+    "settings": "Dates and deadlines",
+    "import": "Student import",
+    "codes": "Send codes",
+    "teachers": "Teachers",
+    "adminEvents": "All events",
+    "export": "Export for the office",
+    "purge": "Purge data",
+    "audit": "Audit log"
+  },
+  "errors": {
+    "forbiddenTitle": "Access denied",
+    "forbiddenText": "You do not have access to this page.",
+    "notFoundTitle": "Page not found",
+    "notFoundText": "The page you were looking for does not exist.",
+    "serverTitle": "Something went wrong",
+    "serverText": "An error occurred. Please try again later.",
+    "backHome": "Go to the front page"
+  },
+  "stub": {
+    "notImplemented": "Not ready yet."
+  }
+}

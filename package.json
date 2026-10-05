@@ -1,0 +1,39 @@
+{
+  "name": "saeludagar",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sæludagar: event sign-up and absence-point choices for the school's Sæludagar",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file=.env src/server.js",
+    "watch:css": "sass --watch scss/main.scss public/css/main.css",
+    "build:css": "sass --style=compressed --no-source-map scss/main.scss public/css/main.css",
+    "start": "node --env-file-if-exists=.env src/server.js",
+    "migrate": "node --env-file-if-exists=.env src/db/migrate.js",
+    "create-admin": "node --env-file-if-exists=.env scripts/create-admin.js",
+    "backup": "node --env-file-if-exists=.env scripts/backup.js",
+    "test": "node --test",
+    "loadtest": "node --env-file-if-exists=.env scripts/loadtest.js",
+    "seed:dev": "node --env-file-if-exists=.env scripts/seed-dev.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "csv-parse": "^7.0.3",
+    "ejs": "^6.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "multer": "^2.4.0",
+    "nodemailer": "^10.0.15"
+  },
+  "devDependencies": {
+    "sass": "^1.105.1"
+  },
+  "allowScripts": {
+    "better-sqlite3": false,
+    "@parcel/watcher": false
+  }
+}
