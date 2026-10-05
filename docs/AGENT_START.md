@@ -1,6 +1,6 @@
 # AGENT_START.md: Sæludagar website
 
-> This is the complete, standalone specification for you, the coding agent. You do not have the original planning files; everything you need is here. Build **milestone 1 only** (section 13), then stop and wait.
+> This is the complete, standalone specification for you, the coding agent. The original planning files are in `docs/` (`requirements.md`, `saeludagar-notes.txt`) for reference only; where they differ from this document, this document wins. Build **milestone 1 only** (section 13), then stop and wait.
 
 ---
 
@@ -705,8 +705,22 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 | `seed:dev` | Fake development data only |
 
 ### Project structure
-The folders below already exist, each with an empty `.gitkeep` file. Leave the `.gitkeep` files in place.
+The folders below already exist, each with an empty `.gitkeep` file. Leave the `.gitkeep` files in place. `README.md`, `.gitignore`, `CLAUDE.md`, `.claude/` and `docs/` also exist. Do not change them unless asked, except where a milestone says to extend the README or `.gitignore`.
 ```
+README.md              project overview and how the team works; setup is added in milestone 1
+.gitignore             already ignores node_modules, .env, data, uploads, backups, compiled CSS
+CLAUDE.md              project instructions for Claude Code (points here)
+.claude/
+  settings.json        shared Claude Code permissions and settings
+  agents/
+    spec-reviewer.md   read-only reviewer: business rules, security (§9), scope
+  commands/
+    milestone.md       /milestone N: build one milestone, then stop
+    review.md          /review: run spec-reviewer on the current changes
+docs/
+  AGENT_START.md       this specification
+  requirements.md      original requirements (reference only)
+  saeludagar-notes.txt original meeting notes (reference only)
 src/
   server.js            entry point: env, start app, start jobs
   app.js               express app (helmet, session, csrf, i18n, routes, errors)
@@ -859,9 +873,9 @@ Everything in sections 3–11:
 Do:
 - **Project files:**
   - `package.json` with exactly the dependencies and scripts in section 10.
-  - `.gitignore` covering `node_modules`, `.env`, `data/*`, `uploads/*`, `backups/*` and `public/css/*`, while keeping each `.gitkeep`.
+  - `.gitignore` already exists. It covers `node_modules`, `.env`, `data/*`, `uploads/*`, `backups/*`, `public/css/*` and `.claude/settings.local.json`, and keeps each `.gitkeep`. Only extend it if something new needs ignoring.
   - `.env.example`.
-  - `README.md` covering setup, generating keys, the scripts, the structure and the environment variables.
+  - `README.md` already exists. Fill in its "Setup" section: setup steps, generating keys, the scripts and the environment variables.
 - **App shell:**
   - An Express 5 app with EJS, helmet (CSP), static files and error pages.
   - Header and footer partials.
@@ -1021,8 +1035,8 @@ Each item names the section or milestone it blocks and what to do until it is an
 ## 16. Sources
 
 ### Source key
-- **REQ**: `requirements.md`, the original requirements: purpose, users, FR-01–FR-10, NFR-01–NFR-04, user stories, and the "Tæki" stack.
-- **NOTES**: `Sæludagar.txt`, the meeting notes: people, needs, the data source, kennitala checks.
+- **REQ**: `docs/requirements.md`, the original requirements: purpose, users, FR-01–FR-10, NFR-01–NFR-04, user stories, and the "Tæki" stack.
+- **NOTES**: `docs/saeludagar-notes.txt` (originally `Sæludagar.txt`), the meeting notes: people, needs, the data source, kennitala checks.
 - **INT**: the interview with the project owner on 2 October 2026, including its confirmation round.
 - **EMAIL**: the school's email to students of 8 March 2026, pasted by the project owner during the interview (INT).
 
