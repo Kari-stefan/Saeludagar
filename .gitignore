@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets (.env.example is committed)
+.env
+.env.*
+!.env.example
+
+# Runtime data. The folders stay in git through their .gitkeep files.
+data/*
+!data/.gitkeep
+uploads/*
+!uploads/.gitkeep
+backups/*
+!backups/.gitkeep
+
+# Compiled CSS (built from scss/)
+public/css/*
+!public/css/.gitkeep
+
+# Personal Claude Code settings
+.claude/settings.local.json
+
+# Logs and OS files
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
