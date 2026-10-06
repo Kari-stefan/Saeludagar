@@ -17,6 +17,7 @@ Milestone 1 (project scaffold and data model) is built. The next step is milesto
 | File | What it is |
 |---|---|
 | [docs/AGENT_START.md](docs/AGENT_START.md) | **The full specification**: business rules, pages, data model, build plan, open questions |
+| [docs/run.md](docs/run.md) | **How to run the site on your computer**, with Windows notes and troubleshooting |
 | [docs/requirements.md](docs/requirements.md) | Original requirements (reference only) |
 | [docs/saeludagar-notes.txt](docs/saeludagar-notes.txt) | Original meeting notes (reference only) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code loads automatically in this repo |
@@ -62,6 +63,8 @@ The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_
 Claude Code asks before installing packages, pushing, or anything else section 14 of AGENT_START.md lists. It cannot read `.env`, the database or the backups. These rules are in `.claude/settings.json`.
 
 ## Setup
+
+The quick version is below. For a step-by-step guide covering what you should see, Windows PowerShell notes and troubleshooting, see **[docs/run.md](docs/run.md)**.
 
 You need **Node.js 24 LTS**. Check with `node -v`.
 

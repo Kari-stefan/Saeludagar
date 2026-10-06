@@ -37,4 +37,5 @@ Also:
 - Check a library's current documentation before using its API; several packages in AGENT_START §10 had recent major releases.
 
 ## Commands
-The npm scripts (`dev`, `watch:css`, `build:css`, `test`, `migrate`, `create-admin`, `backup`, `loadtest`, `seed:dev`) are created in milestone 1. They are listed in AGENT_START §10. Until milestone 1 is done there is nothing to run.
+- `docs/run.md` explains how to run the site locally (with Windows notes and troubleshooting); the README's Setup section is the short version. The npm scripts are listed in AGENT_START §10 and in the README.
+- When a milestone adds or changes a command, a setup step or an error message people will see, update `docs/run.md` in the same change.
