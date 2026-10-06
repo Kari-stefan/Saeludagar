@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="<%= lang %>">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= pageTitle %> · <%= siteTitle %></title>
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <a class="skip-link" href="#main"><%= t('site.skipToContent') %></a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="site-title" href="/"><%= siteTitle %></a>
+      <nav class="site-nav" aria-label="<%= t('nav.main') %>">
+        <a class="site-nav__link" href="/login"><%= t('nav.login') %></a>
+        <form class="lang-switch" method="post" action="/language" role="group" aria-label="<%= t('language.label') %>">
+          <input type="hidden" name="returnTo" value="<%= currentPath %>">
+          <button type="submit" name="lang" value="is" lang="is" aria-label="<%= t('language.is') %>" aria-pressed="<%= lang === 'is' %>">ÍS</button>
+          <button type="submit" name="lang" value="en" lang="en" aria-label="<%= t('language.en') %>" aria-pressed="<%= lang === 'en' %>">EN</button>
+        </form>
+      </nav>
+    </div>
+  </header>
+  <main id="main" class="container site-main" tabindex="-1">

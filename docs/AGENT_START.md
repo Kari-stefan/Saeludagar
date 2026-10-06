@@ -719,6 +719,7 @@ CLAUDE.md              project instructions for Claude Code (points here)
     review.md          /review: run spec-reviewer on the current changes
 docs/
   AGENT_START.md       this specification
+  run.md               how to run the site locally; keep it current as milestones change commands
   requirements.md      original requirements (reference only)
   saeludagar-notes.txt original meeting notes (reference only)
 src/
