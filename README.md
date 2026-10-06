@@ -66,20 +66,24 @@ Claude Code asks before installing packages, pushing, or anything else section 1
 
 The quick version is below. For a step-by-step guide covering what you should see, Windows PowerShell notes and troubleshooting, see **[docs/run.md](docs/run.md)**.
 
-You need **Node.js 24 LTS**. Check with `node -v`.
+You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` and `npm -v` prints **11.16 or newer**.
 
 1. **Install the packages:**
    ```
    npm install
    ```
-   better-sqlite3 and the Sass file watcher ship prebuilt binaries for Windows, macOS and Linux (x64 and arm64), so nothing is compiled and no build tools are needed. `package.json` turns off their install scripts (`allowScripts`), because npm 11 otherwise tries to compile better-sqlite3 from source and fails on machines without build tools. On a platform with no prebuilt binary, run `npm install-scripts approve better-sqlite3` to compile it; that needs Python and a C++ compiler.
-2. **Create your `.env`** from the example:
+   better-sqlite3 and the Sass file watcher ship prebuilt binaries for Windows, macOS and Linux (x64 and arm64), so nothing is compiled and no build tools are needed.
+
+   `package.json` turns off their install scripts (`allowScripts`), because npm otherwise tries to compile better-sqlite3 from source and fails on machines without build tools. npm older than 11.16 ignores `allowScripts`; see the troubleshooting in [docs/run.md](docs/run.md).
+
+   On a platform with no prebuilt binary (rare), compile it yourself, which needs Python and a C++ compiler. First delete the `"better-sqlite3": false` line from `allowScripts` in your local `package.json` (don't commit that change). Then run `npm install-scripts approve better-sqlite3` and `npm rebuild better-sqlite3`.
+2. **Create your `.env`** from the example. Skip this if you already have one, because copying overwrites it:
    ```
    cp .env.example .env              # PowerShell: Copy-Item .env.example .env
    ```
-3. **Generate the secrets.** Run this once for each of `SESSION_SECRET`, `KENNITALA_ENC_KEY` and `KENNITALA_HMAC_KEY`, and paste each result into `.env`:
+3. **Generate the secrets.** This prints three lines; replace the three empty lines in `.env` with them:
    ```
-   node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"
+   node -e "for (const k of ['SESSION_SECRET','KENNITALA_ENC_KEY','KENNITALA_HMAC_KEY']) console.log(k + '=' + require('node:crypto').randomBytes(32).toString('base64'))"
    ```
    Only `SESSION_SECRET` is used so far; the kennitala keys are needed from milestone 2. Never commit `.env`. If the kennitala keys are lost, stored kennitölur can't be read or matched. The student CSV then has to be imported again, and every teacher account, the admin's included, created again. Keep a copy of the keys somewhere other than the database backups.
 4. **Create the database** (in `data/saeludagar.db`):
@@ -101,7 +105,7 @@ You need **Node.js 24 LTS**. Check with `node -v`.
 
 | Script | What it does | Works from |
 |---|---|---|
-| `npm run dev` | Starts the site and restarts it when files change | Milestone 1 |
+| `npm run dev` | Starts the site and restarts it when JavaScript in `src/` or `.env` changes | Milestone 1 |
 | `npm run watch:css` | Rebuilds `public/css/main.css` when SCSS changes | Milestone 1 |
 | `npm run build:css` | Builds the CSS once, compressed | Milestone 1 |
 | `npm start` | Starts the site (production) | Milestone 1 |
