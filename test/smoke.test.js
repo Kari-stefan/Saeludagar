@@ -1,105 +1,89 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import os from 'node:os';
-import path from 'node:path';
 import { createApp } from '../src/app.js';
-import { loadConfig, MAX_POINTS_PER_COURSE, MAX_SIGNUPS_PER_STUDENT, POINTS_PER_ATTENDANCE } from '../src/config.js';
-import { openDatabase } from '../src/db/index.js';
+import { MAX_POINTS_PER_COURSE, MAX_SIGNUPS_PER_STUDENT, POINTS_PER_ATTENDANCE } from '../src/config.js';
 import { migrate, SCHEMA_VERSION } from '../src/db/migrate.js';
 import { dictionaries } from '../src/i18n/index.js';
+import { Browser, startSite, tempDatabase } from './helpers.js';
 
-const config = loadConfig({ NODE_ENV: 'test', SESSION_SECRET: 'test-secret', SCHOOL_NAME: 'Prófunarskóli' });
-
-let server;
-let baseUrl;
+let site;
+const as = {};
 
 before(async () => {
-  const app = createApp({ config });
-  await new Promise((resolve) => {
-    server = app.listen(0, '127.0.0.1', resolve);
-  });
-  baseUrl = `http://127.0.0.1:${server.address().port}`;
+  site = await startSite();
+  as.guest = site.browser();
+  for (const [role, fields] of [['student', { role: 'student' }], ['teacher', {}], ['admin', { isAdmin: true }]]) {
+    const account = await site.addUser(fields);
+    as[role] = site.browser();
+    await as[role].login(account.kennitala, account.code);
+  }
 });
 
-after(() => new Promise((resolve) => server.close(resolve)));
-
-function cookieFrom(res) {
-  return res.headers.getSetCookie().map((c) => c.split(';')[0]).join('; ');
-}
+after(() => site.close());
 
 describe('app shell', () => {
   test('the app starts and GET / returns 200 with the page shell', async () => {
-    const res = await fetch(`${baseUrl}/`);
+    const res = await as.guest.get('/');
     assert.equal(res.status, 200);
-    const html = await res.text();
-    assert.match(html, /<html lang="is">/);
-    assert.match(html, /Sæludagar – Prófunarskóli/);
-    assert.match(html, /Viðburðir á Sæludögum/);
+    assert.match(res.html, /<html lang="is">/);
+    assert.match(res.html, /Sæludagar – Prófunarskóli/);
+    assert.match(res.html, /Viðburðir á Sæludögum/);
   });
 
-  test('every page in AGENT_START §6 renders its stub in Icelandic', async () => {
+  test('every page in AGENT_START §6 renders in Icelandic for the role it is for', async () => {
     const pages = [
-      ['/', 'Viðburðir á Sæludögum'],
-      ['/events/1', 'Viðburður'],
-      ['/login', 'Innskráning'],
-      ['/login/new-code', 'Fá nýjan kóða'],
-      ['/my-events', 'Mínir viðburðir'],
-      ['/teacher', 'Kennarasvæði'],
-      ['/teacher/events/new', 'Nýr viðburður'],
-      ['/teacher/events/1/edit', 'Breyta viðburði'],
-      ['/teacher/events/1/preview', 'Forskoðun viðburðar'],
-      ['/teacher/events/1', 'Umsjón viðburðar'],
-      ['/teacher/events/1/attendance', 'Mæting'],
-      ['/teacher/events/1/print', 'Þátttakendalisti'],
-      ['/teacher/events/1/message', 'Senda póst á þátttakendur'],
-      ['/admin', 'Stjórnendasvæði'],
-      ['/admin/settings', 'Dagsetningar og frestir'],
-      ['/admin/import', 'Innflutningur nemenda'],
-      ['/admin/codes', 'Senda kóða'],
-      ['/admin/teachers', 'Kennarar'],
-      ['/admin/events', 'Allir viðburðir'],
-      ['/admin/export', 'Útflutningur fyrir skrifstofu'],
-      ['/admin/purge', 'Hreinsun gagna'],
-      ['/admin/audit', 'Aðgerðaskrá'],
+      ['guest', '/', 'Viðburðir á Sæludögum'],
+      ['guest', '/events/1', 'Viðburður'],
+      ['guest', '/login', 'Innskráning'],
+      ['guest', '/login/new-code', 'Fá nýjan kóða'],
+      ['student', '/my-events', 'Mínir viðburðir'],
+      ['teacher', '/teacher', 'Kennarasvæði'],
+      ['teacher', '/teacher/events/new', 'Nýr viðburður'],
+      ['teacher', '/teacher/events/1/edit', 'Breyta viðburði'],
+      ['teacher', '/teacher/events/1/preview', 'Forskoðun viðburðar'],
+      ['teacher', '/teacher/events/1', 'Umsjón viðburðar'],
+      ['teacher', '/teacher/events/1/attendance', 'Mæting'],
+      ['teacher', '/teacher/events/1/print', 'Þátttakendalisti'],
+      ['teacher', '/teacher/events/1/message', 'Senda póst á þátttakendur'],
+      ['admin', '/admin', 'Stjórnendasvæði'],
+      ['admin', '/admin/settings', 'Dagsetningar og frestir'],
+      ['admin', '/admin/import', 'Innflutningur nemenda'],
+      ['admin', '/admin/codes', 'Senda kóða'],
+      ['admin', '/admin/teachers', 'Kennarar'],
+      ['admin', '/admin/events', 'Allir viðburðir'],
+      ['admin', '/admin/export', 'Útflutningur fyrir skrifstofu'],
+      ['admin', '/admin/purge', 'Hreinsun gagna'],
+      ['admin', '/admin/audit', 'Aðgerðaskrá'],
     ];
-    for (const [pagePath, title] of pages) {
-      const res = await fetch(`${baseUrl}${pagePath}`);
+    for (const [role, pagePath, title] of pages) {
+      const res = await as[role].get(pagePath);
       assert.equal(res.status, 200, pagePath);
-      assert.match(await res.text(), new RegExp(`<h1>${title}</h1>`), pagePath);
+      assert.match(res.html, new RegExp(`<h1>${title}</h1>`), pagePath);
     }
   });
 
-  test('stubs without a page: GET /admin/export.csv answers 501, POST /logout redirects home', async () => {
-    const csv = await fetch(`${baseUrl}/admin/export.csv`);
+  test('GET /admin/export.csv is still a stub that answers 501', async () => {
+    const csv = await as.admin.get('/admin/export.csv');
     assert.equal(csv.status, 501);
-    assert.equal(await csv.text(), 'Ekki tilbúið enn.');
-
-    const logout = await fetch(`${baseUrl}/logout`, { method: 'POST', redirect: 'manual' });
-    assert.equal(logout.status, 303);
-    assert.equal(logout.headers.get('location'), '/');
+    assert.equal(csv.html, 'Ekki tilbúið enn.');
   });
 
-  test('request errors before the language middleware still render the error page', async () => {
-    const res = await fetch(`${baseUrl}/language`, {
-      method: 'POST',
-      body: new URLSearchParams({ lang: 'en', filler: 'x'.repeat(200 * 1024) }),
-    });
+  test('a form body over 100 kB gets the error page without details', async () => {
+    const res = await as.guest.post('/language', { lang: 'en', filler: 'x'.repeat(200 * 1024) });
     assert.equal(res.status, 413);
-    const html = await res.text();
-    assert.match(html, /<html lang="is">/);
-    assert.match(html, /Eitthvað fór úrskeiðis/);
-    assert.doesNotMatch(html, /PayloadTooLargeError|at .*\.js/);
+    assert.match(res.html, /<html lang="is">/);
+    assert.match(res.html, /Eitthvað fór úrskeiðis/);
+    assert.doesNotMatch(res.html, /PayloadTooLargeError|at .*\.js/);
   });
 
   test('unknown paths get the 404 page', async () => {
-    const res = await fetch(`${baseUrl}/does-not-exist`);
+    const res = await as.guest.get('/does-not-exist');
     assert.equal(res.status, 404);
-    assert.match(await res.text(), /Síða fannst ekki/);
+    assert.match(res.html, /Síða fannst ekki/);
   });
 
   test('security headers: strict CSP without inline styles or scripts, no X-Powered-By', async () => {
-    const res = await fetch(`${baseUrl}/`);
+    const res = await fetch(`${site.baseUrl}/`);
     const csp = res.headers.get('content-security-policy');
     assert.match(csp, /default-src 'self'/);
     assert.match(csp, /script-src 'self'(;|$)/);
@@ -111,33 +95,41 @@ describe('app shell', () => {
 
 describe('language (BR-59)', () => {
   test('BR-59: the ÍS/EN toggle switches the header text and is remembered for the session', async () => {
-    const switchRes = await fetch(`${baseUrl}/language`, {
-      method: 'POST',
-      body: new URLSearchParams({ lang: 'en', returnTo: '/login' }),
-      redirect: 'manual',
-    });
-    assert.equal(switchRes.status, 303);
-    assert.equal(switchRes.headers.get('location'), '/login');
-    const cookie = cookieFrom(switchRes);
-    assert.ok(cookie.startsWith('sid='));
+    const browser = site.browser();
+    const res = await browser.post('/language', { lang: 'en', returnTo: '/login' });
+    assert.equal(res.status, 303);
+    assert.equal(res.location, '/login');
+    assert.ok(browser.sessionId);
 
-    const html = await (await fetch(`${baseUrl}/`, { headers: { cookie } })).text();
+    const html = (await browser.get('/')).html;
     assert.match(html, /<html lang="en">/);
     assert.match(html, />Log in</);
     assert.match(html, /<h1>Sæludagar events<\/h1>/);
 
-    const fresh = await (await fetch(`${baseUrl}/`)).text();
+    const fresh = (await site.browser().get('/')).html;
     assert.match(fresh, />Innskráning</);
   });
 
+  test('BR-59: the choice survives a server restart, because sessions are kept in the database', async () => {
+    const browser = site.browser();
+    await browser.post('/language', { lang: 'en', returnTo: '/' });
+    const restarted = await new Promise((resolve) => {
+      const listening = createApp({ config: site.config, db: site.db }).listen(0, '127.0.0.1', () => resolve(listening));
+    });
+    try {
+      const again = new Browser(`http://127.0.0.1:${restarted.address().port}`);
+      again.cookies = browser.cookies;
+      assert.match((await again.get('/')).html, /<html lang="en">/);
+    } finally {
+      await new Promise((resolve) => restarted.close(resolve));
+    }
+  });
+
   test('BR-59: the language switch never redirects off-site', async () => {
+    const browser = site.browser();
     for (const returnTo of ['//evil.example', 'https://evil.example', '/\\evil.example', '']) {
-      const res = await fetch(`${baseUrl}/language`, {
-        method: 'POST',
-        body: new URLSearchParams({ lang: 'en', returnTo }),
-        redirect: 'manual',
-      });
-      assert.equal(res.headers.get('location'), '/', returnTo);
+      const res = await browser.post('/language', { lang: 'en', returnTo });
+      assert.equal(res.location, '/', returnTo);
     }
   });
 
@@ -153,19 +145,15 @@ describe('language (BR-59)', () => {
 });
 
 describe('database (§7)', () => {
-  let dir;
+  let database;
   let db;
 
   before(() => {
-    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'saeludagar-test-'));
-    db = openDatabase(path.join(dir, 'test.db'));
-    migrate(db);
+    database = tempDatabase();
+    db = database.db;
   });
 
-  after(() => {
-    db.close();
-    fs.rmSync(dir, { recursive: true, force: true });
-  });
+  after(() => database.remove());
 
   test('migrate creates every table and index and sets user_version = 1', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);

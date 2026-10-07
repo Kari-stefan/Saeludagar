@@ -1,0 +1,6 @@
+<% const message = locals.takeFlash ? takeFlash() : undefined; -%>
+<% if (message) { -%>
+<div class="alert alert--<%= message.type %>" role="<%= message.type === 'error' ? 'alert' : 'status' %>">
+  <p><%= t(message.key, message.params) %></p>
+</div>
+<% } -%>

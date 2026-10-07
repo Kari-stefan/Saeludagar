@@ -1,0 +1,20 @@
+<%# BR-08: "Fá nýjan kóða". Plain text, rendered in Icelandic and then English (BR-52). -%>
+<% languages.forEach((t, index) => { -%>
+<% if (index > 0) { -%>
+
+----------------------------------------
+
+<% } -%>
+<%= t('emails.common.greeting', { name }) %>
+
+<%= t('emails.new_code.intro') %>
+
+    <%= code %>
+
+<%= t('emails.new_code.oldCode') %>
+
+<%= t('emails.common.login') %>
+<%= loginUrl %>
+
+<%= t('emails.common.noReply') %>
+<% }) -%>

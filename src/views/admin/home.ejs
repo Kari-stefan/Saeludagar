@@ -1,3 +1,21 @@
 <%- include('../partials/header', { pageTitle: t('pages.adminHome') }) %>
 <h1><%= t('pages.adminHome') %></h1>
+
+<h2><%= t('admin.home.outboxHeading') %></h2>
+<ul class="stats">
+  <li><%= t('admin.home.queued', { count: outbox.queued }) %></li>
+  <li><%= t('admin.home.failed', { count: outbox.failed }) %></li>
+</ul>
+
+<h2><%= t('admin.home.pagesHeading') %></h2>
+<ul class="link-list">
+  <li><a href="/admin/settings"><%= t('pages.settings') %></a></li>
+  <li><a href="/admin/import"><%= t('pages.import') %></a></li>
+  <li><a href="/admin/codes"><%= t('pages.codes') %></a></li>
+  <li><a href="/admin/teachers"><%= t('pages.teachers') %></a></li>
+  <li><a href="/admin/events"><%= t('pages.adminEvents') %></a></li>
+  <li><a href="/admin/export"><%= t('pages.export') %></a></li>
+  <li><a href="/admin/purge"><%= t('pages.purge') %></a></li>
+  <li><a href="/admin/audit"><%= t('pages.audit') %></a></li>
+</ul>
 <%- include('../partials/footer') %>

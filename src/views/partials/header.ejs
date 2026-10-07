@@ -1,3 +1,8 @@
+<%
+  // Error pages can render before the user and CSRF middleware have run.
+  const user = locals.currentUser;
+  const token = locals.csrfToken ? csrfToken() : '';
+-%>
 <!doctype html>
 <html lang="<%= lang %>">
 <head>
@@ -12,8 +17,25 @@
     <div class="container site-header__inner">
       <a class="site-title" href="/"><%= siteTitle %></a>
       <nav class="site-nav" aria-label="<%= t('nav.main') %>">
+        <% if (user) { -%>
+        <% if (user.role === 'student') { -%>
+        <a class="site-nav__link" href="/my-events"><%= t('pages.myEvents') %></a>
+        <% } else { -%>
+        <a class="site-nav__link" href="/teacher"><%= t('pages.teacherHome') %></a>
+        <% if (user.isAdmin) { -%>
+        <a class="site-nav__link" href="/admin"><%= t('pages.adminHome') %></a>
+        <% } -%>
+        <% } -%>
+        <span class="site-nav__user"><%= user.name %></span>
+        <form class="site-nav__form" method="post" action="/logout">
+          <input type="hidden" name="_csrf" value="<%= token %>">
+          <button type="submit" class="site-nav__button"><%= t('nav.logout') %></button>
+        </form>
+        <% } else { -%>
         <a class="site-nav__link" href="/login"><%= t('nav.login') %></a>
+        <% } -%>
         <form class="lang-switch" method="post" action="/language" role="group" aria-label="<%= t('language.label') %>">
+          <input type="hidden" name="_csrf" value="<%= token %>">
           <input type="hidden" name="returnTo" value="<%= currentPath %>">
           <button type="submit" name="lang" value="is" lang="is" aria-label="<%= t('language.is') %>" aria-pressed="<%= lang === 'is' %>">ÍS</button>
           <button type="submit" name="lang" value="en" lang="en" aria-label="<%= t('language.en') %>" aria-pressed="<%= lang === 'en' %>">EN</button>

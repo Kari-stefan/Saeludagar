@@ -10,7 +10,7 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestone 1 (project scaffold and data model) is built. The next step is milestone 2 (login, accounts and email). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+Milestones 1 and 2 are built: the project scaffold and data model, then login, accounts and email. Until the school's mail server details arrive, emails are printed in the terminal instead of sent. The next step is milestone 3 (admin settings, student import, sending codes). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
@@ -85,18 +85,25 @@ You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` 
    ```
    node -e "for (const k of ['SESSION_SECRET','KENNITALA_ENC_KEY','KENNITALA_HMAC_KEY']) console.log(k + '=' + require('node:crypto').randomBytes(32).toString('base64'))"
    ```
-   Only `SESSION_SECRET` is used so far; the kennitala keys are needed from milestone 2. Never commit `.env`. If the kennitala keys are lost, stored kennitölur can't be read or matched. The student CSV then has to be imported again, and every teacher account, the admin's included, created again. Keep a copy of the keys somewhere other than the database backups.
+   All three are required. Never commit `.env`. If the kennitala keys are lost, stored kennitölur can't be read or matched. The student CSV then has to be imported again, and every teacher account, the admin's included, created again. Keep a copy of the keys somewhere other than the database backups.
 4. **Create the database** (in `data/saeludagar.db`):
    ```
    npm run migrate
    ```
-5. **Build the CSS and start the site:**
+5. **Create your admin account.** On your own computer, use a fake kennitala such as `0000000001`, never a real one:
+   ```
+   npm run create-admin -- --name "Your Name" --email "you@example.is" --kennitala "0000000001"
+   ```
+   It prints your login code. This is the only time the code is shown. To try a student login, `npm run seed:dev` creates three fake students and prints their codes.
+6. **Build the CSS and start the site:**
    ```
    npm run build:css
    npm run dev
    ```
-   Open http://localhost:3000. To rebuild the CSS whenever you change it, run `npm run watch:css` in a second terminal.
-6. **Run the tests:**
+   Open http://localhost:3000 and log in with the kennitala and the code. To rebuild the CSS whenever you change it, run `npm run watch:css` in a second terminal.
+
+   While `SMTP_HOST` in `.env` is empty, emails (such as the codes of teachers you create) are printed in the `npm run dev` terminal instead of sent.
+7. **Run the tests:**
    ```
    npm test
    ```
@@ -112,7 +119,7 @@ You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` 
 | `npm run migrate` | Creates the database tables | Milestone 1 |
 | `npm test` | Runs the tests | Milestone 1 |
 | `npm run create-admin` | Creates the first admin account | Milestone 2 |
-| `npm run seed:dev` | Fills the database with fake development data | When needed |
+| `npm run seed:dev` | Creates fake students (with new codes) for trying student login. Development only | Milestone 2 |
 | `npm run backup` | Backs up the database and uploads | Milestone 8 |
 | `npm run loadtest` | 1,000-student sign-up load test | Milestone 8 |
 
@@ -128,9 +135,9 @@ You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` 
 | `UPLOAD_DIR` | Event images | `./uploads` |
 | `BACKUP_DIR` | Database backups | `./backups` |
 | `SESSION_SECRET` | **Required.** Signs the session cookie | none |
-| `KENNITALA_ENC_KEY` | Encrypts kennitölur (milestone 2) | none |
-| `KENNITALA_HMAC_KEY` | Separate key for kennitala lookups (milestone 2) | none |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server (milestone 2). If `SMTP_HOST` is empty, emails are printed to the console instead of sent | empty, `587`, `false` |
+| `KENNITALA_ENC_KEY` | **Required.** Encrypts kennitölur | none |
+| `KENNITALA_HMAC_KEY` | **Required.** A separate key for kennitala lookups | none |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server. `MAIL_FROM` (the noreply address) is required when `SMTP_HOST` is set. If `SMTP_HOST` is empty, development prints emails to the console instead of sending them; production never prints them, and they stay queued | empty, `587`, `false` |
 | `SMTP_MAX_PER_MINUTE` | Sending limit for bulk email | `30` |
 | `TRUST_PROXY` | Set to `1` behind nginx in production | `0` |
 

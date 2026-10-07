@@ -5,12 +5,20 @@
   },
   "nav": {
     "main": "Aðalvalmynd",
-    "login": "Innskráning"
+    "login": "Innskráning",
+    "logout": "Útskráning"
   },
   "language": {
     "label": "Tungumál",
     "is": "Íslenska",
     "en": "English"
+  },
+  "common": {
+    "yes": "Já",
+    "no": "Nei"
+  },
+  "form": {
+    "errorSummary": "Lagaðu villurnar hér fyrir neðan."
   },
   "pages": {
     "home": "Viðburðir á Sæludögum",
@@ -36,9 +44,89 @@
     "purge": "Hreinsun gagna",
     "audit": "Aðgerðaskrá"
   },
+  "validation": {
+    "kennitala": "Kennitala verður að vera 10 tölustafir"
+  },
+  "login": {
+    "kennitala": "Kennitala",
+    "kennitalaHint": "10 tölustafir, með eða án bandstriks",
+    "code": "Kóði",
+    "codeHint": "6 stafa kóðinn sem þú fékkst í tölvupósti",
+    "submit": "Skrá inn",
+    "failed": "Kennitala eða kóði er rangur",
+    "errors": {
+      "code": "Kóðinn er 6 tölustafir"
+    }
+  },
+  "newCode": {
+    "intro": "Sláðu inn kennitöluna þína. Ef hún tilheyrir virkum aðgangi verður nýr kóði sendur á netfangið sem er skráð á aðganginn og gamli kóðinn hættir að virka.",
+    "submit": "Senda nýjan kóða",
+    "sent": "Ef kennitalan tilheyrir virkum aðgangi verður nýr kóði sendur á netfangið sem er skráð á aðganginn. Hver kennitala getur fengið einn nýjan kóða á 10 mínútna fresti.",
+    "back": "Aftur í innskráningu"
+  },
+  "admin": {
+    "home": {
+      "outboxHeading": "Tölvupóstur",
+      "queued": "Í biðröð: {count}",
+      "failed": "Tókst ekki að senda: {count}",
+      "pagesHeading": "Stjórnun"
+    },
+    "teachers": {
+      "listHeading": "Kennaraaðgangar",
+      "none": "Engir kennaraaðgangar enn.",
+      "name": "Nafn",
+      "email": "Netfang",
+      "admin": "Stjórnandi",
+      "status": "Staða",
+      "actions": "Aðgerðir",
+      "active": "Virkur",
+      "inactive": "Óvirkur",
+      "you": "(þú)",
+      "newCode": "Senda nýjan kóða",
+      "deactivate": "Gera óvirkan",
+      "activate": "Virkja",
+      "grantAdmin": "Gera að stjórnanda",
+      "revokeAdmin": "Taka stjórnandaréttindi",
+      "createHeading": "Stofna kennaraaðgang",
+      "createHelp": "Kennarinn fær kóða sendan í tölvupósti til að skrá sig inn með.",
+      "create": "Stofna aðgang",
+      "created": "Aðgangur stofnaður: {name}. Kóði verður sendur á {email}.",
+      "codeQueued": "Nýr kóði verður sendur á {email}.",
+      "deactivated": "Aðgangur gerður óvirkur: {name}",
+      "activated": "Aðgangur virkjaður: {name}",
+      "adminGranted": "Stjórnandaréttindi veitt: {name}",
+      "adminRevoked": "Stjórnandaréttindi tekin af: {name}",
+      "errors": {
+        "name": "Sláðu inn nafn",
+        "email": "Sláðu inn gilt netfang",
+        "kennitalaTaken": "Þessi kennitala er þegar með aðgang",
+        "self": "Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin.",
+        "inactive": "Virkjaðu aðganginn fyrst."
+      }
+    }
+  },
+  "emails": {
+    "common": {
+      "greeting": "Halló {name},",
+      "login": "Skráðu þig inn með kennitölunni þinni og kóðanum á:",
+      "noReply": "Þessi póstur var sendur sjálfvirkt. Vinsamlegast svaraðu honum ekki."
+    },
+    "new_code": {
+      "subject": "Nýr kóði fyrir Sæludaga",
+      "intro": "Beðið var um nýjan kóða fyrir aðganginn þinn á Sæludagavefnum. Nýi kóðinn þinn er:",
+      "oldCode": "Gamli kóðinn virkar ekki lengur. Notaðu alltaf nýjasta kóðann sem þú fékkst."
+    },
+    "teacher_code": {
+      "subject": "Kóði fyrir Sæludagavefinn",
+      "intro": "Hér er kóðinn þinn til að skrá þig inn á Sæludagavefinn sem kennari:",
+      "oldCode": "Ef þú áttir eldri kóða virkar hann ekki lengur."
+    }
+  },
   "errors": {
     "forbiddenTitle": "Aðgangur ekki leyfður",
     "forbiddenText": "Þú hefur ekki aðgang að þessari síðu.",
+    "csrfTitle": "Eyðublaðið er útrunnið",
+    "csrfText": "Farðu aftur á síðuna, endurhlaðaðu hana og reyndu aftur.",
     "notFoundTitle": "Síða fannst ekki",
     "notFoundText": "Síðan sem þú leitaðir að er ekki til.",
     "serverTitle": "Eitthvað fór úrskeiðis",

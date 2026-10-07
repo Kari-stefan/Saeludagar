@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 1 the site is only a shell: every page exists and shows its title, and the ÍS/EN switch works. Nobody can log in yet.
+As of milestone 2 you can log in. You create your own admin account with a command, and as admin you create teacher accounts. Emails, such as login codes, are printed in the terminal instead of being sent. Student accounts will come from the CSV import in milestone 3; until then, `npm run seed:dev` creates fake students to log in with. Pages from later milestones still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -33,7 +33,7 @@ As of milestone 1 the site is only a shell: every page exists and shows its titl
   If your branch already exists on GitHub, use `git switch your-name` instead. Work on your own branch, never on `main` (see [How we work](../README.md#how-we-work)).
 - **A terminal in the project folder.** In VS Code, use File → Open Folder, pick the `Saeludagar` folder, then Terminal → New Terminal. Run every command in this guide there.
 
-You don't need any build tools or a separate database server. SQLite runs inside the app.
+You don't need any build tools, a separate database server or a mail server. SQLite runs inside the app, and emails are printed in the terminal.
 
 ## 2. Windows: let PowerShell run npm
 
@@ -79,11 +79,11 @@ node -e "for (const k of ['SESSION_SECRET','KENNITALA_ENC_KEY','KENNITALA_HMAC_K
 ```
 Open `.env` and **replace** the three empty lines (`SESSION_SECRET=`, `KENNITALA_ENC_KEY=`, `KENNITALA_HMAC_KEY=`) with the printed lines. Don't add them as extra lines: if a name appears twice, the last line wins, so an empty line further down would undo your value.
 
-- Only `SESSION_SECRET` is used so far; the two kennitala keys are needed from milestone 2.
+- All three are required. The site doesn't start without them.
 - Every developer generates their own values, once, and keeps them.
-- From milestone 2, changing the kennitala keys makes the kennitölur already in your local database unreadable. If you ever change them, [reset the database](#8-reset-your-local-database).
+- Changing the kennitala keys later makes the kennitölur already in your local database unreadable, so nobody can log in. If you ever change them, [reset the database](#8-reset-your-local-database).
 
-You can leave the other settings as they are; [README → Environment variables](../README.md#environment-variables) explains each one.
+You can leave the other settings as they are; [README → Environment variables](../README.md#environment-variables) explains each one. Keep `SMTP_HOST` empty on your own computer, so emails are printed instead of sent.
 
 **4. Create the database:**
 ```
@@ -97,6 +97,20 @@ npm run build:css
 ```
 This creates `public/css/main.css`. Without it the pages load but have no styling.
 
+**6. Create your admin account.** Fill in your own name and email, and use a **fake** kennitala such as `0000000001`, never a real one:
+```
+npm run create-admin -- --name "Your Name" --email "you@example.is" --kennitala "0000000001"
+```
+The same command works in PowerShell, Command Prompt and Git Bash. Keep the `--` after `create-admin`, and the quotes around each value.
+
+You should see:
+```
+Admin account created for Your Name (you@example.is).
+Login code: 123456
+This is the only time the code is shown. Log in at http://localhost:3000/login
+```
+Your code is a different 6-digit number. Write it down: this is the only time it is shown. If you lose it, use **Fá nýjan kóða** on the login page; the new code is printed in the `npm run dev` terminal (see [section 4](#4-start-the-site)). No email is sent, so the email address can be made up.
+
 ## 4. Start the site
 
 ```
@@ -107,25 +121,53 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone 1):**
-- A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons.
-- The front page heading "Viðburðir á Sæludögum".
-- **EN** switches the whole page to English ("Log in", "Sæludagar events"). **ÍS** switches back. The choice is kept as you move between pages.
-- Every planned page already exists and shows only its title. Try:
+**What you should see (milestone 2):**
+- A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons. **EN** switches the whole site to English and **ÍS** switches back.
+- **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
+  ```
+  npm run seed:dev
+  ```
+  It prints their kennitölur and new codes (your codes are different):
+  ```
+  Fake students for development. Log in at http://localhost:3000/login
+    kennitala 0000000101  code 123456  Jóna Jónsdóttir (Rafmagnsbraut)
+    kennitala 0000000102  code 654321  Páll Pálsson (Starfsbraut)
+    kennitala 0000000103  code 112233  Sara Sigurðardóttir (Rafmagnsbraut)
+  Run npm run seed:dev again to give them new codes.
+  ```
+  Log in with one of them. A student lands on **Mínir viðburðir** (My events), which stays empty until sign-ups arrive in milestone 5. The header shows the student's name and **Útskráning**. A student's session ends after 2 hours without activity. `seed:dev` only makes fake data and refuses to run when `NODE_ENV=production`.
+- **Log in as admin.** Click **Innskráning** and enter your fake kennitala (`0000000001` or `000000-0001`) and the code from [step 6](#3-first-time-setup). You land in the teacher area ("Kennarasvæði"). The header now shows your name, **Stjórnendasvæði** (the admin area) and **Útskráning** (log out).
+- **Create a teacher.** Go to Stjórnendasvæði → **Kennarar**. Enter a name, an email and another fake kennitala, such as `0000000002`. Within a few seconds the teacher's code email appears in the `npm run dev` terminal:
+  ```
+  --- Email (not sent, because SMTP_HOST is empty) ---
+  To: Jón Kennari <jon@example.is>
+  Subject: Kóði fyrir Sæludagavefinn / Your code for the Sæludagar website
 
-| Page | Address |
-|---|---|
-| Front page | http://localhost:3000/ |
-| Log in | http://localhost:3000/login |
-| My events (students) | http://localhost:3000/my-events |
-| Teacher area | http://localhost:3000/teacher |
-| New event | http://localhost:3000/teacher/events/new |
-| Admin area | http://localhost:3000/admin |
-| Send codes | http://localhost:3000/admin/codes |
+  Halló Jón Kennari,
+  …
+      123456
+  …
+  --- End of email ---
+  ```
+  Every email is written in Icelandic first, then English. Log out and log in as the teacher with that code. Teachers don't see Stjórnendasvæði.
+- **On the Kennarar page** you can also send a teacher a new code, deactivate or reactivate them, and make them an admin or remove that. You can't deactivate yourself or remove your own admin rights; another admin can.
+- **Fá nýjan kóða** on the login page prints a new code in the terminal; the old code stops working once the new one is printed. Each kennitala gets at most one new code every 10 minutes, counting codes an admin sends. The page shows the same message every time, even when no code is sent, on purpose.
+- **5 wrong codes** for the same kennitala lock it for 15 minutes. While it is locked, even the right code gives "Kennitala eða kóði er rangur".
 
-The full list of pages is in section 6 of [AGENT_START.md](AGENT_START.md). Student, teacher and admin pages have no login check yet; that arrives in milestone 2.
+Who can open which page:
 
-To use a different port, set `PORT` in `.env` (and `BASE_URL` to match). The server restarts on the new port by itself; open that port instead.
+| Page | Address | Who |
+|---|---|---|
+| Front page | http://localhost:3000/ | Everyone |
+| Log in | http://localhost:3000/login | Everyone |
+| My events | http://localhost:3000/my-events | Students (fake ones from `npm run seed:dev`) |
+| Teacher area | http://localhost:3000/teacher | Teachers and admins |
+| Admin area | http://localhost:3000/admin | Admins |
+| Teacher accounts | http://localhost:3000/admin/teachers | Admins |
+
+If you aren't logged in, these pages send you to the login page; if you are logged in without the right role, you get "Aðgangur ekki leyfður" (access denied). The full list of pages is in section 6 of [AGENT_START.md](AGENT_START.md).
+
+To use a different port, set `PORT` in `.env` (and `BASE_URL` to match, because it is the link in the emails). The server restarts on the new port by itself; open that port instead.
 
 ## 5. Working on the code
 
@@ -140,13 +182,13 @@ What you need to do after a change depends on the file:
 |---|---|
 | JavaScript in `src/` | Nothing. The server restarts by itself (you'll see `Restarting 'src/server.js'`). |
 | `.env` | Nothing. The server restarts by itself with the new values (you'll see `Change detected in '….env'`). |
-| A view in `src/views/` (`.ejs`) | Refresh the browser. |
+| A view in `src/views/` (`.ejs`), including the email templates in `src/views/emails/` | Refresh the browser. The next email uses the changed template. |
 | Text in `src/i18n/is.json` or `en.json` | Restart the server (`Ctrl+C`, then `npm run dev`). These files are only read when the server starts. |
 | Styles in `scss/` | With `npm run watch:css` running, refresh the browser. Otherwise run `npm run build:css` first. |
 
-Every restart resets the language to Icelandic, because sessions are kept in memory until milestone 2 moves them into the database.
+A restart doesn't log you out or reset the language: sessions are kept in the database.
 
-Keep `NODE_ENV=development` in your `.env`. In production mode, views are cached until the server restarts, and the session cookie only works over HTTPS, so the ÍS/EN switch stops working on `http://localhost`.
+Keep `NODE_ENV=development` in your `.env`. In production mode, views are cached until the server restarts, emails are no longer printed in the terminal, and the session cookie only works over HTTPS, so logging in and the ÍS/EN switch stop working on `http://localhost`.
 
 ## 6. Run the tests
 
@@ -154,9 +196,9 @@ Keep `NODE_ENV=development` in your `.env`. In production mode, views are cached
 npm test
 ```
 
-All tests should pass: the summary at the end shows `ℹ fail 0`. The tests use their own temporary databases. They never touch `data/` or your `.env`, so you can run them while `npm run dev` is running.
+All tests should pass: the summary at the end shows `ℹ fail 0`. The tests use their own temporary databases and fake kennitölur. They never touch `data/` or your `.env`, so you can run them while `npm run dev` is running. A full run takes about 15 seconds.
 
-Some tests check error handling on purpose, so error messages and stack traces in the output are normal as long as the summary says `fail 0`.
+Some tests check error handling on purpose, so error messages in the output are normal as long as the summary says `fail 0`.
 
 ## 7. Get the team's latest code
 
@@ -189,9 +231,8 @@ This deletes everything in your **local development** database and starts empty.
    | Git Bash / macOS / Linux | `rm -f data/saeludagar.db*` |
 
    SQLite keeps up to three files: `saeludagar.db`, `saeludagar.db-wal` and `saeludagar.db-shm`. The `*` removes all of them. If the files can't be deleted ("being used by another process" or "Device or resource busy"), the server is still running somewhere; stop it and try again.
-3. Run `npm run migrate`, then `npm run dev`.
-
-   From milestone 2, a fresh database has no admin account, so also run `npm run create-admin` again.
+3. Run `npm run migrate`.
+4. A fresh database has no accounts, so [create your admin account](#3-first-time-setup) again (step 6), and run `npm run seed:dev` if you want the fake students. Then run `npm run dev`.
 
 ## 9. Troubleshooting
 
@@ -203,22 +244,36 @@ Find the message you see in the left column.
 | `Could not read package.json` or `ENOENT … package.json` | The terminal isn't in the project folder | `cd Saeludagar`, or open that folder in VS Code ([section 1](#1-what-you-need)). |
 | `node: .env: not found` | `npm run dev` needs a `.env` file | Do [steps 2 and 3](#3-first-time-setup) of the setup. |
 | `SESSION_SECRET is not set. Copy .env.example to .env and fill it in` | `SESSION_SECRET` in `.env` is empty | Paste a generated value ([step 3](#3-first-time-setup)) and save `.env`; the server restarts by itself. Check that `SESSION_SECRET=` doesn't appear twice. |
-| `The database is not set up. Run: npm run migrate` | The database hasn't been created yet, or was made by a different version of the code | Run `npm run migrate`, then restart `npm run dev` (it doesn't restart by itself after a migrate). If migrate says `Unknown database schema version`, see that row. |
+| `KENNITALA_ENC_KEY is not set. Copy .env.example to .env and fill it in` (or `KENNITALA_HMAC_KEY`) | That key in `.env` is empty. Both kennitala keys are required from milestone 2 | Paste generated values ([step 3](#3-first-time-setup)) and save `.env`. Check that the name doesn't appear twice. |
+| `KENNITALA_ENC_KEY must be 32 random bytes, base64-encoded` (or `KENNITALA_HMAC_KEY`) | The value isn't a whole generated key. Often the `=` at the end is missing, or it has extra quotes or spaces | Generate new values ([step 3](#3-first-time-setup)) and paste the whole line. |
+| `KENNITALA_ENC_KEY and KENNITALA_HMAC_KEY must be different` | The same value was pasted for both keys | Run the [step 3](#3-first-time-setup) command again; it prints a different value on each line. |
+| `MAIL_FROM is not set. Set it to the school's noreply address` | `SMTP_HOST` is set in `.env`, so the site tries to send real email | On your own computer, leave `SMTP_HOST=` empty, so emails are printed in the terminal. |
+| `The database is not set up. Run: npm run migrate` | The database hasn't been created yet, or was made by a different version of the code. `npm run create-admin` shows it too | Run `npm run migrate`, then restart `npm run dev` (it doesn't restart by itself after a migrate). If migrate says `Unknown database schema version`, see that row. |
 | `Unknown database schema version …` | Your database was made by a different version of the code | [Reset your local database](#8-reset-your-local-database). |
+| `Usage: npm run create-admin -- --name "Full name" --email "name@example.is" --kennitala "0000000000"` | An option is missing, or the `--` after `create-admin` is missing | Copy the command from [step 6](#3-first-time-setup) and fill in all three values. |
+| `Unexpected argument '…'` from `create-admin` | A value with a space has no quotes around it | Put quotes around each value, for example `--name "Jón Jónsson"`. |
+| `Kennitala must be 10 digits`, `Enter a valid email address` or `Enter a name` from `create-admin` | That value has the wrong format | The kennitala is 10 digits, with or without a hyphen after the 6th: `0000000001` or `000000-0001`. |
+| `seed:dev only creates fake development data. It does not run when NODE_ENV=production.` | `NODE_ENV` in `.env` is `production` | Set `NODE_ENV=development` (see [section 5](#5-working-on-the-code)). |
+| `Skipped 0000000103: it belongs to a teacher account.` from `seed:dev` | You created a teacher with one of the fake students' kennitölur | Log in with the other fake students, or [reset the database](#8-reset-your-local-database). |
+| `This kennitala already has an account` from `create-admin` | You already created an account with that kennitala | Log in with it. If you've lost the code, use **Fá nýjan kóða** on the login page and read the new code in the `npm run dev` terminal. |
+| "Kennitala eða kóði er rangur" with a code you know is right | 5 wrong codes have locked that kennitala for 15 minutes; or a newer code was sent, and only the newest works; or the account was deactivated; or the kennitala keys in `.env` have changed | Wait 15 minutes; or use the newest code in the terminal; or have another admin reactivate the account. If you changed the keys, [reset the database](#8-reset-your-local-database). |
+| **Fá nýjan kóða** prints no email in the terminal | Each kennitala gets one new code every 10 minutes, counting codes an admin sends. Kennitölur without an active account get nothing. The page shows the same message either way, on purpose | Wait 10 minutes and try again, and check the kennitala. Emails appear within about 5 seconds. |
+| `Email 3 (teacher_code) could not be sent: …` in the terminal, or "Tókst ekki að senda: 1" / "Failed: 1" on Stjórnendasvæði | The site tried to send an email through `SMTP_HOST` and the mail server refused or didn't answer; the text after `could not be sent:` is the reason. A failed email is retried 5 times, 1, 2, 4, 8 and 16 minutes apart; after that it counts as failed | On your own computer, leave `SMTP_HOST=` empty, so emails are printed instead. On the server, check the `SMTP_` settings. A failed code email can be replaced with a new one: **Senda nýjan kóða** on the Kennarar page, or **Fá nýjan kóða**. |
+| "Eyðublaðið er útrunnið" / "This form has expired" | The page was open so long that your session ended (after 2 hours without activity, or 12 hours for teachers and admins) | Go back, reload the page and try again. If it happens every time, check that your browser allows cookies for `localhost`. |
+| "Aðgangur ekki leyfður" / "Access denied" | You're logged in, but your account can't open that page, for example a teacher opening `/admin` | Log in with an admin account, or have an admin make you an admin. |
 | `Port 3000 is already in use. Stop the other server, or set PORT in .env to a free port.` | Something else is using the port | If it's your own `npm run dev` in another terminal, the site is already running there: press `Ctrl+C` in this terminal and use the other one. If another program uses the port, set `PORT=3001` (and `BASE_URL`) in `.env`. |
 | `Failed running 'src/server.js'. Waiting for file changes before restarting...` | The server stopped because of an error | Read the error above it. If it's a message from this table, follow that row. Otherwise it's usually a mistake in code you just changed: the first lines of the error name the file and line. Fix it and save; the server restarts by itself. |
 | `Terminate batch job (Y/N)?` | You stopped a server started with `npm.cmd` or from Command Prompt | Type `Y` and press Enter. The server has already stopped. |
 | The page has no colours or layout | The CSS hasn't been built | Run `npm run build:css`, then refresh with `Ctrl+F5` (`Cmd+Shift+R` on a Mac). |
 | Changed text in `is.json` / `en.json` doesn't appear | Translation files are read when the server starts | Restart `npm run dev`. |
-| The page switched back to Icelandic | The server restarted (after a code or `.env` change), which clears sessions until milestone 2 | Click **EN** again. |
 | `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '…'` | Packages are missing or out of date | Stop `npm run dev`, then run `npm install`. |
 | `'sass' is not recognized as an internal or external command` (macOS/Linux: `sass: command not found` or `sass: not found`) | The packages aren't installed | Run `npm install`. |
-| `Error: Cannot find module '…scripts\create-admin.js'` (or `backup.js`, `loadtest.js`, `seed-dev.js`) | That script isn't written yet | See [Not covered yet](#not-covered-yet). |
+| `Error: Cannot find module '…scripts\backup.js'` (or `loadtest.js`) | That script isn't written yet | See [Not covered yet](#not-covered-yet). |
 | `gyp ERR!` or `node-gyp` during `npm install` | Your npm is older than 11.16, so it ignores the `allowScripts` setting in `package.json` and tries to compile better-sqlite3 | Install the current Node.js 24 LTS (check `npm -v`), then run `npm install` again. Quick workaround: `npm install --ignore-scripts`. |
 | `npm error code EPERM`, `being used by another process` or `Device or resource busy` | A running server (maybe in another terminal) is using the files you're installing or deleting | Stop it with `Ctrl+C`, then run the command again. If `npm install` stopped halfway, just run it again. |
 | `node: bad option: --env-file-if-exists=.env`, or `EBADENGINE` warnings | Your Node.js is too old | Install the current Node.js 24 LTS, then run `npm install` again. |
 
-If you're still stuck, copy the whole error from the terminal into a message to the team. Never include your `.env`.
+If you're still stuck, copy the whole error from the terminal into a message to the team. Never include your `.env`, or a login code you still use.
 
 ## 10. Where things are
 
@@ -228,7 +283,8 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 | `data/saeludagar.db` | Your local database | No |
 | `public/css/main.css` | Built from `scss/` by `build:css` / `watch:css` | No |
 | `uploads/`, `backups/` | Event images and backups (used from later milestones) | No |
-| `src/` | Server code, views and translations | Yes |
+| `src/` | Server code, views, email templates and translations | Yes |
+| `scripts/` | Command-line scripts, such as `create-admin.js` | Yes |
 | `scss/` | Styles; brand colours are in `scss/_tokens.scss` | Yes |
 | `test/` | Tests | Yes |
 | `docs/` | Specification ([AGENT_START.md](AGENT_START.md)), original notes and this guide | Yes |
@@ -239,13 +295,12 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 
   | Script | Arrives in |
   |---|---|
-  | `npm run create-admin` | milestone 2 |
   | `npm run backup` | milestone 8 |
   | `npm run loadtest` | milestone 8 |
-  | `npm run seed:dev` | when needed |
 
   Running one of them now gives `Error: Cannot find module`.
-- **Email** arrives in milestone 2. As long as `SMTP_HOST` in your `.env` is empty (keep it empty on your own computer), emails are printed in the `npm run dev` terminal instead of being sent.
+- **The student CSV import** arrives in milestone 3. Until then, `npm run seed:dev` creates fake students.
+- **Real email** needs the school's SMTP details (open question 4 in [AGENT_START.md](AGENT_START.md)). Until then, keep `SMTP_HOST` empty; emails are printed in the `npm run dev` terminal.
 - **Deployment notes** for the school's server (a Linux guide in the README) arrive in milestone 8. The deployment itself happens separately, once it is approved.
 
 This guide will be updated as those milestones land.
