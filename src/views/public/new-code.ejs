@@ -1,3 +1,20 @@
+<% const errors = locals.errors || {}; -%>
 <%- include('../partials/header', { pageTitle: t('pages.newCode') }) %>
 <h1><%= t('pages.newCode') %></h1>
+<p><%= t('newCode.intro') %></p>
+<%- include('../partials/form-errors', { errors }) %>
+<form class="form" method="post" action="/login/new-code">
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <div class="field">
+    <label class="field__label" for="kennitala"><%= t('login.kennitala') %></label>
+    <p class="field__hint" id="kennitala-hint"><%= t('login.kennitalaHint') %></p>
+    <% if (errors.kennitala) { -%>
+    <p class="field__error" id="kennitala-error"><%= t(errors.kennitala) %></p>
+    <% } -%>
+    <input class="field__input" id="kennitala" name="kennitala" type="text" inputmode="numeric" autocomplete="username" maxlength="20" required
+      aria-describedby="kennitala-hint<%= errors.kennitala ? ' kennitala-error' : '' %>"<% if (errors.kennitala) { %> aria-invalid="true"<% } %>>
+  </div>
+  <button type="submit" class="button"><%= t('newCode.submit') %></button>
+</form>
+<p><a href="/login"><%= t('newCode.back') %></a></p>
 <%- include('../partials/footer') %>

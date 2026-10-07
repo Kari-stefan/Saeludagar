@@ -11,3 +11,8 @@ export function openDatabase(file) {
   db.pragma('synchronous = NORMAL');
   return db;
 }
+
+// Timestamps are ISO-8601 UTC without milliseconds, e.g. 2027-03-11T10:00:00Z (AGENT_START §7).
+export function toIso(date = new Date()) {
+  return date.toISOString().replace(/\.\d{3}Z$/, 'Z');
+}

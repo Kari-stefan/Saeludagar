@@ -1,3 +1,34 @@
+<% const errors = locals.errors || {}; -%>
 <%- include('../partials/header', { pageTitle: t('pages.login') }) %>
 <h1><%= t('pages.login') %></h1>
+<%- include('../partials/flash') %>
+<% if (locals.failed) { -%>
+<div class="alert alert--error" role="alert">
+  <p><%= t('login.failed') %></p>
+</div>
+<% } -%>
+<%- include('../partials/form-errors', { errors }) %>
+<form class="form" method="post" action="/login">
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <div class="field">
+    <label class="field__label" for="kennitala"><%= t('login.kennitala') %></label>
+    <p class="field__hint" id="kennitala-hint"><%= t('login.kennitalaHint') %></p>
+    <% if (errors.kennitala) { -%>
+    <p class="field__error" id="kennitala-error"><%= t(errors.kennitala) %></p>
+    <% } -%>
+    <input class="field__input" id="kennitala" name="kennitala" type="text" inputmode="numeric" autocomplete="username" maxlength="20" required
+      aria-describedby="kennitala-hint<%= errors.kennitala ? ' kennitala-error' : '' %>"<% if (errors.kennitala) { %> aria-invalid="true"<% } %>>
+  </div>
+  <div class="field">
+    <label class="field__label" for="code"><%= t('login.code') %></label>
+    <p class="field__hint" id="code-hint"><%= t('login.codeHint') %></p>
+    <% if (errors.code) { -%>
+    <p class="field__error" id="code-error"><%= t(errors.code) %></p>
+    <% } -%>
+    <input class="field__input field__input--short" id="code" name="code" type="password" inputmode="numeric" autocomplete="current-password" maxlength="20" required
+      aria-describedby="code-hint<%= errors.code ? ' code-error' : '' %>"<% if (errors.code) { %> aria-invalid="true"<% } %>>
+  </div>
+  <button type="submit" class="button"><%= t('login.submit') %></button>
+</form>
+<p><a href="/login/new-code"><%= t('pages.newCode') %></a></p>
 <%- include('../partials/footer') %>

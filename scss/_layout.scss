@@ -27,14 +27,30 @@
 
 .site-nav {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--space-1) var(--space-3);
 }
 
 .site-nav__link {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-target);
+}
+
+.site-nav__user {
+  font-weight: 600;
+}
+
+.site-nav__button {
+  min-height: var(--tap-target);
+  padding: 0;
+  font: inherit;
+  color: var(--color-on-primary);
+  text-decoration: underline;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
 }
 
 .lang-switch {

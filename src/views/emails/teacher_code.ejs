@@ -1,0 +1,20 @@
+<%# BR-10, BR-11: an admin created the teacher account or sent a new code. Plain text, Icelandic then English (BR-52). -%>
+<% languages.forEach((t, index) => { -%>
+<% if (index > 0) { -%>
+
+----------------------------------------
+
+<% } -%>
+<%= t('emails.common.greeting', { name }) %>
+
+<%= t('emails.teacher_code.intro') %>
+
+    <%= code %>
+
+<%= t('emails.teacher_code.oldCode') %>
+
+<%= t('emails.common.login') %>
+<%= loginUrl %>
+
+<%= t('emails.common.noReply') %>
+<% }) -%>

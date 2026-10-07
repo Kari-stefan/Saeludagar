@@ -107,7 +107,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
   - Each kennitala can get at most one new code every 10 minutes.
 - **BR-09** A session ends after 2 hours of inactivity for students, and after 12 hours for teachers and admins.
 - **BR-10** An admin creates a teacher account with name, email and kennitala. The system then generates the teacher's code and emails it to them.
-- **BR-11** An admin can deactivate or reactivate a teacher account, and can grant or revoke the admin flag. A deactivated teacher cannot log in. Their events remain, and admins manage them.
+- **BR-11** An admin can deactivate or reactivate a teacher account, and can grant or revoke the admin flag. A deactivated teacher cannot log in. Their events remain, and admins manage them. An admin cannot deactivate their own account or revoke their own admin flag; another admin can.
 - **BR-12** A kennitala can belong to only one account, either a student or a teacher.
 - **BR-13** The first admin account is created by a command run on the server.
 
@@ -486,7 +486,7 @@ CREATE INDEX audit_at ON audit_log(at);
 **Codes:**
 - Generate with `crypto.randomInt(0, 1_000_000)`, zero-padded to 6 digits.
 - Hash with `crypto.scrypt`, using a random 16-byte salt per code, in a self-describing format such as `scrypt$<salt>$<hash>`.
-- Never write a code to logs, except the development email console.
+- Never write a code to logs, except the development email console. `npm run seed:dev` may also print the codes of its fake students, because it never runs in production.
 
 **Sessions:**
 - express-session with your own store in `src/db/sessionStore.js` that extends `session.Store` and implements get/set/destroy/touch.

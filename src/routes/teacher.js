@@ -1,8 +1,10 @@
 import express from 'express';
+import { requireTeacher } from '../middleware/auth.js';
 
-// Stubs until milestones 4 and 6. Mounted at /teacher.
+// Stubs until milestones 4 and 6. Mounted at /teacher; teachers and admins only.
 export function teacherRouter() {
   const router = express.Router();
+  router.use(requireTeacher);
 
   router.get('/', (req, res) => res.render('teacher/home'));
   router.get('/events/new', (req, res) => res.render('teacher/event-form', { titleKey: 'pages.eventNew' }));

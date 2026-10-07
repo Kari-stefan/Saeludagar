@@ -5,12 +5,20 @@
   },
   "nav": {
     "main": "Main menu",
-    "login": "Log in"
+    "login": "Log in",
+    "logout": "Log out"
   },
   "language": {
     "label": "Language",
     "is": "Íslenska",
     "en": "English"
+  },
+  "common": {
+    "yes": "Yes",
+    "no": "No"
+  },
+  "form": {
+    "errorSummary": "Please fix the errors below."
   },
   "pages": {
     "home": "Sæludagar events",
@@ -36,9 +44,89 @@
     "purge": "Purge data",
     "audit": "Audit log"
   },
+  "validation": {
+    "kennitala": "Kennitala must be 10 digits"
+  },
+  "login": {
+    "kennitala": "Kennitala",
+    "kennitalaHint": "10 digits, with or without a hyphen",
+    "code": "Code",
+    "codeHint": "The 6-digit code you received by email",
+    "submit": "Log in",
+    "failed": "Incorrect kennitala or code",
+    "errors": {
+      "code": "The code is 6 digits"
+    }
+  },
+  "newCode": {
+    "intro": "Enter your kennitala. If it belongs to an active account, a new code will be sent to the email address on file, and the old code will stop working.",
+    "submit": "Send a new code",
+    "sent": "If the kennitala belongs to an active account, a new code will be sent to the email address on file. Each kennitala can get one new code every 10 minutes.",
+    "back": "Back to log in"
+  },
+  "admin": {
+    "home": {
+      "outboxHeading": "Email",
+      "queued": "Queued: {count}",
+      "failed": "Failed: {count}",
+      "pagesHeading": "Admin pages"
+    },
+    "teachers": {
+      "listHeading": "Teacher accounts",
+      "none": "No teacher accounts yet.",
+      "name": "Name",
+      "email": "Email",
+      "admin": "Admin",
+      "status": "Status",
+      "actions": "Actions",
+      "active": "Active",
+      "inactive": "Inactive",
+      "you": "(you)",
+      "newCode": "Send a new code",
+      "deactivate": "Deactivate",
+      "activate": "Reactivate",
+      "grantAdmin": "Make admin",
+      "revokeAdmin": "Remove admin rights",
+      "createHeading": "Create a teacher account",
+      "createHelp": "The teacher receives a code by email to log in with.",
+      "create": "Create account",
+      "created": "Account created: {name}. A code will be sent to {email}.",
+      "codeQueued": "A new code will be sent to {email}.",
+      "deactivated": "Account deactivated: {name}",
+      "activated": "Account reactivated: {name}",
+      "adminGranted": "Admin rights granted: {name}",
+      "adminRevoked": "Admin rights removed: {name}",
+      "errors": {
+        "name": "Enter a name",
+        "email": "Enter a valid email address",
+        "kennitalaTaken": "This kennitala already has an account",
+        "self": "You cannot deactivate your own account or remove your own admin rights.",
+        "inactive": "Reactivate the account first."
+      }
+    }
+  },
+  "emails": {
+    "common": {
+      "greeting": "Hello {name},",
+      "login": "Log in with your kennitala and the code at:",
+      "noReply": "This email was sent automatically. Please do not reply to it."
+    },
+    "new_code": {
+      "subject": "Your new Sæludagar code",
+      "intro": "A new code was requested for your account on the Sæludagar website. Your new code is:",
+      "oldCode": "Your old code no longer works. Always use the newest code you have received."
+    },
+    "teacher_code": {
+      "subject": "Your code for the Sæludagar website",
+      "intro": "Here is your code for logging in to the Sæludagar website as a teacher:",
+      "oldCode": "If you had an older code, it no longer works."
+    }
+  },
   "errors": {
     "forbiddenTitle": "Access denied",
     "forbiddenText": "You do not have access to this page.",
+    "csrfTitle": "This form has expired",
+    "csrfText": "Go back to the page, reload it and try again.",
     "notFoundTitle": "Page not found",
     "notFoundText": "The page you were looking for does not exist.",
     "serverTitle": "Something went wrong",

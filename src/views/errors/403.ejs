@@ -1,5 +1,6 @@
-<%- include('../partials/header', { pageTitle: t('errors.forbiddenTitle') }) %>
-<h1><%= t('errors.forbiddenTitle') %></h1>
-<p><%= t('errors.forbiddenText') %></p>
+<% const titleKey = locals.titleKey || 'errors.forbiddenTitle'; const textKey = locals.textKey || 'errors.forbiddenText'; -%>
+<%- include('../partials/header', { pageTitle: t(titleKey) }) %>
+<h1><%= t(titleKey) %></h1>
+<p><%= t(textKey) %></p>
 <p><a href="/"><%= t('errors.backHome') %></a></p>
 <%- include('../partials/footer') %>

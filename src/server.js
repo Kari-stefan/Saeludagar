@@ -1,7 +1,11 @@
 import { loadConfig } from './config.js';
 import { openDatabase } from './db/index.js';
 import { SCHEMA_VERSION } from './db/migrate.js';
+import { SqliteSessionStore } from './db/sessionStore.js';
 import { createApp } from './app.js';
+import { createOutboxWorker } from './jobs/outbox.js';
+import { startSessionCleanup } from './jobs/sessionCleanup.js';
+import { createMailer } from './services/email.js';
 
 const config = loadConfig();
 
@@ -11,13 +15,20 @@ if (db.pragma('user_version', { simple: true }) !== SCHEMA_VERSION) {
   process.exit(1);
 }
 
+const sessionStore = new SqliteSessionStore(db);
 let app;
+let mailer;
 try {
-  app = createApp({ config });
+  app = createApp({ config, db, sessionStore });
+  mailer = createMailer(config);
 } catch (err) {
   console.error(err.message);
   process.exit(1);
 }
+
+// Scheduled jobs run inside this process (AGENT_START §8).
+const outbox = createOutboxWorker({ db, mailer, config });
+let stopSessionCleanup = () => {};
 
 // Express 5 passes listen errors (such as a busy port) to this callback.
 const server = app.listen(config.port, (err) => {
@@ -29,9 +40,13 @@ const server = app.listen(config.port, (err) => {
     process.exit(1);
   }
   console.log(`Sæludagar is running at http://localhost:${config.port}`);
+  outbox.start();
+  stopSessionCleanup = startSessionCleanup(sessionStore);
 });
 
-function shutdown() {
+async function shutdown() {
+  stopSessionCleanup();
+  await outbox.stop();
   server.close(() => {
     db.close();
     process.exit(0);
