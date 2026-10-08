@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { ROOT_DIR } from './config.js';
 import { SqliteSessionStore } from './db/sessionStore.js';
 import { loadUser, STUDENT_SESSION_MS } from './middleware/auth.js';
-import { csrfToken, verifyCsrf } from './middleware/csrf.js';
+import { csrfToken, verifyCsrfUnlessUpload } from './middleware/csrf.js';
 import { flash } from './middleware/flash.js';
 import { languageMiddleware } from './middleware/language.js';
 import { errorHandler, notFound } from './middleware/errors.js';
@@ -21,7 +21,8 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   if (!config.sessionSecret) {
     throw new Error('SESSION_SECRET is not set. Copy .env.example to .env and fill it in (see README, "Setup").');
   }
-  const accounts = createAccounts({ db, kt: kennitalaCrypto(config) });
+  const kt = kennitalaCrypto(config);
+  const accounts = createAccounts({ db, kt });
 
   const app = express();
   app.set('views', path.join(ROOT_DIR, 'src', 'views'));
@@ -68,13 +69,13 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   app.use(csrfToken);
   app.use(flash);
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
-  app.use(verifyCsrf);
+  app.use(verifyCsrfUnlessUpload);
 
   app.use(publicRouter());
   app.use(authRouter({ accounts }));
   app.use(studentRouter());
   app.use('/teacher', teacherRouter());
-  app.use('/admin', adminRouter({ db, accounts }));
+  app.use('/admin', adminRouter({ config, db, kt, accounts }));
 
   app.use(notFound);
   app.use(errorHandler);

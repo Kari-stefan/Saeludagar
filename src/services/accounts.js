@@ -12,6 +12,15 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const CONTROL_CHARACTERS = /[\u0000-\u001f\u007f]/;
 const collator = new Intl.Collator('is');
 
+// Names and email addresses of teachers and imported students. Both are trimmed first.
+export function isValidName(name) {
+  return name.length > 0 && name.length <= 200 && !CONTROL_CHARACTERS.test(name);
+}
+
+export function isValidEmail(email) {
+  return email.length <= 254 && EMAIL_PATTERN.test(email);
+}
+
 // Checks a new teacher account's fields (the admin page and scripts/create-admin.js).
 // Errors are i18n keys, by field.
 export function validateTeacher(input) {
@@ -19,8 +28,8 @@ export function validateTeacher(input) {
   const email = String(input.email ?? '').trim();
   const kennitala = normalizeKennitala(input.kennitala);
   const errors = {};
-  if (!name || name.length > 200 || CONTROL_CHARACTERS.test(name)) errors.name = 'admin.teachers.errors.name';
-  if (email.length > 254 || !EMAIL_PATTERN.test(email)) errors.email = 'admin.teachers.errors.email';
+  if (!isValidName(name)) errors.name = 'admin.teachers.errors.name';
+  if (!isValidEmail(email)) errors.email = 'admin.teachers.errors.email';
   if (!kennitala) errors.kennitala = 'validation.kennitala';
   return { values: { name, email, kennitala }, errors };
 }
@@ -148,9 +157,49 @@ export function createAccounts({ db, kt }) {
     return { teacher };
   });
 
+  // BR-07: "Senda kóða" queues a student_code email for every active student; the worker generates
+  // each code when it sends it, so a student's previous code works until then. Priority 1 lets
+  // other emails go first, and the worker keeps to SMTP_MAX_PER_MINUTE (BR-53). A student who
+  // already has one waiting is not queued twice.
+  const queueStudentCodes = db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, created_at, next_try_at)
+    SELECT 'student_code', 1, id, ?, ? FROM users
+    WHERE role = 'student' AND active = 1 AND NOT EXISTS (SELECT 1 FROM email_outbox
+      WHERE kind = 'student_code' AND user_id = users.id AND next_try_at IS NOT NULL)`);
+  const markStudentCodesRequested = db.prepare(`UPDATE users SET code_requested_at = ?, updated_at = ?
+    WHERE role = 'student' AND active = 1`);
+  const studentCodeRows = db.prepare(`SELECT COUNT(*) FILTER (WHERE next_try_at IS NOT NULL) AS queued,
+    COUNT(*) FILTER (WHERE next_try_at IS NULL) AS failed FROM email_outbox WHERE kind = 'student_code'`);
+  const activeStudents = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").pluck();
+  const activeStudentIds = db.prepare("SELECT id FROM users WHERE role = 'student' AND active = 1").pluck();
+  // Students of the latest send whose email has gone: still active (the worker drops emails to
+  // inactive accounts unsent) and with no student_code row left, waiting or failed.
+  const sentOf = db.prepare(`SELECT COUNT(*) FROM users WHERE id IN (SELECT value FROM json_each(?)) AND active = 1
+    AND NOT EXISTS (SELECT 1 FROM email_outbox WHERE kind = 'student_code' AND user_id = users.id)`).pluck();
+
+  // The students of the latest send, for the "sent" count on the page. Only this process knows
+  // them, so the count is gone after a restart; queued and failed always come from the outbox.
+  let lastSend = null;
+
+  const sendStudentCodes = db.transaction(() => {
+    const now = toIso();
+    const count = queueStudentCodes.run(now, now).changes;
+    markStudentCodesRequested.run(now, now);
+    if (count > 0) lastSend = { at: now, ids: JSON.stringify(activeStudentIds.all()) };
+    return count;
+  });
+
+  // §6: the number of active students and the progress (queued / sent / failed).
+  function studentCodeStatus() {
+    const { queued, failed } = studentCodeRows.get();
+    const sent = lastSend ? sentOf.get(lastSend.ids) : null;
+    return { activeStudents: activeStudents.get(), queued, failed, sent, lastSentAt: lastSend?.at ?? null };
+  }
+
   return {
     login,
     requestNewCode,
+    sendStudentCodes,
+    studentCodeStatus,
     createTeacher,
     createAdmin,
     listTeachers,
