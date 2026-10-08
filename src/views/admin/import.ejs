@@ -1,3 +1,70 @@
+<% const token = csrfToken(); -%>
 <%- include('../partials/header', { pageTitle: t('pages.import') }) %>
 <h1><%= t('pages.import') %></h1>
+<%- include('../partials/flash') %>
+<p><%= t('import.current', { count: activeStudents }) %>
+  <%= brautir.length > 0 ? t('import.brautir', { list: brautir.join(', ') }) : t('import.noBrautir') %></p>
+
+<% if (locals.preview) { -%>
+<h2><%= t('import.previewHeading') %></h2>
+<p><%= t('import.previewIntro', { count: preview.students }) %></p>
+<ul class="stats">
+  <li><%= t('import.added', { count: preview.added }) %></li>
+  <li><%= t('import.updated', { count: preview.updated }) %></li>
+  <li><%= t('import.deactivated', { count: preview.deactivated }) %></li>
+  <li><%= t('import.signupsRemoved', { count: preview.signupsRemoved }) %></li>
+</ul>
+<p><%= t('import.confirmHelp') %></p>
+<div class="button-row">
+  <form method="post" action="/admin/import">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <input type="hidden" name="token" value="<%= locals.token %>">
+    <button type="submit" class="button" name="action" value="confirm"><%= t('import.confirm') %></button>
+  </form>
+  <form method="post" action="/admin/import">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <input type="hidden" name="token" value="<%= locals.token %>">
+    <button type="submit" class="button button--secondary" name="action" value="cancel"><%= t('import.cancel') %></button>
+  </form>
+</div>
+<% } else { -%>
+<% if (errors.length > 0) { -%>
+<div class="alert alert--error" role="alert">
+  <p><%= t('import.errorsIntro', { count: errors.length }) %></p>
+  <ul>
+    <% for (const error of errors) { -%>
+    <li><%= t(error.key, error.params) %></li>
+    <% } -%>
+  </ul>
+</div>
+<% } -%>
+<%
+  // Problems with the chosen file belong to the file field; the others concern the whole import.
+  const fileErrors = ['import.errors.noFile', 'import.errors.tooLarge', 'import.errors.upload'];
+  const fileError = fileErrors.includes(locals.uploadError) ? uploadError : null;
+-%>
+<% if (locals.uploadError && !fileError) { -%>
+<div class="alert alert--error" role="alert">
+  <p><%= t(uploadError) %></p>
+</div>
+<% } -%>
+<%- include('../partials/form-errors', { errors: fileError ? { file: fileError } : {} }) %>
+<h2><%= t('import.uploadHeading') %></h2>
+<p><%= t('import.formatHelp') %></p>
+<pre class="example"><code>kennitala;nafn;netfang;braut;afangi</code></pre>
+<p><%= t('import.rowsHelp') %></p>
+<form class="form" method="post" action="/admin/import" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="<%= token %>">
+  <div class="field">
+    <label class="field__label" for="file"><%= t('import.file') %></label>
+    <p class="field__hint" id="file-hint"><%= t('import.fileHint') %></p>
+    <% if (fileError) { -%>
+    <p class="field__error" id="file-error"><%= t(fileError) %></p>
+    <% } -%>
+    <input class="field__input" id="file" name="file" type="file" accept=".csv,text/csv" required
+      aria-describedby="file-hint<%= fileError ? ' file-error' : '' %>"<% if (fileError) { %> aria-invalid="true"<% } %>>
+  </div>
+  <button type="submit" class="button"><%= t('import.upload') %></button>
+</form>
+<% } -%>
 <%- include('../partials/footer') %>

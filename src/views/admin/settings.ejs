@@ -1,3 +1,67 @@
+<% const token = csrfToken(); -%>
 <%- include('../partials/header', { pageTitle: t('pages.settings') }) %>
 <h1><%= t('pages.settings') %></h1>
+<%- include('../partials/flash') %>
+
+<h2><%= t('admin.settings.daysHeading') %></h2>
+<% if (settings.days.length === 0) { -%>
+<p><%= t('admin.settings.noDays') %></p>
+<% } else { -%>
+<ul class="day-list">
+  <% for (const day of settings.days) { -%>
+  <li>
+    <span><%= formatDate(day) %></span>
+    <form class="inline-form" method="post" action="/admin/settings">
+      <input type="hidden" name="_csrf" value="<%= token %>">
+      <input type="hidden" name="action" value="remove-day">
+      <input type="hidden" name="day" value="<%= day %>">
+      <button type="submit" class="button button--small button--secondary"><%= t('admin.settings.removeDay') %><span class="visually-hidden">: <%= formatDate(day) %></span></button>
+    </form>
+  </li>
+  <% } -%>
+</ul>
+<% } -%>
+<form class="form" method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="<%= token %>">
+  <input type="hidden" name="action" value="add-day">
+  <%- include('../partials/form-errors', { errors: locals.dayError ? { day: dayError } : {} }) %>
+  <div class="field">
+    <label class="field__label" for="day"><%= t('admin.settings.newDay') %></label>
+    <% if (locals.dayError) { -%>
+    <p class="field__error" id="day-error"><%= t(dayError) %></p>
+    <% } -%>
+    <input class="field__input field__input--short" id="day" name="day" type="date" required value="<%= locals.day || '' %>"<% if (locals.dayError) { %> aria-describedby="day-error" aria-invalid="true"<% } %>>
+  </div>
+  <button type="submit" class="button"><%= t('admin.settings.addDay') %></button>
+</form>
+
+<h2><%= t('admin.settings.timesHeading') %></h2>
+<p><%= t('admin.settings.timesHelp') %></p>
+<%- include('../partials/form-errors', { errors: timeErrors }) %>
+<form class="form" method="post" action="/admin/settings">
+  <input type="hidden" name="_csrf" value="<%= token %>">
+  <input type="hidden" name="action" value="save-times">
+  <% for (const name of ['signupOpens', 'signupCloses', 'choiceDeadline']) { -%>
+  <fieldset class="fieldset">
+    <legend class="field__label"><%= t(`admin.settings.${name}`) %></legend>
+    <p class="field__hint" id="<%= name %>-current"><%= settings[name] ? t('admin.settings.current', { value: formatDateTime(settings[name]) }) : t('admin.settings.notSet') %></p>
+    <% if (timeErrors[name]) { -%>
+    <p class="field__error" id="<%= name %>-error"><%= t(timeErrors[name]) %></p>
+    <% } -%>
+    <div class="field-row">
+      <div class="field">
+        <label for="<%= name %>Date"><%= t('admin.settings.date') %></label>
+        <input class="field__input" id="<%= name %>Date" name="<%= name %>Date" type="date" value="<%= times[`${name}Date`] %>"
+          aria-describedby="<%= name %>-current<%= timeErrors[name] ? ` ${name}-error` : '' %>"<% if (timeErrors[name]) { %> aria-invalid="true"<% } %>>
+      </div>
+      <div class="field">
+        <label for="<%= name %>Time"><%= t('admin.settings.time') %></label>
+        <input class="field__input" id="<%= name %>Time" name="<%= name %>Time" type="time" value="<%= times[`${name}Time`] %>"
+          aria-describedby="<%= name %>-current<%= timeErrors[name] ? ` ${name}-error` : '' %>"<% if (timeErrors[name]) { %> aria-invalid="true"<% } %>>
+      </div>
+    </div>
+  </fieldset>
+  <% } -%>
+  <button type="submit" class="button"><%= t('admin.settings.save') %></button>
+</form>
 <%- include('../partials/footer') %>

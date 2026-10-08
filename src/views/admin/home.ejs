@@ -1,6 +1,17 @@
 <%- include('../partials/header', { pageTitle: t('pages.adminHome') }) %>
 <h1><%= t('pages.adminHome') %></h1>
 
+<h2><%= t('admin.home.datesHeading') %></h2>
+<dl class="facts">
+  <dt><%= t('admin.settings.daysHeading') %></dt>
+  <dd><%= settings.days.length > 0 ? settings.days.map((day) => formatDate(day)).join(', ') : t('admin.settings.notSet') %></dd>
+  <% for (const name of ['signupOpens', 'signupCloses', 'choiceDeadline']) { -%>
+  <dt><%= t(`admin.settings.${name}`) %></dt>
+  <dd><%= settings[name] ? formatDateTime(settings[name]) : t('admin.settings.notSet') %></dd>
+  <% } -%>
+</dl>
+<p><a href="/admin/settings"><%= t('admin.home.changeDates') %></a></p>
+
 <h2><%= t('admin.home.outboxHeading') %></h2>
 <ul class="stats">
   <li><%= t('admin.home.queued', { count: outbox.queued }) %></li>

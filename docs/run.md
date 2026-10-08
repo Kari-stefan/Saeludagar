@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 2 you can log in. You create your own admin account with a command, and as admin you create teacher accounts. Emails, such as login codes, are printed in the terminal instead of being sent. Student accounts will come from the CSV import in milestone 3; until then, `npm run seed:dev` creates fake students to log in with. Pages from later milestones still show only their title.
+As of milestone 3 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (events, sign-ups, attendance) still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -121,7 +121,7 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone 2):**
+**What you should see (milestone 3):**
 - A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons. **EN** switches the whole site to English and **ÍS** switches back.
 - **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
   ```
@@ -153,6 +153,16 @@ To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.
 - **On the Kennarar page** you can also send a teacher a new code, deactivate or reactivate them, and make them an admin or remove that. You can't deactivate yourself or remove your own admin rights; another admin can.
 - **Fá nýjan kóða** on the login page prints a new code in the terminal; the old code stops working once the new one is printed. Each kennitala gets at most one new code every 10 minutes, counting codes an admin sends. The page shows the same message every time, even when no code is sent, on purpose.
 - **5 wrong codes** for the same kennitala lock it for 15 minutes. While it is locked, even the right code gives "Kennitala eða kóði er rangur".
+- **Dates.** Stjórnendasvæði → **Dagsetningar og frestir**: add and remove Sæludagar days, and set when sign-up opens and closes and the course-choice deadline (each a date and a time, in Icelandic time). Stjórnendasvæði shows the current values.
+- **Import students.** Save this as `nemendur.csv` (fake data; UTF-8, or Windows-1252 as Excel saves it):
+  ```
+  kennitala;nafn;netfang;braut;afangi
+  0000000201;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05
+  0000000201;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;ÍSLE2MB05
+  000000-0202;Páll Pálsson;pall@example.is;Starfsbraut;
+  ```
+  Stjórnendasvæði → **Innflutningur nemenda** → choose the file → **Hlaða upp og yfirfara**. If any line is wrong, the page lists every error with its line number and saves nothing. Otherwise it shows what will change (new, updated, made inactive, sign-ups removed); nothing is saved until you click **Staðfesta innflutning**, within 10 minutes. Active students who are missing from the file become inactive, and that includes the `seed:dev` students (running `npm run seed:dev` again makes them active again).
+- **Send codes.** Stjórnendasvæði → **Senda kóða** → confirm. Every active student gets a new code, printed in the terminal, at most `SMTP_MAX_PER_MINUTE` (30) a minute and after any other email. The page shows how many are queued, sent and failed; reload it to update the numbers. Each student's old code stops working once their new code is printed.
 
 Who can open which page:
 
@@ -164,6 +174,9 @@ Who can open which page:
 | Teacher area | http://localhost:3000/teacher | Teachers and admins |
 | Admin area | http://localhost:3000/admin | Admins |
 | Teacher accounts | http://localhost:3000/admin/teachers | Admins |
+| Dates and deadlines | http://localhost:3000/admin/settings | Admins |
+| Student import | http://localhost:3000/admin/import | Admins |
+| Send codes | http://localhost:3000/admin/codes | Admins |
 
 If you aren't logged in, these pages send you to the login page; if you are logged in without the right role, you get "Aðgangur ekki leyfður" (access denied). The full list of pages is in section 6 of [AGENT_START.md](AGENT_START.md).
 
@@ -259,6 +272,11 @@ Find the message you see in the left column.
 | "Kennitala eða kóði er rangur" with a code you know is right | 5 wrong codes have locked that kennitala for 15 minutes; or a newer code was sent, and only the newest works; or the account was deactivated; or the kennitala keys in `.env` have changed | Wait 15 minutes; or use the newest code in the terminal; or have another admin reactivate the account. If you changed the keys, [reset the database](#8-reset-your-local-database). |
 | **Fá nýjan kóða** prints no email in the terminal | Each kennitala gets one new code every 10 minutes, counting codes an admin sends. Kennitölur without an active account get nothing. The page shows the same message either way, on purpose | Wait 10 minutes and try again, and check the kennitala. Emails appear within about 5 seconds. |
 | `Email 3 (teacher_code) could not be sent: …` in the terminal, or "Tókst ekki að senda: 1" / "Failed: 1" on Stjórnendasvæði | The site tried to send an email through `SMTP_HOST` and the mail server refused or didn't answer; the text after `could not be sent:` is the reason. A failed email is retried 5 times, 1, 2, 4, 8 and 16 minutes apart; after that it counts as failed | On your own computer, leave `SMTP_HOST=` empty, so emails are printed instead. On the server, check the `SMTP_` settings. A failed code email can be replaced with a new one: **Senda nýjan kóða** on the Kennarar page, or **Fá nýjan kóða**. |
+| "Lína 3: kennitala verður að vera 10 tölustafir" (or another "Lína …" error) on Innflutningur nemenda | That line of the CSV file is wrong. Nothing was imported | Fix every listed line and upload the file again. The header must be `kennitala;nafn;netfang;braut;afangi`. In Excel, save as **CSV (semicolon delimited)** or **CSV UTF-8**. |
+| "Lína 1: fyrirsögnin verður að vera kennitala;nafn;netfang;braut;afangi" | The first line isn't the agreed header, or the file isn't CSV (for example an `.xlsx` file) | Make the first line exactly the header above and save the file as CSV. |
+| "Innflutningurinn rann út eða var þegar staðfestur" | More than 10 minutes passed between the upload and **Staðfesta innflutning**, the import was already confirmed or cancelled, or it was uploaded in another browser | Upload the file again and confirm within 10 minutes. |
+| "Skráin er of stór. Hámarkið er 5 MB." | The file is bigger than the 5 MB limit | Check that it is the student CSV; a full school list is far smaller. |
+| Codes from **Senda kóða** appear slowly in the terminal | Emails go out at most `SMTP_MAX_PER_MINUTE` (30) a minute, on purpose, so the school's mail server doesn't block them | Wait; the Senda kóða page shows the progress. |
 | "Eyðublaðið er útrunnið" / "This form has expired" | The page was open so long that your session ended (after 2 hours without activity, or 12 hours for teachers and admins) | Go back, reload the page and try again. If it happens every time, check that your browser allows cookies for `localhost`. |
 | "Aðgangur ekki leyfður" / "Access denied" | You're logged in, but your account can't open that page, for example a teacher opening `/admin` | Log in with an admin account, or have an admin make you an admin. |
 | `Port 3000 is already in use. Stop the other server, or set PORT in .env to a free port.` | Something else is using the port | If it's your own `npm run dev` in another terminal, the site is already running there: press `Ctrl+C` in this terminal and use the other one. If another program uses the port, set `PORT=3001` (and `BASE_URL`) in `.env`. |
@@ -299,7 +317,6 @@ If you're still stuck, copy the whole error from the terminal into a message to 
   | `npm run loadtest` | milestone 8 |
 
   Running one of them now gives `Error: Cannot find module`.
-- **The student CSV import** arrives in milestone 3. Until then, `npm run seed:dev` creates fake students.
 - **Real email** needs the school's SMTP details (open question 4 in [AGENT_START.md](AGENT_START.md)). Until then, keep `SMTP_HOST` empty; emails are printed in the `npm run dev` terminal.
 - **Deployment notes** for the school's server (a Linux guide in the README) arrive in milestone 8. The deployment itself happens separately, once it is approved.
 

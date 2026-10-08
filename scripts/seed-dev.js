@@ -1,5 +1,5 @@
 // npm run seed:dev: fake development data only (AGENT_START §10). Creates a few fake students
-// with new login codes, so student login can be tried before the CSV import (milestone 3).
+// with new login codes, so student login can be tried without a CSV file.
 // Running it again gives the same students new codes. It never runs in production.
 import { loadConfig } from '../src/config.js';
 import { openDatabase, toIso } from '../src/db/index.js';

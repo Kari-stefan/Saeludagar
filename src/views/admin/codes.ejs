@@ -1,3 +1,28 @@
 <%- include('../partials/header', { pageTitle: t('pages.codes') }) %>
 <h1><%= t('pages.codes') %></h1>
+<%- include('../partials/flash') %>
+<p><%= t('admin.codes.activeStudents', { count: status.activeStudents }) %></p>
+
+<% if (status.activeStudents > 0) { -%>
+<div class="alert alert--error">
+  <p><%= t('admin.codes.warning') %></p>
+</div>
+<form method="post" action="/admin/codes">
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <button type="submit" class="button"><%= t('admin.codes.confirm', { count: status.activeStudents }) %></button>
+</form>
+<% } else { -%>
+<p><%= t('admin.codes.noStudents') %></p>
+<% } -%>
+
+<h2><%= t('admin.codes.progressHeading') %></h2>
+<ul class="stats">
+  <li><%= t('admin.codes.queued', { count: status.queued }) %></li>
+  <% if (status.sent !== null) { -%>
+  <li><%= t('admin.codes.sent', { count: status.sent, time: formatDateTime(status.lastSentAt) }) %></li>
+  <% } -%>
+  <li><%= t('admin.codes.failed', { count: status.failed }) %></li>
+</ul>
+<p><%= t('admin.codes.rate', { count: maxPerMinute }) %></p>
+<p><a href="/admin/codes"><%= t('admin.codes.refresh') %></a></p>
 <%- include('../partials/footer') %>

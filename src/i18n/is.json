@@ -69,7 +69,9 @@
       "outboxHeading": "Tölvupóstur",
       "queued": "Í biðröð: {count}",
       "failed": "Tókst ekki að senda: {count}",
-      "pagesHeading": "Stjórnun"
+      "pagesHeading": "Stjórnun",
+      "datesHeading": "Dagsetningar og frestir",
+      "changeDates": "Breyta dagsetningum og frestum"
     },
     "teachers": {
       "listHeading": "Kennaraaðgangar",
@@ -103,6 +105,45 @@
         "self": "Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin.",
         "inactive": "Virkjaðu aðganginn fyrst."
       }
+    },
+    "settings": {
+      "daysHeading": "Sæludagar",
+      "noDays": "Engir dagar skráðir enn.",
+      "removeDay": "Fjarlægja",
+      "newDay": "Nýr dagur",
+      "addDay": "Bæta við degi",
+      "timesHeading": "Skráning og frestur",
+      "timesHelp": "Tímar eru á íslenskum tíma. Skildu báða reitina eftir tóma til að hafa engan tíma.",
+      "signupOpens": "Skráning opnar",
+      "signupCloses": "Skráningu lýkur",
+      "choiceDeadline": "Frestur til að velja áfanga",
+      "current": "Núna: {value}",
+      "notSet": "Ekki skráð",
+      "date": "Dagsetning",
+      "time": "Tími",
+      "save": "Vista",
+      "dayAdded": "Degi bætt við: {day}",
+      "dayRemoved": "Degi eytt.",
+      "timesSaved": "Tímarnir hafa verið vistaðir.",
+      "errors": {
+        "day": "Sláðu inn gilda dagsetningu",
+        "both": "Fylltu inn bæði dagsetningu og tíma, eða hvorugt",
+        "dateTime": "Sláðu inn gilda dagsetningu og tíma",
+        "closesBeforeOpens": "Skráningu verður að ljúka eftir að hún opnar"
+      }
+    },
+    "codes": {
+      "activeStudents": "Virkir nemendur: {count}",
+      "warning": "Allir virkir nemendur fá nýjan kóða í tölvupósti. Fyrri kóði hvers nemanda hættir að virka um leið og nýi kóðinn er sendur.",
+      "confirm": "Senda kóða á {count} nemendur",
+      "noStudents": "Engir virkir nemendur. Fluttu inn nemendalistann fyrst.",
+      "started": "Kóðar fara í tölvupósti til {count} nemenda. Fylgstu með stöðunni hér fyrir neðan.",
+      "progressHeading": "Staða sendingar",
+      "queued": "Í biðröð: {count}",
+      "sent": "Sendir síðan {time}: {count}",
+      "failed": "Tókst ekki að senda: {count}",
+      "rate": "Pósturinn fer út í mesta lagi {count} á mínútu, á eftir öðrum pósti.",
+      "refresh": "Uppfæra stöðuna"
     }
   },
   "emails": {
@@ -120,6 +161,12 @@
       "subject": "Kóði fyrir Sæludagavefinn",
       "intro": "Hér er kóðinn þinn til að skrá þig inn á Sæludagavefinn sem kennari:",
       "oldCode": "Ef þú áttir eldri kóða virkar hann ekki lengur."
+    },
+    "student_code": {
+      "subject": "Kóðinn þinn fyrir Sæludaga",
+      "intro": "Á Sæludagavefnum skráir þú þig á viðburði á Sæludögum. Eftir að þú mætir velur þú áfanga sem fær fjarvistarstig felld niður. Kóðinn þinn er:",
+      "instructions": "Geymdu kóðann. Ef þú týnir honum geturðu fengið nýjan með „Fá nýjan kóða“ á innskráningarsíðunni.",
+      "oldCode": "Eldri kóðar virka ekki lengur."
     }
   },
   "errors": {
@@ -135,5 +182,47 @@
   },
   "stub": {
     "notImplemented": "Ekki tilbúið enn."
+  },
+  "format": {
+    "dateTime": "{date}, kl. {time}"
+  },
+  "import": {
+    "current": "Virkir nemendur: {count}.",
+    "brautir": "Brautir: {list}.",
+    "noBrautir": "Engar brautir enn.",
+    "previewHeading": "Yfirlit yfir breytingar",
+    "previewIntro": "Skráin er í lagi: {count} nemendur. Þetta breytist ef þú staðfestir:",
+    "added": "Nýir nemendur: {count}",
+    "updated": "Nemendur sem eru uppfærðir: {count}",
+    "deactivated": "Nemendur sem verða óvirkir: {count}",
+    "signupsRemoved": "Skráningar sem verða fjarlægðar: {count}",
+    "confirmHelp": "Ekkert er vistað fyrr en þú staðfestir. Staðfestu innan 10 mínútna.",
+    "confirm": "Staðfesta innflutning",
+    "cancel": "Hætta við",
+    "cancelled": "Hætt var við innflutninginn. Ekkert var vistað.",
+    "done": "Innflutningi lokið: {added} nýir, {updated} uppfærðir, {deactivated} óvirkir og {signupsRemoved} skráningar fjarlægðar.",
+    "errorsIntro": "Skráin var ekki flutt inn og ekkert var vistað. Lagaðu þessar villur ({count}) og hladdu skránni upp aftur:",
+    "uploadHeading": "Hlaða upp nemendalista",
+    "formatHelp": "CSV-skrá með þessari fyrirsagnarlínu, aðgreind með semíkommum (eða kommum):",
+    "rowsHelp": "Ein lína fyrir hvern nemanda og áfanga. Nemandi án áfanga fær eina línu með tómum áfanga. Virkir nemendur sem eru ekki í skránni verða óvirkir.",
+    "file": "Skrá",
+    "fileHint": "CSV, UTF-8 eða Windows-1252 (úr Excel), mest 5 MB",
+    "upload": "Hlaða upp og yfirfara",
+    "errors": {
+      "unreadable": "Lína {line}: ekki tókst að lesa skrána héðan (athugaðu gæsalappir)",
+      "header": "Lína {line}: fyrirsögnin verður að vera kennitala;nafn;netfang;braut;afangi",
+      "columns": "Lína {line}: línan verður að hafa 5 dálka",
+      "kennitala": "Lína {line}: kennitala verður að vera 10 tölustafir",
+      "name": "Lína {line}: nafn vantar eða er ógilt",
+      "email": "Lína {line}: netfangið er ekki gilt",
+      "mismatch": "Lína {line}: nafn, netfang og braut verða að vera eins og í línu {first} fyrir sama nemanda",
+      "teacher": "Lína {line}: kennitalan tilheyrir kennara",
+      "noStudents": "Skráin inniheldur enga nemendur",
+      "tooLarge": "Skráin er of stór. Hámarkið er 5 MB.",
+      "upload": "Ekki tókst að taka við skránni. Reyndu aftur.",
+      "noFile": "Veldu skrá til að hlaða upp.",
+      "expired": "Innflutningurinn rann út eða var þegar staðfestur. Hladdu skránni upp aftur.",
+      "changed": "Kennari er kominn með eina af kennitölunum í skránni síðan henni var hlaðið upp. Ekkert var vistað. Hladdu skránni upp aftur."
+    }
   }
 }

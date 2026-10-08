@@ -1,23 +1,111 @@
 import express from 'express';
+import multer from 'multer';
 import { requireAdmin } from '../middleware/auth.js';
+import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
 import { validateTeacher } from '../services/accounts.js';
 import { outboxStatus } from '../services/email.js';
+import {
+  activeStudentCount, applyImport, brautList, holdImport, MAX_FILE_BYTES, previewImport, readStudentCsv, takeImport,
+} from '../services/import.js';
+import { addDay, getSettings, removeDay, saveTimes, timeFields } from '../services/settings.js';
 
 function httpError(status) {
   return Object.assign(new Error(`HTTP ${status}`), { status });
 }
 
-// Mounted at /admin. Settings, import, codes, events, export, purge and audit are stubs until
-// milestones 3, 4, 7 and 8.
-export function adminRouter({ db, accounts }) {
+// BR-15, §8: the CSV is read into memory only, at most 5 MB, one file.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_FILE_BYTES, files: 1, fields: 5 } })
+  .single('file');
+
+// A multer error (such as a file over 5 MB) becomes a message on the form.
+function readUpload(req, res, next) {
+  upload(req, res, (err) => {
+    if (err) req.uploadError = err.code === 'LIMIT_FILE_SIZE' ? 'import.errors.tooLarge' : 'import.errors.upload';
+    next();
+  });
+}
+
+// Mounted at /admin. Events, export, purge and audit are stubs until milestones 4, 7 and 8.
+export function adminRouter({ config, db, kt, accounts }) {
   const router = express.Router();
   router.use(requireAdmin);
 
-  router.get('/', (req, res) => res.render('admin/home', { outbox: outboxStatus(db) }));
-  router.get('/settings', (req, res) => res.render('admin/settings'));
-  router.get('/import', (req, res) => res.render('admin/import'));
-  router.get('/codes', (req, res) => res.render('admin/codes'));
+  router.get('/', (req, res) => res.render('admin/home', { outbox: outboxStatus(db), settings: getSettings(db) }));
+
+  // BR-54: Sæludagar days, the sign-up window and the course-choice deadline.
+  const renderSettings = (res, status = 200, form = {}) => {
+    const settings = getSettings(db);
+    res.status(status).render('admin/settings', { settings, times: timeFields(settings), timeErrors: {}, ...form });
+  };
+
+  router.get('/settings', (req, res) => renderSettings(res));
+
+  router.post('/settings', (req, res, next) => {
+    const body = req.body ?? {};
+    const day = String(body.day ?? '').trim();
+    if (body.action === 'add-day') {
+      const result = addDay(db, day);
+      if (result.error) return renderSettings(res, 400, { dayError: result.error, day });
+      setFlash(req, 'success', 'admin.settings.dayAdded', { day: res.locals.formatDate(day) });
+    } else if (body.action === 'remove-day') {
+      removeDay(db, day);
+      setFlash(req, 'success', 'admin.settings.dayRemoved');
+    } else if (body.action === 'save-times') {
+      const { values, errors } = saveTimes(db, body);
+      if (Object.keys(errors).length > 0) return renderSettings(res, 400, { times: values, timeErrors: errors });
+      setFlash(req, 'success', 'admin.settings.timesSaved');
+    } else {
+      return next(httpError(400));
+    }
+    res.redirect(303, '/admin/settings');
+  });
+
+  // BR-14 to BR-18: the student CSV import. Upload and check, then confirm (§8, two steps).
+  const renderImport = (res, status = 200, page = {}) => res.status(status).render('admin/import', {
+    activeStudents: activeStudentCount(db), brautir: brautList(db), errors: [], ...page,
+  });
+
+  router.get('/import', (req, res) => renderImport(res));
+
+  // The upload is multipart, so the CSRF token is checked here, after multer (see middleware/csrf.js).
+  router.post('/import', readUpload, verifyCsrf, (req, res) => {
+    const body = req.body ?? {};
+
+    if (req.is('multipart/form-data')) {
+      if (req.uploadError) return renderImport(res, 400, { uploadError: req.uploadError });
+      if (!req.file) return renderImport(res, 400, { uploadError: 'import.errors.noFile' });
+      const { students, errors } = readStudentCsv(req.file.buffer, { db, kt });
+      if (errors.length > 0) return renderImport(res, 400, { errors });
+      const token = holdImport(students);
+      req.session.importToken = token;
+      return renderImport(res, 200, { preview: previewImport(db, kt, students), token });
+    }
+
+    // Confirm or cancel the import this session uploaded.
+    const ours = typeof body.token === 'string' && body.token === req.session.importToken;
+    if (ours) delete req.session.importToken;
+    const students = ours ? takeImport(body.token) : null;
+    if (body.action === 'cancel') {
+      setFlash(req, 'info', 'import.cancelled');
+      return res.redirect(303, '/admin/import');
+    }
+    if (!students) return renderImport(res, 400, { uploadError: 'import.errors.expired' });
+    const result = applyImport(db, kt, students, req.user.id);
+    if (result.error) return renderImport(res, 400, { uploadError: result.error });
+    setFlash(req, 'success', 'import.done', result);
+    res.redirect(303, '/admin/import');
+  });
+
+  // BR-07: send codes to all active students.
+  router.get('/codes', (req, res) => res.render('admin/codes', {
+    status: accounts.studentCodeStatus(), maxPerMinute: config.smtp.maxPerMinute,
+  }));
+
+  router.post('/codes', (req, res) => {
+    setFlash(req, 'success', 'admin.codes.started', { count: accounts.sendStudentCodes() });
+    res.redirect(303, '/admin/codes');
+  });
 
   // BR-10 to BR-12: teacher accounts.
   const renderTeachers = (res, status = 200, form = {}) =>

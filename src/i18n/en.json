@@ -69,7 +69,9 @@
       "outboxHeading": "Email",
       "queued": "Queued: {count}",
       "failed": "Failed: {count}",
-      "pagesHeading": "Admin pages"
+      "pagesHeading": "Admin pages",
+      "datesHeading": "Dates and deadlines",
+      "changeDates": "Change dates and deadlines"
     },
     "teachers": {
       "listHeading": "Teacher accounts",
@@ -103,6 +105,45 @@
         "self": "You cannot deactivate your own account or remove your own admin rights.",
         "inactive": "Reactivate the account first."
       }
+    },
+    "settings": {
+      "daysHeading": "Sæludagar days",
+      "noDays": "No days yet.",
+      "removeDay": "Remove",
+      "newDay": "New day",
+      "addDay": "Add day",
+      "timesHeading": "Sign-up and deadline",
+      "timesHelp": "Times are Icelandic time. Leave both fields empty for no time.",
+      "signupOpens": "Sign-up opens",
+      "signupCloses": "Sign-up closes",
+      "choiceDeadline": "Course-choice deadline",
+      "current": "Now: {value}",
+      "notSet": "Not set",
+      "date": "Date",
+      "time": "Time",
+      "save": "Save",
+      "dayAdded": "Day added: {day}",
+      "dayRemoved": "Day removed.",
+      "timesSaved": "The times have been saved.",
+      "errors": {
+        "day": "Enter a valid date",
+        "both": "Enter both a date and a time, or neither",
+        "dateTime": "Enter a valid date and time",
+        "closesBeforeOpens": "Sign-up must close after it opens"
+      }
+    },
+    "codes": {
+      "activeStudents": "Active students: {count}",
+      "warning": "Every active student receives a new code by email. Each student's previous code stops working as soon as the new one is sent.",
+      "confirm": "Send codes to {count} students",
+      "noStudents": "No active students. Import the student list first.",
+      "started": "Codes are being emailed to {count} students. Follow the progress below.",
+      "progressHeading": "Sending progress",
+      "queued": "Queued: {count}",
+      "sent": "Sent since {time}: {count}",
+      "failed": "Failed: {count}",
+      "rate": "Emails go out at most {count} a minute, after other emails.",
+      "refresh": "Refresh the progress"
     }
   },
   "emails": {
@@ -120,6 +161,12 @@
       "subject": "Your code for the Sæludagar website",
       "intro": "Here is your code for logging in to the Sæludagar website as a teacher:",
       "oldCode": "If you had an older code, it no longer works."
+    },
+    "student_code": {
+      "subject": "Your Sæludagar code",
+      "intro": "On the Sæludagar website you sign up for events during Sæludagar. After attending, you choose a course to have absence points removed. Your code is:",
+      "instructions": "Keep the code. If you lose it, you can get a new one with “Get a new code” on the login page.",
+      "oldCode": "Any older code no longer works."
     }
   },
   "errors": {
@@ -135,5 +182,47 @@
   },
   "stub": {
     "notImplemented": "Not ready yet."
+  },
+  "format": {
+    "dateTime": "{date}, {time}"
+  },
+  "import": {
+    "current": "Active students: {count}.",
+    "brautir": "Brautir (study programmes): {list}.",
+    "noBrautir": "No brautir yet.",
+    "previewHeading": "Summary of changes",
+    "previewIntro": "The file is valid: {count} students. Confirming makes these changes:",
+    "added": "New students: {count}",
+    "updated": "Students updated: {count}",
+    "deactivated": "Students made inactive: {count}",
+    "signupsRemoved": "Sign-ups to be removed: {count}",
+    "confirmHelp": "Nothing is saved until you confirm. Confirm within 10 minutes.",
+    "confirm": "Confirm import",
+    "cancel": "Cancel",
+    "cancelled": "The import was cancelled. Nothing was saved.",
+    "done": "Import complete: {added} new, {updated} updated, {deactivated} made inactive and {signupsRemoved} sign-ups removed.",
+    "errorsIntro": "The file was not imported, and nothing was saved. Fix these errors ({count}) and upload the file again:",
+    "uploadHeading": "Upload the student list",
+    "formatHelp": "A CSV file with this header line, separated by semicolons (or commas):",
+    "rowsHelp": "One line per student per course. A student with no courses gets one line with an empty course. Active students who are missing from the file become inactive.",
+    "file": "File",
+    "fileHint": "CSV, UTF-8 or Windows-1252 (from Excel), at most 5 MB",
+    "upload": "Upload and check",
+    "errors": {
+      "unreadable": "Line {line}: the file could not be read from here (check the quotation marks)",
+      "header": "Line {line}: the header must be kennitala;nafn;netfang;braut;afangi",
+      "columns": "Line {line}: the line must have 5 columns",
+      "kennitala": "Line {line}: kennitala must be 10 digits",
+      "name": "Line {line}: the name is missing or invalid",
+      "email": "Line {line}: the email address is not valid",
+      "mismatch": "Line {line}: name, email and braut must be the same as on line {first} for the same student",
+      "teacher": "Line {line}: this kennitala belongs to a teacher",
+      "noStudents": "The file contains no students",
+      "tooLarge": "The file is too large. The limit is 5 MB.",
+      "upload": "The file could not be received. Try again.",
+      "noFile": "Choose a file to upload.",
+      "expired": "The import has expired or was already confirmed. Upload the file again.",
+      "changed": "A teacher account now has one of the kennitölur in the file. Nothing was saved. Upload the file again."
+    }
   }
 }

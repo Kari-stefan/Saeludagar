@@ -115,7 +115,7 @@ export class Browser {
       method,
       redirect: 'manual',
       headers: { ...(cookie ? { cookie } : {}), ...headers },
-      body: form ? new URLSearchParams(form) : undefined,
+      body: form instanceof FormData || !form ? form : new URLSearchParams(form),
     });
     const setCookies = res.headers.getSetCookie();
     for (const header of setCookies) {
@@ -143,6 +143,14 @@ export class Browser {
 
   login(kennitala, code) {
     return this.post('/login', { kennitala, code });
+  }
+
+  // Uploads one file as a multipart form, the way the import page does: the token field comes first.
+  async upload(url, bytes, { token, filename = 'nemendur.csv' } = {}) {
+    const form = new FormData();
+    if (token !== null) form.append('_csrf', token ?? await this.csrfToken());
+    form.append('file', new Blob([bytes]), filename);
+    return this.request('POST', url, form);
   }
 
   // The session ID inside the signed cookie value (s:<id>.<signature>).

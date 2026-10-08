@@ -10,7 +10,7 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestones 1 and 2 are built: the project scaffold and data model, then login, accounts and email. Until the school's mail server details arrive, emails are printed in the terminal instead of sent. The next step is milestone 3 (admin settings, student import, sending codes). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+Milestones 1 to 3 are built: the project scaffold and data model; login, accounts and email; and the admin settings, student CSV import and sending codes to every student. Until the school's mail server details arrive, emails are printed in the terminal instead of sent. The next step is milestone 4 (events). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
