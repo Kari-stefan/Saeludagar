@@ -1,0 +1,24 @@
+<%# BR-28: the date, time or location of an event the student signed up for changed. Icelandic then English (BR-52). -%>
+<% languages.forEach(({ t, formatDate, formatTimeRange, eventText }, index) => { -%>
+<% if (index > 0) { -%>
+
+----------------------------------------
+
+<% } -%>
+<%= t('emails.common.greeting', { name }) %>
+
+<%= t('emails.event_changed.intro', { title: eventText(event, 'title') }) %>
+
+<%= t('emails.event_changed.now') %>
+  <%= formatDate(after.event_date) %>, <%= formatTimeRange(after.start_time, after.end_time) %>
+  <%= after.location %>
+
+<%= t('emails.event_changed.before') %>
+  <%= formatDate(before.event_date) %>, <%= formatTimeRange(before.start_time, before.end_time) %>
+  <%= before.location %>
+
+<%= t('emails.event_changed.cancel') %>
+<%= eventUrl %>
+
+<%= t('emails.common.noReply') %>
+<% }) -%>

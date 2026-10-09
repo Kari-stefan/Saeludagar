@@ -1,3 +1,5 @@
+import { eventAccess, getEvent } from '../services/events.js';
+
 // BR-09: a session ends after this long without a request. Every new session starts with the
 // student value; login sets the teacher value for teachers and admins.
 export const STUDENT_SESSION_MS = 2 * 60 * 60 * 1000;
@@ -35,6 +37,21 @@ function guard(allowed) {
   return (req, res, next) => {
     if (!req.user) return res.redirect(303, '/login');
     if (!allowed(req.user)) return res.status(403).render('errors/403');
+    next();
+  };
+}
+
+// §8: access to the event in /:id, checked on every request. 'editor' lets in the owner,
+// co-teachers and admins; 'owner' only the owner and admins. Sets req.event and req.eventAccess.
+export function requireEventAccess(db, level) {
+  return (req, res, next) => {
+    const id = Number(req.params.id);
+    const event = Number.isSafeInteger(id) ? getEvent(db, id) : undefined;
+    if (!event) return res.status(404).render('errors/404');
+    const access = eventAccess(db, req.user, event);
+    if (!access || (level === 'owner' && access !== 'owner')) return res.status(403).render('errors/403');
+    req.event = event;
+    req.eventAccess = access;
     next();
   };
 }

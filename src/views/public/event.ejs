@@ -1,3 +1,7 @@
-<%- include('../partials/header', { pageTitle: t('pages.event') }) %>
-<h1><%= t('pages.event') %></h1>
+<%- include('../partials/header', { pageTitle: eventText(event, 'title') }) %>
+<% if (event.status !== 'published') { -%>
+<div class="alert"><p><%= t('events.draftNotice') %></p></div>
+<% } -%>
+<%- include('../partials/event-details', { event }) %>
+<p><a href="/"><%= t('events.backToAll') %></a></p>
 <%- include('../partials/footer') %>

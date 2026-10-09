@@ -1,3 +1,32 @@
 <%- include('../partials/header', { pageTitle: t('pages.home') }) %>
 <h1><%= t('pages.home') %></h1>
+<% if (days.length === 0) { -%>
+<p><%= t('home.noDays') %></p>
+<% } else { -%>
+<p class="lead"><%= t('home.days', { days: days.map((day) => formatDate(day)).join(', ') }) %></p>
+
+<nav class="filter" aria-label="<%= t('home.filterLabel') %>">
+  <ul>
+    <li><a href="/"<% if (!braut) { %> aria-current="page"<% } %>><%= t('home.allBrautir') %></a></li>
+    <% for (const name of brautir) { -%>
+    <li><a href="/?braut=<%= encodeURIComponent(name) %>"<% if (name === braut) { %> aria-current="page"<% } %>><%= name %></a></li>
+    <% } -%>
+  </ul>
+</nav>
+
+<% for (const day of days) { const dayEvents = events.filter((event) => event.event_date === day); -%>
+<section class="day" aria-labelledby="day-<%= day %>">
+  <h2 id="day-<%= day %>"><%= formatDate(day) %></h2>
+  <% if (dayEvents.length === 0) { -%>
+  <p><%= t('home.noEvents') %></p>
+  <% } else { -%>
+  <div class="card-grid">
+    <% for (const event of dayEvents) { -%>
+    <%- include('../partials/event-card', { event }) %>
+    <% } -%>
+  </div>
+  <% } -%>
+</section>
+<% } -%>
+<% } -%>
 <%- include('../partials/footer') %>

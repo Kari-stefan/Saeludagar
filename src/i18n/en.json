@@ -129,7 +129,8 @@
         "day": "Enter a valid date",
         "both": "Enter both a date and a time, or neither",
         "dateTime": "Enter a valid date and time",
-        "closesBeforeOpens": "Sign-up must close after it opens"
+        "closesBeforeOpens": "Sign-up must close after it opens",
+        "dayHasEvents": "{day} cannot be removed because it has events: {events}. Move them to another day or delete them first."
       }
     },
     "codes": {
@@ -167,6 +168,18 @@
       "intro": "On the Sæludagar website you sign up for events during Sæludagar. After attending, you choose a course to have absence points removed. Your code is:",
       "instructions": "Keep the code. If you lose it, you can get a new one with “Get a new code” on the login page.",
       "oldCode": "Any older code no longer works."
+    },
+    "event_changed": {
+      "subject": "Event changed: {title}",
+      "intro": "The event {title} that you signed up for has changed.",
+      "now": "Now:",
+      "before": "Before:",
+      "cancel": "If you can no longer come, you can cancel while sign-up is open. More about the event:"
+    },
+    "event_deleted": {
+      "subject": "Event cancelled: {title}",
+      "intro": "The event below, which you signed up for, has been cancelled:",
+      "signups": "Your sign-up has been removed and no longer counts towards your sign-ups."
     }
   },
   "errors": {
@@ -184,7 +197,10 @@
     "notImplemented": "Not ready yet."
   },
   "format": {
-    "dateTime": "{date}, {time}"
+    "dateTime": "{date}, {time}",
+    "timeRange": "{start}–{end}",
+    "fee": "ISK {amount}",
+    "free": "Free"
   },
   "import": {
     "current": "Active students: {count}.",
@@ -223,6 +239,107 @@
       "noFile": "Choose a file to upload.",
       "expired": "The import has expired or was already confirmed. Upload the file again.",
       "changed": "A teacher account now has one of the kennitölur in the file. Nothing was saved. Upload the file again."
+    }
+  },
+  "home": {
+    "noDays": "The Sæludagar dates have not been set yet.",
+    "days": "Sæludagar: {days}",
+    "filterLabel": "Filter by braut",
+    "allBrautir": "All brautir",
+    "noEvents": "No events yet."
+  },
+  "events": {
+    "restricted": "Only for students of these brautir",
+    "signups": "{count} / {capacity} signed up",
+    "full": "Full",
+    "when": "When",
+    "where": "Where",
+    "host": "Host",
+    "brautir": "Brautir",
+    "fee": "Fee",
+    "places": "Signed up",
+    "draftNotice": "This event is a draft, and students cannot see it.",
+    "backToAll": "All events",
+    "publish": "Publish",
+    "mine": "Events you run",
+    "none": "No events yet.",
+    "title": "Event",
+    "status": "Status",
+    "owner": "Owner",
+    "edit": "Edit",
+    "statusName": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "draftHelp": "Students cannot see the event until it is published. Preview it first.",
+    "created": "The event was saved as a draft.",
+    "saved": "The changes were saved.",
+    "published": "The event has been published.",
+    "deleted": "Event deleted: {title}",
+    "coteacherAdded": "Co-teacher added.",
+    "coteacherRemoved": "Co-teacher removed.",
+    "preview": {
+      "banner": "Preview.",
+      "help": "This is how students will see the event.",
+      "back": "Back to managing the event",
+      "link": "Preview"
+    },
+    "delete": {
+      "heading": "Delete the event",
+      "blocked": "The event cannot be deleted because attendance has been marked.",
+      "button": "Delete event",
+      "help": "The students signed up ({count}) get an email, and their sign-ups are removed.",
+      "confirm": "Yes, delete this event"
+    },
+    "coteachers": {
+      "heading": "Co-teachers",
+      "none": "No co-teachers.",
+      "help": "Co-teachers can do everything except delete the event and change the co-teachers.",
+      "remove": "Remove",
+      "choose": "Add a co-teacher",
+      "add": "Add"
+    },
+    "form": {
+      "noDays": "The admin has not set the Sæludagar days yet, so events cannot be created.",
+      "titleIs": "Title (Icelandic)",
+      "titleEn": "Title in English (optional)",
+      "descriptionIs": "Description (Icelandic)",
+      "descriptionEn": "Description in English (optional)",
+      "hostHint": "Who runs or provides the event",
+      "date": "Day",
+      "start": "Starts",
+      "end": "Ends",
+      "capacity": "Maximum participants",
+      "fee": "Fee (ISK)",
+      "feeHint": "0 means free",
+      "brautirHint": "No braut: for everyone. Tick brautir so students can filter by them, and also tick “Only for students of these brautir” if only their students may sign up.",
+      "noBrautir": "No brautir yet. They come from the student list.",
+      "image": "Image (optional)",
+      "imageHint": "JPG, PNG or WebP, at most 2 MB. Without one, a default image is shown.",
+      "currentImage": "Current image",
+      "removeImage": "Remove the image",
+      "chooseImage": "Choose an image",
+      "newImage": "Chosen image",
+      "saveDraft": "Save draft",
+      "save": "Save"
+    },
+    "errors": {
+      "tooLong": "The text is too long",
+      "invalid": "The text is not valid",
+      "required": "This is required",
+      "capacity": "Enter a whole number, 1 or more",
+      "capacityBelowSignups": "The maximum cannot be lower than the number signed up",
+      "fee": "Enter a whole number of krónur, 0 or more",
+      "date": "Choose one of the Sæludagar days",
+      "time": "Enter a time, such as 10:00",
+      "endBeforeStart": "The event must end after it starts",
+      "braut": "Choose brautir from the list",
+      "restrictedWithoutBraut": "Choose at least one braut if the event is only for students of these brautir",
+      "imageTooLarge": "The image is too large. The limit is 2 MB.",
+      "imageUpload": "The image could not be received. Try again.",
+      "imageType": "The image must be JPG, PNG or WebP.",
+      "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
+      "confirmDelete": "Tick the box to confirm that you want to delete the event."
     }
   }
 }

@@ -1,0 +1,18 @@
+<%# BR-29: an event the student signed up for was deleted. Event name and date. Icelandic then English (BR-52). -%>
+<% languages.forEach(({ t, formatDate, formatTimeRange, eventText }, index) => { -%>
+<% if (index > 0) { -%>
+
+----------------------------------------
+
+<% } -%>
+<%= t('emails.common.greeting', { name }) %>
+
+<%= t('emails.event_deleted.intro') %>
+
+  <%= eventText(event, 'title') %>
+  <%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %>
+
+<%= t('emails.event_deleted.signups') %>
+
+<%= t('emails.common.noReply') %>
+<% }) -%>

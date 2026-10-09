@@ -24,7 +24,7 @@ export function verifyCsrf(req, res, next) {
 // File uploads are multipart, which only multer can read, inside the route. Those routes are listed
 // here and run verifyCsrf themselves, right after multer. Any other multipart request is checked
 // now, which refuses it, because its body cannot be read.
-const UPLOAD_ROUTES = [/^\/admin\/import$/];
+const UPLOAD_ROUTES = [/^\/admin\/import$/, /^\/teacher\/events\/(new|\d+\/edit)$/];
 
 export function verifyCsrfUnlessUpload(req, res, next) {
   if (req.is('multipart/form-data') && UPLOAD_ROUTES.some((route) => route.test(req.path))) return next();

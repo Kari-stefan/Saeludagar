@@ -1,0 +1,23 @@
+<%# An event as students see it (§6): the event page and the teacher's preview use the same partial. -%>
+<% const title = eventText(event, 'title'); -%>
+<article class="event">
+  <h1><%= title %></h1>
+  <img class="event__image" src="<%= event.image_file ? `/uploads/${event.image_file}` : '/img/default-event.svg' %>" alt="<%= title %>">
+  <dl class="facts">
+    <dt><%= t('events.when') %></dt>
+    <dd><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %></dd>
+    <dt><%= t('events.where') %></dt>
+    <dd><%= event.location %></dd>
+    <dt><%= t('events.host') %></dt>
+    <dd><%= event.host %></dd>
+    <% if (event.brautir.length > 0) { -%>
+    <dt><%= t('events.brautir') %></dt>
+    <dd><%= event.brautir.join(', ') %><% if (event.braut_restricted) { %> <span class="badge"><%= t('events.restricted') %></span><% } %></dd>
+    <% } -%>
+    <dt><%= t('events.fee') %></dt>
+    <dd><%= formatFee(event.fee_isk) %></dd>
+    <dt><%= t('events.places') %></dt>
+    <dd><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %><% if (event.signups >= event.capacity) { %> <span class="badge badge--full"><%= t('events.full') %></span><% } %></dd>
+  </dl>
+  <div class="event__description"><%= eventText(event, 'description') %></div>
+</article>

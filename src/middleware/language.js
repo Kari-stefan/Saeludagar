@@ -1,4 +1,6 @@
-import { DEFAULT_LANGUAGE, formatDate, formatDateTime, LANGUAGES, translator } from '../i18n/index.js';
+import {
+  DEFAULT_LANGUAGE, eventText, formatDate, formatDateTime, formatFee, formatTimeRange, LANGUAGES, translator,
+} from '../i18n/index.js';
 
 export function applyLanguage(req, res, lang) {
   const t = translator(lang);
@@ -7,6 +9,9 @@ export function applyLanguage(req, res, lang) {
   res.locals.t = t;
   res.locals.formatDate = (day) => formatDate(lang, day);
   res.locals.formatDateTime = (iso) => formatDateTime(lang, iso);
+  res.locals.formatTimeRange = (start, end) => formatTimeRange(lang, start, end);
+  res.locals.formatFee = (isk) => formatFee(lang, isk);
+  res.locals.eventText = (event, field) => eventText(lang, event, field);
   res.locals.siteTitle = schoolName ? `${t('site.name')} – ${schoolName}` : t('site.name');
   res.locals.currentPath = req.originalUrl;
 }

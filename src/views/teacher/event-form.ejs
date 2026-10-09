@@ -1,3 +1,121 @@
+<%
+  const isNew = !event;
+  const val = (name) => values[name] ?? '';
+  const token = csrfToken();
+  const titleKey = isNew ? 'pages.eventNew' : 'pages.eventEdit';
+-%>
 <%- include('../partials/header', { pageTitle: t(titleKey) }) %>
 <h1><%= t(titleKey) %></h1>
+<%- include('../partials/flash') %>
+<% if (days.length === 0) { -%>
+<div class="alert"><p><%= t('events.form.noDays') %></p></div>
+<% } else { -%>
+<%- include('../partials/form-errors', { errors }) %>
+<form class="form form--wide" method="post" action="<%= isNew ? '/teacher/events/new' : `/teacher/events/${event.id}/edit` %>" enctype="multipart/form-data">
+  <input type="hidden" name="_csrf" value="<%= token %>">
+
+  <%- include('../partials/field', { name: 'title_is', label: t('events.form.titleIs'), value: val('title_is'), error: errors.title_is, required: true, maxlength: 200 }) %>
+  <%- include('../partials/field', { name: 'title_en', label: t('events.form.titleEn'), value: val('title_en'), error: errors.title_en, maxlength: 200 }) %>
+  <%- include('../partials/field', { name: 'description_is', label: t('events.form.descriptionIs'), value: val('description_is'), error: errors.description_is, type: 'textarea', required: true, maxlength: 5000 }) %>
+  <%- include('../partials/field', { name: 'description_en', label: t('events.form.descriptionEn'), value: val('description_en'), error: errors.description_en, type: 'textarea', maxlength: 5000 }) %>
+  <%- include('../partials/field', { name: 'host', label: t('events.host'), hint: t('events.form.hostHint'), value: val('host'), error: errors.host, required: true, maxlength: 200 }) %>
+
+  <fieldset class="fieldset">
+    <legend class="field__label"><%= t('events.when') %></legend>
+    <div class="field">
+      <label for="field-event_date"><%= t('events.form.date') %></label>
+      <% if (errors.event_date) { -%>
+      <p class="field__error" id="field-event_date-error"><%= t(errors.event_date) %></p>
+      <% } -%>
+      <select class="field__input field__input--short" id="field-event_date" name="event_date" required<% if (errors.event_date) { %> aria-describedby="field-event_date-error" aria-invalid="true"<% } %>>
+        <% for (const day of days) { -%>
+        <option value="<%= day %>"<% if (val('event_date') === day) { %> selected<% } %>><%= formatDate(day) %></option>
+        <% } -%>
+      </select>
+    </div>
+    <div class="field-row">
+      <%- include('../partials/field', { name: 'start_time', label: t('events.form.start'), value: val('start_time'), error: errors.start_time, type: 'time', required: true, short: true }) %>
+      <%- include('../partials/field', { name: 'end_time', label: t('events.form.end'), value: val('end_time'), error: errors.end_time, type: 'time', required: true, short: true }) %>
+    </div>
+  </fieldset>
+
+  <%- include('../partials/field', { name: 'location', label: t('events.where'), value: val('location'), error: errors.location, required: true, maxlength: 200 }) %>
+  <div class="field-row">
+    <%- include('../partials/field', { name: 'capacity', label: t('events.form.capacity'), value: val('capacity'), error: errors.capacity, type: 'number', min: 1, required: true, short: true }) %>
+    <%- include('../partials/field', { name: 'fee_isk', label: t('events.form.fee'), hint: t('events.form.feeHint'), value: val('fee_isk'), error: errors.fee_isk, type: 'number', min: 0, short: true }) %>
+  </div>
+
+  <fieldset class="fieldset">
+    <legend class="field__label"><%= t('events.brautir') %></legend>
+    <p class="field__hint" id="brautir-hint"><%= t('events.form.brautirHint') %></p>
+    <% if (errors.brautir) { -%>
+    <p class="field__error" id="brautir-error"><%= t(errors.brautir) %></p>
+    <% } -%>
+    <% if (brautir.length === 0) { -%>
+    <p><%= t('events.form.noBrautir') %></p>
+    <% } -%>
+    <% for (const name of brautir) { -%>
+    <label class="checkbox"><input type="checkbox" name="brautir" value="<%= name %>"<% if ((values.brautir ?? []).includes(name)) { %> checked<% } %>> <%= name %></label>
+    <% } -%>
+    <label class="checkbox"><input type="checkbox" name="braut_restricted" value="1"<% if (values.braut_restricted) { %> checked<% } %> aria-describedby="brautir-hint<%= errors.brautir ? ' brautir-error' : '' %>"> <%= t('events.restricted') %></label>
+  </fieldset>
+
+  <fieldset class="fieldset">
+    <legend class="field__label"><%= t('events.form.image') %></legend>
+    <p class="field__hint" id="image-hint"><%= t('events.form.imageHint') %></p>
+    <% if (errors.image) { -%>
+    <p class="field__error" id="image-error"><%= t(errors.image) %></p>
+    <% } -%>
+    <% if (values.image_file) { -%>
+    <img class="image-preview" src="/uploads/<%= values.image_file %>" alt="<%= t('events.form.currentImage') %>">
+    <label class="checkbox"><input type="checkbox" name="remove_image" value="1"> <%= t('events.form.removeImage') %></label>
+    <% } -%>
+    <label for="image"><%= t('events.form.chooseImage') %></label>
+    <input class="field__input" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" data-preview="image-new-preview"
+      aria-describedby="image-hint<%= errors.image ? ' image-error' : '' %>"<% if (errors.image) { %> aria-invalid="true"<% } %>>
+    <img class="image-preview" id="image-new-preview" alt="<%= t('events.form.newImage') %>" hidden>
+  </fieldset>
+
+  <button type="submit" class="button"><%= t(isNew ? 'events.form.saveDraft' : 'events.form.save') %></button>
+</form>
+
+<% if (!isNew && access === 'owner') { -%>
+<section id="coteachers" aria-labelledby="coteachers-heading">
+  <h2 id="coteachers-heading"><%= t('events.coteachers.heading') %></h2>
+  <p><%= t('events.coteachers.help') %></p>
+  <% if (event.coteachers.length === 0) { -%>
+  <p><%= t('events.coteachers.none') %></p>
+  <% } else { -%>
+  <ul class="day-list">
+    <% for (const teacher of event.coteachers) { -%>
+    <li>
+      <span><%= teacher.name %></span>
+      <form class="inline-form" method="post" action="/teacher/events/<%= event.id %>">
+        <input type="hidden" name="_csrf" value="<%= token %>">
+        <input type="hidden" name="teacher" value="<%= teacher.id %>">
+        <button type="submit" class="button button--small button--secondary" name="action" value="remove-coteacher"><%= t('events.coteachers.remove') %><span class="visually-hidden">: <%= teacher.name %></span></button>
+      </form>
+    </li>
+    <% } -%>
+  </ul>
+  <% } -%>
+  <% if (candidates.length > 0) { -%>
+  <form class="form" method="post" action="/teacher/events/<%= event.id %>">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <input type="hidden" name="action" value="add-coteacher">
+    <div class="field">
+      <label class="field__label" for="teacher"><%= t('events.coteachers.choose') %></label>
+      <select class="field__input" id="teacher" name="teacher">
+        <% for (const teacher of candidates) { -%>
+        <option value="<%= teacher.id %>"><%= teacher.name %></option>
+        <% } -%>
+      </select>
+    </div>
+    <button type="submit" class="button"><%= t('events.coteachers.add') %></button>
+  </form>
+  <% } -%>
+</section>
+<% } -%>
+<script src="/js/image-preview.js" defer></script>
+<% } -%>
 <%- include('../partials/footer') %>

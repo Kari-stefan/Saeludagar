@@ -29,12 +29,15 @@ export function loadConfig(env = process.env) {
     smtp: {
       host: env.SMTP_HOST || '',
       port: Number(env.SMTP_PORT) || 587,
-      secure: env.SMTP_SECURE === 'true',
+      secure: /^(true|1|yes)$/i.test((env.SMTP_SECURE || '').trim()),
       user: env.SMTP_USER || '',
       pass: env.SMTP_PASS || '',
       from: env.MAIL_FROM || '',
       maxPerMinute: Number(env.SMTP_MAX_PER_MINUTE) || 30,
     },
     trustProxy: env.TRUST_PROXY === '1',
+    // BR-08's 10-minute limit on "Fá nýjan kóða". NEW_CODE_LIMIT=off turns it off for testing,
+    // in development only; everywhere else the limit always applies.
+    newCodeLimit: !(nodeEnv === 'development' && /^off$/i.test((env.NEW_CODE_LIMIT || '').trim())),
   };
 }

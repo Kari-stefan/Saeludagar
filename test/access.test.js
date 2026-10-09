@@ -1,6 +1,6 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { startSite } from './helpers.js';
+import { insertEvent, startSite } from './helpers.js';
 
 describe('role guards (AGENT_START §8, §9 item 8)', () => {
   let site;
@@ -13,6 +13,7 @@ describe('role guards (AGENT_START §8, §9 item 8)', () => {
       teacher: await site.addUser(),
       admin: await site.addUser({ isAdmin: true }),
     };
+    insertEvent(site.db, accounts.teacher.id); // event 1, owned by the teacher
     browsers.guest = site.browser();
     for (const [role, account] of Object.entries(accounts)) {
       browsers[role] = site.browser();

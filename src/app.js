@@ -10,6 +10,7 @@ import { flash } from './middleware/flash.js';
 import { languageMiddleware } from './middleware/language.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { createAccounts } from './services/accounts.js';
+import { IMAGE_NAME } from './services/images.js';
 import { kennitalaCrypto } from './services/crypto.js';
 import { publicRouter } from './routes/public.js';
 import { authRouter } from './routes/auth.js';
@@ -22,7 +23,7 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
     throw new Error('SESSION_SECRET is not set. Copy .env.example to .env and fill it in (see README, "Setup").');
   }
   const kt = kennitalaCrypto(config);
-  const accounts = createAccounts({ db, kt });
+  const accounts = createAccounts({ db, kt, newCodeLimit: config.newCodeLimit });
 
   const app = express();
   app.set('views', path.join(ROOT_DIR, 'src', 'views'));
@@ -51,6 +52,12 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
 
   app.use(express.static(path.join(ROOT_DIR, 'public')));
 
+  // BR-27: event images, kept in UPLOAD_DIR outside public/ and served under their random names.
+  app.get('/uploads/:file', (req, res, next) => {
+    if (!IMAGE_NAME.test(req.params.file)) return next();
+    res.sendFile(req.params.file, { root: config.uploadDir, dotfiles: 'deny' }, (err) => err && next());
+  });
+
   // AGENT_START §8. The cookie (the only one the site sets, BR-57) is renewed on every request;
   // login lengthens it for teachers and admins (BR-09).
   app.use(session({
@@ -71,10 +78,10 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   app.use(express.urlencoded({ extended: false, limit: '100kb' }));
   app.use(verifyCsrfUnlessUpload);
 
-  app.use(publicRouter());
+  app.use(publicRouter({ db }));
   app.use(authRouter({ accounts }));
   app.use(studentRouter());
-  app.use('/teacher', teacherRouter());
+  app.use('/teacher', teacherRouter({ config, db }));
   app.use('/admin', adminRouter({ config, db, kt, accounts }));
 
   app.use(notFound);

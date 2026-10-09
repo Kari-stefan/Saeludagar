@@ -1,3 +1,33 @@
 <%- include('../partials/header', { pageTitle: t('pages.teacherHome') }) %>
 <h1><%= t('pages.teacherHome') %></h1>
+<%- include('../partials/flash') %>
+<p><a class="button" href="/teacher/events/new"><%= t('pages.eventNew') %></a></p>
+
+<h2><%= t('events.mine') %></h2>
+<% if (events.length === 0) { -%>
+<p><%= t('events.none') %></p>
+<% } else { -%>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t('events.title') %></th>
+        <th scope="col"><%= t('events.when') %></th>
+        <th scope="col"><%= t('events.status') %></th>
+        <th scope="col"><%= t('events.places') %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const event of events) { -%>
+      <tr>
+        <td><a href="/teacher/events/<%= event.id %>"><%= eventText(event, 'title') %></a></td>
+        <td><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %></td>
+        <td><%= t(`events.statusName.${event.status}`) %></td>
+        <td><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %></td>
+      </tr>
+      <% } -%>
+    </tbody>
+  </table>
+</div>
+<% } -%>
 <%- include('../partials/footer') %>

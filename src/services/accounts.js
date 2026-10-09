@@ -38,7 +38,7 @@ function toTeacher(row) {
   return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1, active: row.active === 1 };
 }
 
-export function createAccounts({ db, kt }) {
+export function createAccounts({ db, kt, newCodeLimit = true }) {
   const userByHmac = db.prepare('SELECT * FROM users WHERE kennitala_hmac = ?');
   const isActive = db.prepare('SELECT active FROM users WHERE id = ?').pluck();
   const teacherById = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'teacher'");
@@ -86,12 +86,14 @@ export function createAccounts({ db, kt }) {
     queueEmail(db, { kind, userId });
   }
 
-  // BR-08: at most one new code per kennitala every 10 minutes, for active accounts only.
+  // BR-08: at most one new code per kennitala every 10 minutes, for active accounts only
+  // (newCodeLimit is false only for testing in development; see src/config.js).
   // The caller shows the same message whatever happens here.
   const requestNewCode = db.transaction((kennitala) => {
     const user = userByHmac.get(kt.hmac(kennitala));
     if (user?.active !== 1) return;
-    if (user.code_requested_at && Date.now() - Date.parse(user.code_requested_at) < NEW_CODE_INTERVAL_MS) return;
+    if (newCodeLimit && user.code_requested_at
+      && Date.now() - Date.parse(user.code_requested_at) < NEW_CODE_INTERVAL_MS) return;
     queueCode(user.id, 'new_code');
   });
 
