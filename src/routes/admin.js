@@ -5,6 +5,7 @@ import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
 import { validateTeacher } from '../services/accounts.js';
 import { outboxStatus } from '../services/email.js';
+import { allEvents } from '../services/events.js';
 import {
   activeStudentCount, applyImport, brautList, holdImport, MAX_FILE_BYTES, previewImport, readStudentCsv, takeImport,
 } from '../services/import.js';
@@ -26,7 +27,7 @@ function readUpload(req, res, next) {
   });
 }
 
-// Mounted at /admin. Events, export, purge and audit are stubs until milestones 4, 7 and 8.
+// Mounted at /admin. Export, purge and audit are stubs until milestones 7 and 8.
 export function adminRouter({ config, db, kt, accounts }) {
   const router = express.Router();
   router.use(requireAdmin);
@@ -49,8 +50,12 @@ export function adminRouter({ config, db, kt, accounts }) {
       if (result.error) return renderSettings(res, 400, { dayError: result.error, day });
       setFlash(req, 'success', 'admin.settings.dayAdded', { day: res.locals.formatDate(day) });
     } else if (body.action === 'remove-day') {
-      removeDay(db, day);
-      setFlash(req, 'success', 'admin.settings.dayRemoved');
+      const result = removeDay(db, day);
+      if (result.error) setFlash(req, 'error', result.error, {
+        day: res.locals.formatDate(day),
+        events: result.events.map((event) => res.locals.eventText(event, 'title')).join(', '),
+      });
+      else setFlash(req, 'success', 'admin.settings.dayRemoved');
     } else if (body.action === 'save-times') {
       const { values, errors } = saveTimes(db, body);
       if (Object.keys(errors).length > 0) return renderSettings(res, 400, { times: values, timeErrors: errors });
@@ -156,7 +161,8 @@ export function adminRouter({ config, db, kt, accounts }) {
     res.redirect(303, '/admin/teachers');
   });
 
-  router.get('/events', (req, res) => res.render('admin/events'));
+  // §6: every event, with its owner, linking to its management page.
+  router.get('/events', (req, res) => res.render('admin/events', { events: allEvents(db) }));
   router.get('/export', (req, res) => res.render('admin/export'));
   router.get('/export.csv', (req, res) => res.status(501).type('text/plain').send(res.locals.t('stub.notImplemented')));
   router.get('/purge', (req, res) => res.render('admin/purge'));

@@ -1,6 +1,7 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { NEW_CODE_INTERVAL_MS } from '../src/services/accounts.js';
+import { loadConfig } from '../src/config.js';
+import { createAccounts, NEW_CODE_INTERVAL_MS } from '../src/services/accounts.js';
 import { codeFrom, startSite } from './helpers.js';
 
 const SENT = 'Ef kennitalan tilheyrir virkum aðgangi verður nýr kóði sendur á netfangið sem er skráð á aðganginn.';
@@ -59,6 +60,25 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
       .run(new Date(Date.now() - NEW_CODE_INTERVAL_MS - 1000).toISOString(), student.id);
     await requestCode(student.kennitala);
     assert.equal(queued().length, 2, 'allowed again after 10 minutes');
+  });
+
+  test('BR-08: NEW_CODE_LIMIT=off removes the 10-minute limit for testing, in development only', () => {
+    assert.equal(loadConfig({ NODE_ENV: 'development', NEW_CODE_LIMIT: 'off' }).newCodeLimit, false);
+    assert.equal(loadConfig({ NODE_ENV: 'development', NEW_CODE_LIMIT: ' OFF ' }).newCodeLimit, false);
+    for (const env of [
+      { NODE_ENV: 'production', NEW_CODE_LIMIT: 'off' },
+      { NODE_ENV: 'test', NEW_CODE_LIMIT: 'off' },
+      { NODE_ENV: 'development', NEW_CODE_LIMIT: 'on' },
+      { NODE_ENV: 'development' },
+      {},
+    ]) {
+      assert.equal(loadConfig(env).newCodeLimit, true, JSON.stringify(env));
+    }
+
+    const unlimited = createAccounts({ db: site.db, kt: site.kt, newCodeLimit: false });
+    unlimited.requestNewCode(student.kennitala);
+    unlimited.requestNewCode(student.kennitala);
+    assert.equal(queued().length, 2, 'every request queues a code');
   });
 
   test('BR-08: unknown and inactive kennitölur queue nothing', async () => {

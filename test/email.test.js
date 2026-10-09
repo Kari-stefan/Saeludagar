@@ -61,13 +61,33 @@ describe('mail transport (AGENT_START §8)', () => {
       /^Error: MAIL_FROM is not set\. Set it to the school's noreply address/);
   });
 
+  test('SMTP_PORT and SMTP_SECURE must match: 465 uses TLS from the start, 587 does not', () => {
+    const smtp = (port, secure) => testConfig({ SMTP_HOST: 'smtp.example.is', MAIL_FROM: 'noreply@example.is', SMTP_PORT: port, SMTP_SECURE: secure });
+    assert.throws(() => createMailer(smtp('465', 'false')), /^Error: SMTP_PORT is 465, so SMTP_SECURE must be true/);
+    assert.throws(() => createMailer(smtp('465', '')), /SMTP_SECURE must be true/);
+    assert.throws(() => createMailer(smtp('587', 'true')), /^Error: SMTP_PORT is 587, so SMTP_SECURE must be false/);
+    for (const yes of ['true', 'True', 'TRUE', ' true ', '1', 'yes']) {
+      assert.doesNotThrow(() => createMailer(smtp('465', yes)), yes);
+    }
+    assert.doesNotThrow(() => createMailer(smtp('587', 'false')));
+  });
+
   describe('SMTP', () => {
     let server;
     const received = [];
+    let connections = 0;
+    let dropNext = 0; // connections to close at once, like a network hiccup
+    let rejectRecipients = false;
 
     // A minimal SMTP server that accepts every message.
     before(async () => {
       server = net.createServer((socket) => {
+        connections += 1;
+        if (dropNext > 0) {
+          dropNext -= 1;
+          socket.destroy();
+          return;
+        }
         let buffer = '';
         let message = null;
         const reply = (line) => socket.write(`${line}\r\n`);
@@ -92,6 +112,8 @@ describe('mail transport (AGENT_START §8)', () => {
             } else if (/^QUIT/i.test(line)) {
               reply('221 Bye');
               socket.end();
+            } else if (rejectRecipients && /^RCPT TO/i.test(line)) {
+              reply('550 No such user');
             } else {
               reply('250 OK');
             }
@@ -115,6 +137,40 @@ describe('mail transport (AGENT_START §8)', () => {
       assert.match(message, /^To: .+ <jona@example\.is>$/m);
       assert.match(message, /^Content-Type: text\/plain; charset=utf-8/im);
       assert.doesNotMatch(message, /text\/html/);
+    });
+
+    const mailer = () => createMailer(testConfig({
+      SMTP_HOST: '127.0.0.1', SMTP_PORT: String(server.address().port), SMTP_SECURE: 'false', MAIL_FROM: 'noreply@example.is',
+    }), { retryDelayMs: 10 });
+    const message = { to: { name: 'Jóna', address: 'jona@example.is' }, subject: 'Prófun', text: 'Texti' };
+
+    test('a dropped connection is tried once more at once, so a network hiccup does not delay the email', async () => {
+      received.length = 0;
+      connections = 0;
+      dropNext = 1;
+      await mailer().send(message);
+      assert.equal(connections, 2);
+      assert.equal(received.length, 1);
+    });
+
+    test('a second failure in a row goes to the outbox, which retries later', async () => {
+      received.length = 0;
+      connections = 0;
+      dropNext = 2;
+      await assert.rejects(mailer().send(message), { code: 'ECONNECTION' });
+      assert.equal(connections, 2, 'only one quick retry');
+      assert.equal(received.length, 0);
+    });
+
+    test('an error that is not a network problem, such as a refused address, is not retried at once', async () => {
+      connections = 0;
+      rejectRecipients = true;
+      try {
+        await assert.rejects(mailer().send(message), { code: 'EENVELOPE' });
+        assert.equal(connections, 1);
+      } finally {
+        rejectRecipients = false;
+      }
     });
   });
 });

@@ -41,9 +41,14 @@ export function addDay(db, day) {
   return {};
 }
 
+// Every event stays on a Sæludagar day (BR-21), so a day with events cannot be removed until they
+// are moved or deleted (the project owner's decision). Returns { error, events } or {}.
 export function removeDay(db, day) {
+  const events = db.prepare('SELECT title_is, title_en FROM events WHERE event_date = ? ORDER BY start_time').all(day);
+  if (events.length > 0) return { error: 'admin.settings.errors.dayHasEvents', events };
   db.prepare('DELETE FROM saeludagar_days WHERE day = ?').run(day);
   touch(db);
+  return {};
 }
 
 // BR-54: the sign-up window (BR-31) and the course-choice deadline (BR-44), each a date and a time.

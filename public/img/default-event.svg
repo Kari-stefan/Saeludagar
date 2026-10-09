@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" width="640" height="360" role="img" aria-hidden="true">
+  <!-- Default image for events without one (BR-27). Placeholder colours from scss/_tokens.scss. -->
+  <rect width="640" height="360" fill="#e8f0f8"/>
+  <g fill="none" stroke="#1f4e79" stroke-width="12" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="230" y="110" width="180" height="150" rx="16"/>
+    <path d="M230 150h180M275 90v40M365 90v40"/>
+  </g>
+  <g fill="#1f4e79">
+    <circle cx="275" cy="190" r="10"/>
+    <circle cx="320" cy="190" r="10"/>
+    <circle cx="365" cy="190" r="10"/>
+    <circle cx="275" cy="225" r="10"/>
+    <circle cx="320" cy="225" r="10"/>
+  </g>
+</svg>

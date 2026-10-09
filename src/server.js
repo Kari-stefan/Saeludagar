@@ -40,6 +40,9 @@ const server = app.listen(config.port, (err) => {
     process.exit(1);
   }
   console.log(`Sæludagar is running at http://localhost:${config.port}`);
+  if (!config.newCodeLimit) {
+    console.log('NEW_CODE_LIMIT=off: "Fá nýjan kóða" has no 10-minute limit (development only).');
+  }
   outbox.start();
   stopSessionCleanup = startSessionCleanup(sessionStore);
 });

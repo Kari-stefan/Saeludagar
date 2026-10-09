@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 3 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (events, sign-ups, attendance) still show only their title.
+As of milestone 4 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, and everyone sees the published ones on the front page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (sign-ups, attendance, the office export) still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -121,7 +121,7 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone 3):**
+**What you should see (milestone 4):**
 - A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons. **EN** switches the whole site to English and **ÍS** switches back.
 - **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
   ```
@@ -151,7 +151,7 @@ To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.
   ```
   Every email is written in Icelandic first, then English. Log out and log in as the teacher with that code. Teachers don't see Stjórnendasvæði.
 - **On the Kennarar page** you can also send a teacher a new code, deactivate or reactivate them, and make them an admin or remove that. You can't deactivate yourself or remove your own admin rights; another admin can.
-- **Fá nýjan kóða** on the login page prints a new code in the terminal; the old code stops working once the new one is printed. Each kennitala gets at most one new code every 10 minutes, counting codes an admin sends. The page shows the same message every time, even when no code is sent, on purpose.
+- **Fá nýjan kóða** on the login page prints a new code in the terminal; the old code stops working once the new one is printed. Each kennitala gets at most one new code every 10 minutes, counting codes an admin sends. The page shows the same message every time, even when no code is sent, on purpose. To test without the limit, add `NEW_CODE_LIMIT=off` to your `.env`; the terminal then says `NEW_CODE_LIMIT=off: "Fá nýjan kóða" has no 10-minute limit (development only).` It only works with `NODE_ENV=development`.
 - **5 wrong codes** for the same kennitala lock it for 15 minutes. While it is locked, even the right code gives "Kennitala eða kóði er rangur".
 - **Dates.** Stjórnendasvæði → **Dagsetningar og frestir**: add and remove Sæludagar days, and set when sign-up opens and closes and the course-choice deadline (each a date and a time, in Icelandic time). Stjórnendasvæði shows the current values.
 - **Import students.** Save this as `nemendur.csv` (fake data; UTF-8, or Windows-1252 as Excel saves it):
@@ -161,17 +161,25 @@ To stop the server, press `Ctrl+C` in its terminal. If you started it with `npm.
   0000000201;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;ÍSLE2MB05
   000000-0202;Páll Pálsson;pall@example.is;Starfsbraut;
   ```
-  Stjórnendasvæði → **Innflutningur nemenda** → choose the file → **Hlaða upp og yfirfara**. If any line is wrong, the page lists every error with its line number and saves nothing. Otherwise it shows what will change (new, updated, made inactive, sign-ups removed); nothing is saved until you click **Staðfesta innflutning**, within 10 minutes. Active students who are missing from the file become inactive, and that includes the `seed:dev` students (running `npm run seed:dev` again makes them active again).
+  A longer example with 8 fake students is in [`docs/example-students.csv`](example-students.csv). Stjórnendasvæði → **Innflutningur nemenda** → choose the file → **Hlaða upp og yfirfara**. If any line is wrong, the page lists every error with its line number and saves nothing. Otherwise it shows what will change (new, updated, made inactive, sign-ups removed); nothing is saved until you click **Staðfesta innflutning**, within 10 minutes. Active students who are missing from the file become inactive, and that includes the `seed:dev` students (running `npm run seed:dev` again makes them active again).
 - **Send codes.** Stjórnendasvæði → **Senda kóða** → confirm. Every active student gets a new code, printed in the terminal, at most `SMTP_MAX_PER_MINUTE` (30) a minute and after any other email. The page shows how many are queued, sent and failed; reload it to update the numbers. Each student's old code stops working once their new code is printed.
+- **Create an event.** First add at least one Sæludagar day on Dagsetningar og frestir; events can only be on those days. Then, as a teacher or admin: Kennarasvæði → **Nýr viðburður**. Fill in the form (the English fields are optional) and optionally choose a JPG, PNG or WebP image of at most 2 MB; the form shows it before you save. **Vista drög** saves the event as a draft, which only you, its co-teachers and admins can see.
+- **Preview and publish.** On the event's page, **Forskoða** shows it exactly as students will, and **Birta** publishes it. It then appears on the front page, grouped by day; brautir from the student list can be used to filter it. Events with no braut are for everyone and show under every braut.
+- **Edit and delete.** **Breyta** edits the event, also after it is published. If the day, times or location of a published event change, every student signed up gets an email (printed in the terminal). On the edit page, the owner or an admin adds **samkennarar** (co-teachers), who can do everything except delete the event and change the co-teachers. Deleting asks you to tick a box first, and isn't possible once attendance has been marked.
+- **All events.** Stjórnendasvæði → **Allir viðburðir** lists every event with its owner; an admin can manage any of them.
 
 Who can open which page:
 
 | Page | Address | Who |
 |---|---|---|
 | Front page | http://localhost:3000/ | Everyone |
+| An event | http://localhost:3000/events/1 | Everyone, once it is published |
 | Log in | http://localhost:3000/login | Everyone |
 | My events | http://localhost:3000/my-events | Students (fake ones from `npm run seed:dev`) |
 | Teacher area | http://localhost:3000/teacher | Teachers and admins |
+| New event | http://localhost:3000/teacher/events/new | Teachers and admins |
+| Managing an event | http://localhost:3000/teacher/events/1 | Its owner, co-teachers and admins |
+| All events | http://localhost:3000/admin/events | Admins |
 | Admin area | http://localhost:3000/admin | Admins |
 | Teacher accounts | http://localhost:3000/admin/teachers | Admins |
 | Dates and deadlines | http://localhost:3000/admin/settings | Admins |
@@ -244,6 +252,13 @@ This deletes everything in your **local development** database and starts empty.
    | Git Bash / macOS / Linux | `rm -f data/saeludagar.db*` |
 
    SQLite keeps up to three files: `saeludagar.db`, `saeludagar.db-wal` and `saeludagar.db-shm`. The `*` removes all of them. If the files can't be deleted ("being used by another process" or "Device or resource busy"), the server is still running somewhere; stop it and try again.
+
+   Event images stay in `uploads/` but are no longer used. To remove them too, keeping the `.gitkeep` file:
+
+   | Terminal | Command |
+   |---|---|
+   | PowerShell | `Remove-Item uploads\* -Exclude .gitkeep` |
+   | Git Bash / macOS / Linux | `find uploads -type f ! -name .gitkeep -delete` |
 3. Run `npm run migrate`.
 4. A fresh database has no accounts, so [create your admin account](#3-first-time-setup) again (step 6), and run `npm run seed:dev` if you want the fake students. Then run `npm run dev`.
 
@@ -261,6 +276,7 @@ Find the message you see in the left column.
 | `KENNITALA_ENC_KEY must be 32 random bytes, base64-encoded` (or `KENNITALA_HMAC_KEY`) | The value isn't a whole generated key. Often the `=` at the end is missing, or it has extra quotes or spaces | Generate new values ([step 3](#3-first-time-setup)) and paste the whole line. |
 | `KENNITALA_ENC_KEY and KENNITALA_HMAC_KEY must be different` | The same value was pasted for both keys | Run the [step 3](#3-first-time-setup) command again; it prints a different value on each line. |
 | `MAIL_FROM is not set. Set it to the school's noreply address` | `SMTP_HOST` is set in `.env`, so the site tries to send real email | On your own computer, leave `SMTP_HOST=` empty, so emails are printed in the terminal. |
+| `SMTP_PORT is 465, so SMTP_SECURE must be true` (or `SMTP_PORT is 587, so SMTP_SECURE must be false`) | The port and `SMTP_SECURE` don't match, so every email would fail. Port 465 uses TLS from the start; 587 switches to TLS after connecting | Set `SMTP_SECURE=true` for 465 or `SMTP_SECURE=false` for 587. Check that `SMTP_SECURE=` appears only once in `.env`. |
 | `The database is not set up. Run: npm run migrate` | The database hasn't been created yet, or was made by a different version of the code. `npm run create-admin` shows it too | Run `npm run migrate`, then restart `npm run dev` (it doesn't restart by itself after a migrate). If migrate says `Unknown database schema version`, see that row. |
 | `Unknown database schema version …` | Your database was made by a different version of the code | [Reset your local database](#8-reset-your-local-database). |
 | `Usage: npm run create-admin -- --name "Full name" --email "name@example.is" --kennitala "0000000000"` | An option is missing, or the `--` after `create-admin` is missing | Copy the command from [step 6](#3-first-time-setup) and fill in all three values. |
@@ -270,9 +286,15 @@ Find the message you see in the left column.
 | `Skipped 0000000103: it belongs to a teacher account.` from `seed:dev` | You created a teacher with one of the fake students' kennitölur | Log in with the other fake students, or [reset the database](#8-reset-your-local-database). |
 | `This kennitala already has an account` from `create-admin` | You already created an account with that kennitala | Log in with it. If you've lost the code, use **Fá nýjan kóða** on the login page and read the new code in the `npm run dev` terminal. |
 | "Kennitala eða kóði er rangur" with a code you know is right | 5 wrong codes have locked that kennitala for 15 minutes; or a newer code was sent, and only the newest works; or the account was deactivated; or the kennitala keys in `.env` have changed | Wait 15 minutes; or use the newest code in the terminal; or have another admin reactivate the account. If you changed the keys, [reset the database](#8-reset-your-local-database). |
-| **Fá nýjan kóða** prints no email in the terminal | Each kennitala gets one new code every 10 minutes, counting codes an admin sends. Kennitölur without an active account get nothing. The page shows the same message either way, on purpose | Wait 10 minutes and try again, and check the kennitala. Emails appear within about 5 seconds. |
-| `Email 3 (teacher_code) could not be sent: …` in the terminal, or "Tókst ekki að senda: 1" / "Failed: 1" on Stjórnendasvæði | The site tried to send an email through `SMTP_HOST` and the mail server refused or didn't answer; the text after `could not be sent:` is the reason. A failed email is retried 5 times, 1, 2, 4, 8 and 16 minutes apart; after that it counts as failed | On your own computer, leave `SMTP_HOST=` empty, so emails are printed instead. On the server, check the `SMTP_` settings. A failed code email can be replaced with a new one: **Senda nýjan kóða** on the Kennarar page, or **Fá nýjan kóða**. |
+| **Fá nýjan kóða** prints no email in the terminal | Each kennitala gets one new code every 10 minutes, counting codes an admin sends. Kennitölur without an active account get nothing. The page shows the same message either way, on purpose | Wait 10 minutes and try again, and check the kennitala. Emails appear within about 5 seconds. While testing on your own computer, `NEW_CODE_LIMIT=off` in `.env` removes the limit. |
+| `Email 3 (teacher_code) could not be sent: …` in the terminal, or "Tókst ekki að senda: 1" / "Failed: 1" on Stjórnendasvæði | The site tried to send an email through `SMTP_HOST` and the mail server refused or didn't answer; the text after `could not be sent:` is the reason. A dropped or timed-out connection is tried once more a few seconds later before this message appears. A failed email is retried 5 times, 1, 2, 4, 8 and 16 minutes apart; after that it counts as failed | On your own computer, leave `SMTP_HOST=` empty, so emails are printed instead. On the server, check the `SMTP_` settings. A failed code email can be replaced with a new one: **Senda nýjan kóða** on the Kennarar page, or **Fá nýjan kóða**. |
 | "Lína 3: kennitala verður að vera 10 tölustafir" (or another "Lína …" error) on Innflutningur nemenda | That line of the CSV file is wrong. Nothing was imported | Fix every listed line and upload the file again. The header must be `kennitala;nafn;netfang;braut;afangi`. In Excel, save as **CSV (semicolon delimited)** or **CSV UTF-8**. |
+| "Lína …: kennitala verður að vera 10 tölustafir" for kennitölur that look right in Excel, or Excel shows `201` instead of `0000000201` | Excel and Google Sheets treat a kennitala without a hyphen as a number and drop its leading zeros. Saving from there writes the shortened value. Real kennitölur of people born on the 1st–9th of a month start with 0 | Don't save the CSV from a spreadsheet after only opening it. Write kennitölur with the hyphen (`000000-0201`), which spreadsheets keep as text, or import the CSV into Excel with the kennitala column set to **Text**. |
+| "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð" on Nýr viðburður | No Sæludagar days exist yet, and every event must be on one | As admin, add the days on Dagsetningar og frestir. |
+| "Ekki er hægt að fjarlægja … því viðburðir eru á deginum" on Dagsetningar og frestir | Events are on that day, and every event must stay on a Sæludagar day | Move the listed events to another day (Breyta) or delete them, then remove the day. |
+| "Myndin verður að vera JPG, PNG eða WebP." | The file isn't one of those image types (an iPhone photo is often HEIC), whatever its name says | Save or export the picture as JPG or PNG and choose it again. |
+| "Myndin er of stór. Hámarkið er 2 MB." | The image is over 2 MB | Make it smaller (for example 1600 pixels wide) and choose it again. |
+| "Hámarkið má ekki vera lægra en fjöldi skráðra" | The new maximum is below the number of students already signed up | Keep the maximum at or above the number signed up. |
 | "Lína 1: fyrirsögnin verður að vera kennitala;nafn;netfang;braut;afangi" | The first line isn't the agreed header, or the file isn't CSV (for example an `.xlsx` file) | Make the first line exactly the header above and save the file as CSV. |
 | "Innflutningurinn rann út eða var þegar staðfestur" | More than 10 minutes passed between the upload and **Staðfesta innflutning**, the import was already confirmed or cancelled, or it was uploaded in another browser | Upload the file again and confirm within 10 minutes. |
 | "Skráin er of stór. Hámarkið er 5 MB." | The file is bigger than the 5 MB limit | Check that it is the student CSV; a full school list is far smaller. |
@@ -300,7 +322,8 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 | `.env` | Your private settings and secrets | No, never commit |
 | `data/saeludagar.db` | Your local database | No |
 | `public/css/main.css` | Built from `scss/` by `build:css` / `watch:css` | No |
-| `uploads/`, `backups/` | Event images and backups (used from later milestones) | No |
+| `uploads/` | Event images, under random names | No |
+| `backups/` | Database backups (from milestone 8) | No |
 | `src/` | Server code, views, email templates and translations | Yes |
 | `scripts/` | Command-line scripts, such as `create-admin.js` | Yes |
 | `scss/` | Styles; brand colours are in `scss/_tokens.scss` | Yes |

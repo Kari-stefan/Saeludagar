@@ -5,12 +5,13 @@ import { renderEmail } from '../services/email.js';
 const MAX_RETRIES = 5; // AGENT_START §8: a failed send is retried up to 5 times,
 const FIRST_RETRY_MS = 60_000; // 1, 2, 4, 8 and 16 minutes later.
 const MINUTE_MS = 60_000;
+const CODE_KINDS = new Set(['student_code', 'new_code', 'teacher_code']);
 
 // The outbox worker (AGENT_START §8): sends due emails, priority 0 first, at most
-// SMTP_MAX_PER_MINUTE a minute (BR-53). So far every kind is a login code, which is
-// generated here at send time: generate the code, send the email, then store the hash.
+// SMTP_MAX_PER_MINUTE a minute (BR-53). A login code is generated here at send time: generate
+// the code, send the email, then store the hash. Other emails take their details from the payload.
 export function createOutboxWorker({ db, mailer, config, now = () => new Date() }) {
-  const nextDue = db.prepare(`SELECT id, kind, user_id, attempts FROM email_outbox
+  const nextDue = db.prepare(`SELECT id, kind, user_id, payload, attempts FROM email_outbox
     WHERE next_try_at <= ? ORDER BY priority, id LIMIT 1`);
   const recipient = db.prepare('SELECT id, name, email, active FROM users WHERE id = ?');
   const remove = db.prepare('DELETE FROM email_outbox WHERE id = ?');
@@ -30,21 +31,30 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
 
   async function deliver(row) {
     const user = recipient.get(row.user_id);
-    // Only active accounts can log in (BR-03), so a code for a deactivated account is dropped unsent.
+    // Only active accounts can log in (BR-03), so an email to a deactivated account is dropped unsent.
     if (!user?.active) {
       remove.run(row.id);
       return;
     }
     sendTimes.push(now().getTime());
     try {
-      const code = generateCode();
-      const codeHash = await hashCode(code);
-      const { subject, text } = await renderEmail(row.kind, { name: user.name, code, loginUrl });
-      await mailer.send({ to: { name: user.name, address: user.email }, subject, text });
-      db.transaction(() => {
-        storeHash.run(codeHash, toIso(now()), user.id);
+      const to = { name: user.name, address: user.email };
+      if (CODE_KINDS.has(row.kind)) {
+        const code = generateCode();
+        const codeHash = await hashCode(code);
+        const { subject, text } = await renderEmail(row.kind, { name: user.name, code, loginUrl });
+        await mailer.send({ to, subject, text });
+        db.transaction(() => {
+          storeHash.run(codeHash, toIso(now()), user.id);
+          remove.run(row.id);
+        })();
+      } else {
+        const payload = JSON.parse(row.payload ?? '{}');
+        const eventUrl = payload.event?.id ? new URL(`/events/${payload.event.id}`, config.baseUrl).href : null;
+        const { subject, text } = await renderEmail(row.kind, { ...payload, name: user.name, eventUrl });
+        await mailer.send({ to, subject, text });
         remove.run(row.id);
-      })();
+      }
     } catch (err) {
       const attempts = row.attempts + 1;
       const retryAt = attempts > MAX_RETRIES

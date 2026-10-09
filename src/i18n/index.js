@@ -44,3 +44,19 @@ export function formatDateTime(lang, iso) {
   const date = new Date(iso);
   return t(lang, 'format.dateTime', { date: dateFormats[lang].format(date), time: timeFormats[lang].format(date) });
 }
+
+// "kl. 10:00–12:00" / "10:00–12:00"; start and end are 'HH:MM'.
+export function formatTimeRange(lang, start, end) {
+  return t(lang, 'format.timeRange', { start, end });
+}
+
+// BR-26: "2.500 kr." / "ISK 2,500", and "Ókeypis" / "Free" for 0.
+const numberFormats = Object.fromEntries(LANGUAGES.map((lang) => [lang, new Intl.NumberFormat(LOCALES[lang])]));
+export function formatFee(lang, isk) {
+  return isk === 0 ? t(lang, 'format.free') : t(lang, 'format.fee', { amount: numberFormats[lang].format(isk) });
+}
+
+// BR-60: in English, an event's English title or description if there is one, else the Icelandic.
+export function eventText(lang, event, field) {
+  return (lang === 'en' && event[`${field}_en`]) || event[`${field}_is`];
+}

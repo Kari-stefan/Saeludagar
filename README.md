@@ -10,7 +10,7 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestones 1 to 3 are built: the project scaffold and data model; login, accounts and email; and the admin settings, student CSV import and sending codes to every student. Until the school's mail server details arrive, emails are printed in the terminal instead of sent. The next step is milestone 4 (events). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+Milestones 1 to 4 are built: the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; and events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter). Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up. The next step is milestone 5 (student sign-up). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
@@ -137,9 +137,10 @@ You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` 
 | `SESSION_SECRET` | **Required.** Signs the session cookie | none |
 | `KENNITALA_ENC_KEY` | **Required.** Encrypts kennitölur | none |
 | `KENNITALA_HMAC_KEY` | **Required.** A separate key for kennitala lookups | none |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server. `MAIL_FROM` (the noreply address) is required when `SMTP_HOST` is set. If `SMTP_HOST` is empty, development prints emails to the console instead of sending them; production never prints them, and they stay queued | empty, `587`, `false` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server. `MAIL_FROM` (the noreply address) is required when `SMTP_HOST` is set. `SMTP_SECURE` is `true` for port 465 and `false` for port 587; the server won't start if they don't match. If `SMTP_HOST` is empty, development prints emails to the console instead of sending them; production never prints them, and they stay queued | empty, `587`, `false` |
 | `SMTP_MAX_PER_MINUTE` | Sending limit for bulk email | `30` |
 | `TRUST_PROXY` | Set to `1` behind nginx in production | `0` |
+| `NEW_CODE_LIMIT` | `off` removes the 10-minute limit on "Fá nýjan kóða" (BR-08) for testing. Only works when `NODE_ENV=development`; never set it on the server | empty (limit on) |
 
 ## Data protection
 

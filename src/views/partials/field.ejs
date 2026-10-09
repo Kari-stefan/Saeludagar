@@ -1,0 +1,24 @@
+<%#
+  One labelled form field, with its hint and error linked for screen readers (§11).
+  Takes name, label, value, and optionally type ('textarea' or an input type), hint, error,
+  required, min, maxlength and short.
+-%>
+<%
+  const id = `field-${name}`;
+  const error = locals.error;
+  const describedBy = [locals.hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ');
+-%>
+<div class="field">
+  <label class="field__label" for="<%= id %>"><%= label %></label>
+  <% if (locals.hint) { -%>
+  <p class="field__hint" id="<%= id %>-hint"><%= hint %></p>
+  <% } -%>
+  <% if (error) { -%>
+  <p class="field__error" id="<%= id %>-error"><%= t(error) %></p>
+  <% } -%>
+  <% if (locals.type === 'textarea') { -%>
+  <textarea class="field__input" id="<%= id %>" name="<%= name %>" rows="6"<% if (locals.maxlength) { %> maxlength="<%= maxlength %>"<% } %><% if (locals.required) { %> required<% } %><% if (describedBy) { %> aria-describedby="<%= describedBy %>"<% } %><% if (error) { %> aria-invalid="true"<% } %>><%= value %></textarea>
+  <% } else { -%>
+  <input class="field__input<%= locals.short ? ' field__input--short' : '' %>" id="<%= id %>" name="<%= name %>" type="<%= locals.type || 'text' %>" value="<%= value %>"<% if (locals.min !== undefined) { %> min="<%= min %>"<% } %><% if (locals.maxlength) { %> maxlength="<%= maxlength %>"<% } %><% if (locals.required) { %> required<% } %><% if (describedBy) { %> aria-describedby="<%= describedBy %>"<% } %><% if (error) { %> aria-invalid="true"<% } %>>
+  <% } -%>
+</div>

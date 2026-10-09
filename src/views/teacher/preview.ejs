@@ -1,3 +1,15 @@
-<%- include('../partials/header', { pageTitle: t('pages.eventPreview') }) %>
-<h1><%= t('pages.eventPreview') %></h1>
+<%- include('../partials/header', { pageTitle: `${t('pages.eventPreview')}: ${eventText(event, 'title')}` }) %>
+<div class="preview-banner" role="note">
+  <p><strong><%= t('events.preview.banner') %></strong> <%= t('events.preview.help') %></p>
+  <div class="button-row">
+    <a class="button button--secondary" href="/teacher/events/<%= event.id %>"><%= t('events.preview.back') %></a>
+    <% if (event.status === 'draft') { -%>
+    <form method="post" action="/teacher/events/<%= event.id %>">
+      <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+      <button type="submit" class="button" name="action" value="publish"><%= t('events.publish') %></button>
+    </form>
+    <% } -%>
+  </div>
+</div>
+<%- include('../partials/event-details', { event }) %>
 <%- include('../partials/footer') %>

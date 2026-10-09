@@ -129,7 +129,8 @@
         "day": "Sláðu inn gilda dagsetningu",
         "both": "Fylltu inn bæði dagsetningu og tíma, eða hvorugt",
         "dateTime": "Sláðu inn gilda dagsetningu og tíma",
-        "closesBeforeOpens": "Skráningu verður að ljúka eftir að hún opnar"
+        "closesBeforeOpens": "Skráningu verður að ljúka eftir að hún opnar",
+        "dayHasEvents": "Ekki er hægt að fjarlægja {day} því viðburðir eru á deginum: {events}. Færðu þá á annan dag eða eyddu þeim fyrst."
       }
     },
     "codes": {
@@ -167,6 +168,18 @@
       "intro": "Á Sæludagavefnum skráir þú þig á viðburði á Sæludögum. Eftir að þú mætir velur þú áfanga sem fær fjarvistarstig felld niður. Kóðinn þinn er:",
       "instructions": "Geymdu kóðann. Ef þú týnir honum geturðu fengið nýjan með „Fá nýjan kóða“ á innskráningarsíðunni.",
       "oldCode": "Eldri kóðar virka ekki lengur."
+    },
+    "event_changed": {
+      "subject": "Breyting á viðburði: {title}",
+      "intro": "Breyting hefur orðið á viðburðinum {title} sem þú skráðir þig á.",
+      "now": "Nú:",
+      "before": "Áður:",
+      "cancel": "Ef þú kemst ekki lengur geturðu afskráð þig á meðan skráning er opin. Nánar um viðburðinn:"
+    },
+    "event_deleted": {
+      "subject": "Viðburði aflýst: {title}",
+      "intro": "Viðburðinum hér fyrir neðan, sem þú skráðir þig á, hefur verið aflýst:",
+      "signups": "Skráning þín hefur verið felld niður og telst ekki lengur með í skráningunum þínum."
     }
   },
   "errors": {
@@ -184,7 +197,10 @@
     "notImplemented": "Ekki tilbúið enn."
   },
   "format": {
-    "dateTime": "{date}, kl. {time}"
+    "dateTime": "{date}, kl. {time}",
+    "timeRange": "kl. {start}–{end}",
+    "fee": "{amount} kr.",
+    "free": "Ókeypis"
   },
   "import": {
     "current": "Virkir nemendur: {count}.",
@@ -223,6 +239,107 @@
       "noFile": "Veldu skrá til að hlaða upp.",
       "expired": "Innflutningurinn rann út eða var þegar staðfestur. Hladdu skránni upp aftur.",
       "changed": "Kennari er kominn með eina af kennitölunum í skránni síðan henni var hlaðið upp. Ekkert var vistað. Hladdu skránni upp aftur."
+    }
+  },
+  "home": {
+    "noDays": "Dagsetningar Sæludaga hafa ekki verið ákveðnar enn.",
+    "days": "Sæludagar: {days}",
+    "filterLabel": "Sía eftir braut",
+    "allBrautir": "Allar brautir",
+    "noEvents": "Engir viðburðir enn."
+  },
+  "events": {
+    "restricted": "Aðeins fyrir nemendur brautar",
+    "signups": "{count} / {capacity} skráðir",
+    "full": "Uppselt",
+    "when": "Hvenær",
+    "where": "Hvar",
+    "host": "Mótshaldari/Veitandi",
+    "brautir": "Brautir",
+    "fee": "Þátttökugjald",
+    "places": "Skráðir",
+    "draftNotice": "Þessi viðburður er í drögum og nemendur sjá hann ekki.",
+    "backToAll": "Allir viðburðir",
+    "publish": "Birta",
+    "mine": "Viðburðir sem þú sérð um",
+    "none": "Engir viðburðir enn.",
+    "title": "Viðburður",
+    "status": "Staða",
+    "owner": "Eigandi",
+    "edit": "Breyta",
+    "statusName": {
+      "draft": "Drög",
+      "published": "Birtur"
+    },
+    "draftHelp": "Nemendur sjá viðburðinn ekki fyrr en hann er birtur. Forskoðaðu hann fyrst.",
+    "created": "Viðburðurinn var vistaður sem drög.",
+    "saved": "Breytingarnar voru vistaðar.",
+    "published": "Viðburðurinn hefur verið birtur.",
+    "deleted": "Viðburðinum var eytt: {title}",
+    "coteacherAdded": "Samkennara bætt við.",
+    "coteacherRemoved": "Samkennari fjarlægður.",
+    "preview": {
+      "banner": "Forskoðun.",
+      "help": "Svona sjá nemendur viðburðinn.",
+      "back": "Aftur í umsjón viðburðar",
+      "link": "Forskoða"
+    },
+    "delete": {
+      "heading": "Eyða viðburði",
+      "blocked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
+      "button": "Eyða viðburði",
+      "help": "Skráðir nemendur ({count}) fá tölvupóst og skráningar þeirra eru felldar niður.",
+      "confirm": "Já, eyða þessum viðburði"
+    },
+    "coteachers": {
+      "heading": "Samkennarar",
+      "none": "Engir samkennarar.",
+      "help": "Samkennarar geta gert allt nema eytt viðburðinum og breytt samkennurum.",
+      "remove": "Fjarlægja",
+      "choose": "Bæta við samkennara",
+      "add": "Bæta við"
+    },
+    "form": {
+      "noDays": "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð.",
+      "titleIs": "Heiti",
+      "titleEn": "Heiti á ensku (valfrjálst)",
+      "descriptionIs": "Lýsing",
+      "descriptionEn": "Lýsing á ensku (valfrjálst)",
+      "hostHint": "Hver heldur viðburðinn eða veitir hann",
+      "date": "Dagur",
+      "start": "Hefst",
+      "end": "Lýkur",
+      "capacity": "Hámarksfjöldi þátttakenda",
+      "fee": "Þátttökugjald (kr.)",
+      "feeHint": "0 þýðir ókeypis",
+      "brautirHint": "Engin braut: fyrir alla. Merktu brautir svo hægt sé að sía eftir þeim, og hakaðu líka við „Aðeins fyrir nemendur brautar“ ef aðeins nemendur þeirra mega skrá sig.",
+      "noBrautir": "Engar brautir enn. Þær koma úr nemendalistanum.",
+      "image": "Mynd (valfrjálst)",
+      "imageHint": "JPG, PNG eða WebP, mest 2 MB. Án myndar er sjálfgefin mynd sýnd.",
+      "currentImage": "Núverandi mynd",
+      "removeImage": "Fjarlægja myndina",
+      "chooseImage": "Velja mynd",
+      "newImage": "Valin mynd",
+      "saveDraft": "Vista drög",
+      "save": "Vista"
+    },
+    "errors": {
+      "tooLong": "Textinn er of langur",
+      "invalid": "Textinn er ekki gildur",
+      "required": "Þetta þarf að fylla út",
+      "capacity": "Sláðu inn heila tölu, 1 eða hærri",
+      "capacityBelowSignups": "Hámarkið má ekki vera lægra en fjöldi skráðra",
+      "fee": "Sláðu inn heila krónutölu, 0 eða hærri",
+      "date": "Veldu einn af Sæludögunum",
+      "time": "Sláðu inn tíma, t.d. 10:00",
+      "endBeforeStart": "Viðburðinum verður að ljúka eftir að hann hefst",
+      "braut": "Veldu brautir af listanum",
+      "restrictedWithoutBraut": "Veldu að minnsta kosti eina braut ef viðburðurinn er aðeins fyrir nemendur brautar",
+      "imageTooLarge": "Myndin er of stór. Hámarkið er 2 MB.",
+      "imageUpload": "Ekki tókst að taka við myndinni. Reyndu aftur.",
+      "imageType": "Myndin verður að vera JPG, PNG eða WebP.",
+      "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
+      "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum."
     }
   }
 }

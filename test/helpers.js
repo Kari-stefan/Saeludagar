@@ -56,11 +56,30 @@ export async function insertUser(db, kt, {
   return { id: Number(result.lastInsertRowid), kennitala, code };
 }
 
+// Inserts an event (published unless said otherwise) on a Sæludagar day, adding the day if needed.
+export function insertEvent(db, ownerId, fields = {}) {
+  const now = toIso();
+  const event = {
+    status: 'published', title_is: 'Prófunarviðburður', title_en: null, description_is: 'Lýsing.', description_en: null,
+    host: 'Gestgjafi', braut_restricted: 0, capacity: 10, fee_isk: 0, image_file: null, event_date: '2027-03-11',
+    start_time: '10:00', end_time: '12:00', location: 'Stofa 101', brautir: [], ...fields,
+  };
+  db.prepare('INSERT OR IGNORE INTO saeludagar_days (day) VALUES (?)').run(event.event_date);
+  const id = Number(db.prepare(`INSERT INTO events (owner_id, status, title_is, title_en, description_is, description_en,
+    host, braut_restricted, capacity, fee_isk, image_file, event_date, start_time, end_time, location, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(ownerId, event.status, event.title_is, event.title_en,
+    event.description_is, event.description_en, event.host, event.braut_restricted, event.capacity, event.fee_isk,
+    event.image_file, event.event_date, event.start_time, event.end_time, event.location, now, now).lastInsertRowid);
+  for (const braut of event.brautir) db.prepare('INSERT INTO event_brautir (event_id, braut) VALUES (?, ?)').run(id, braut);
+  return id;
+}
+
 // A running site on a random port with a temporary database. Emails go to `sent` when the
 // test runs the outbox worker with sendEmails().
 export async function startSite(env = {}) {
   const database = tempDatabase();
-  const config = testConfig(env);
+  // Event images go to the temporary folder too, never to the repository's uploads/.
+  const config = testConfig({ UPLOAD_DIR: path.join(database.dir, 'uploads'), ...env });
   const app = createApp({ config, db: database.db });
   const server = await new Promise((resolve) => {
     const listening = app.listen(0, '127.0.0.1', () => resolve(listening));
@@ -146,6 +165,18 @@ export class Browser {
   }
 
   // Uploads one file as a multipart form, the way the import page does: the token field comes first.
+  // Posts a multipart form such as the event form: fields (an array value repeats the field)
+  // and optionally one file { field, bytes, name, type }.
+  async postForm(url, fields, file) {
+    const form = new FormData();
+    form.append('_csrf', await this.csrfToken());
+    for (const [name, value] of Object.entries(fields)) {
+      for (const item of [].concat(value)) form.append(name, String(item));
+    }
+    if (file) form.append(file.field ?? 'image', new Blob([file.bytes], { type: file.type ?? 'application/octet-stream' }), file.name ?? 'mynd.png');
+    return this.request('POST', url, form);
+  }
+
   async upload(url, bytes, { token, filename = 'nemendur.csv' } = {}) {
     const form = new FormData();
     if (token !== null) form.append('_csrf', token ?? await this.csrfToken());

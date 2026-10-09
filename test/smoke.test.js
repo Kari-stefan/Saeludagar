@@ -4,10 +4,11 @@ import { createApp } from '../src/app.js';
 import { MAX_POINTS_PER_COURSE, MAX_SIGNUPS_PER_STUDENT, POINTS_PER_ATTENDANCE } from '../src/config.js';
 import { migrate, SCHEMA_VERSION } from '../src/db/migrate.js';
 import { dictionaries } from '../src/i18n/index.js';
-import { Browser, startSite, tempDatabase } from './helpers.js';
+import { Browser, insertEvent, startSite, tempDatabase } from './helpers.js';
 
 let site;
 const as = {};
+let eventId;
 
 before(async () => {
   site = await startSite();
@@ -16,6 +17,7 @@ before(async () => {
     const account = await site.addUser(fields);
     as[role] = site.browser();
     await as[role].login(account.kennitala, account.code);
+    if (role === 'teacher') eventId = insertEvent(site.db, account.id, { title_is: 'Prófunarviðburður' });
   }
 });
 
@@ -33,18 +35,18 @@ describe('app shell', () => {
   test('every page in AGENT_START §6 renders in Icelandic for the role it is for', async () => {
     const pages = [
       ['guest', '/', 'Viðburðir á Sæludögum'],
-      ['guest', '/events/1', 'Viðburður'],
+      ['guest', `/events/${eventId}`, 'Prófunarviðburður'],
       ['guest', '/login', 'Innskráning'],
       ['guest', '/login/new-code', 'Fá nýjan kóða'],
       ['student', '/my-events', 'Mínir viðburðir'],
       ['teacher', '/teacher', 'Kennarasvæði'],
       ['teacher', '/teacher/events/new', 'Nýr viðburður'],
-      ['teacher', '/teacher/events/1/edit', 'Breyta viðburði'],
-      ['teacher', '/teacher/events/1/preview', 'Forskoðun viðburðar'],
-      ['teacher', '/teacher/events/1', 'Umsjón viðburðar'],
-      ['teacher', '/teacher/events/1/attendance', 'Mæting'],
-      ['teacher', '/teacher/events/1/print', 'Þátttakendalisti'],
-      ['teacher', '/teacher/events/1/message', 'Senda póst á þátttakendur'],
+      ['teacher', `/teacher/events/${eventId}/edit`, 'Breyta viðburði'],
+      ['teacher', `/teacher/events/${eventId}/preview`, 'Prófunarviðburður'],
+      ['teacher', `/teacher/events/${eventId}`, 'Prófunarviðburður'],
+      ['teacher', `/teacher/events/${eventId}/attendance`, 'Mæting'],
+      ['teacher', `/teacher/events/${eventId}/print`, 'Þátttakendalisti'],
+      ['teacher', `/teacher/events/${eventId}/message`, 'Senda póst á þátttakendur'],
       ['admin', '/admin', 'Stjórnendasvæði'],
       ['admin', '/admin/settings', 'Dagsetningar og frestir'],
       ['admin', '/admin/import', 'Innflutningur nemenda'],

@@ -107,10 +107,13 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     }
     const before = Date.now();
     await site.browser().login(teacher.kennitala, '999999');
+    const after = Date.now();
     const locked = user(teacher.id);
     assert.equal(locked.failed_logins, 0, 'the counter resets when the lock is set');
-    const lockedFor = Date.parse(locked.locked_until) - before;
-    assert.ok(lockedFor > LOCKOUT_MS - 2000 && lockedFor <= LOCKOUT_MS, `locked for ${lockedFor} ms`);
+    // The lock starts while the request runs, and is stored to the second.
+    const lockedUntil = Date.parse(locked.locked_until);
+    assert.ok(lockedUntil >= before - 1000 + LOCKOUT_MS && lockedUntil <= after + LOCKOUT_MS,
+      `locked until ${locked.locked_until}, request ran ${new Date(before).toISOString()}–${new Date(after).toISOString()}`);
     assert.equal(LOCKOUT_MS, 15 * 60 * 1000);
 
     const right = await site.browser().login(teacher.kennitala, teacher.code);

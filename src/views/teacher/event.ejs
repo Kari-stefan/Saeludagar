@@ -1,3 +1,53 @@
-<%- include('../partials/header', { pageTitle: t('pages.eventManage') }) %>
-<h1><%= t('pages.eventManage') %></h1>
+<% const token = csrfToken(); -%>
+<%- include('../partials/header', { pageTitle: `${t('pages.eventManage')}: ${eventText(event, 'title')}` }) %>
+<p class="eyebrow"><%= t('pages.eventManage') %></p>
+<h1><%= eventText(event, 'title') %></h1>
+<%- include('../partials/flash') %>
+
+<dl class="facts">
+  <dt><%= t('events.status') %></dt>
+  <dd><%= t(`events.statusName.${event.status}`) %></dd>
+  <dt><%= t('events.when') %></dt>
+  <dd><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %></dd>
+  <dt><%= t('events.where') %></dt>
+  <dd><%= event.location %></dd>
+  <dt><%= t('events.places') %></dt>
+  <dd><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %></dd>
+  <dt><%= t('events.owner') %></dt>
+  <dd><%= event.owner_name %></dd>
+  <dt><%= t('events.coteachers.heading') %></dt>
+  <dd><%= event.coteachers.length > 0 ? event.coteachers.map((teacher) => teacher.name).join(', ') : t('events.coteachers.none') %></dd>
+</dl>
+
+<div class="button-row">
+  <a class="button button--secondary" href="/teacher/events/<%= event.id %>/edit"><%= t('events.edit') %></a>
+  <a class="button button--secondary" href="/teacher/events/<%= event.id %>/preview"><%= t('events.preview.link') %></a>
+  <% if (event.status === 'draft') { -%>
+  <form method="post" action="/teacher/events/<%= event.id %>">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <button type="submit" class="button" name="action" value="publish"><%= t('events.publish') %></button>
+  </form>
+  <% } -%>
+</div>
+<% if (event.status === 'draft') { -%>
+<p><%= t('events.draftHelp') %></p>
+<% } -%>
+
+<% if (access === 'owner') { -%>
+<h2><%= t('events.delete.heading') %></h2>
+<% if (event.attended > 0) { -%>
+<p><%= t('events.delete.blocked') %></p>
+<button type="button" class="button button--secondary" disabled><%= t('events.delete.button') %></button>
+<% } else { -%>
+<p><%= t('events.delete.help', { count: event.signups }) %></p>
+<form class="form" method="post" action="/teacher/events/<%= event.id %>">
+  <input type="hidden" name="_csrf" value="<%= token %>">
+  <input type="hidden" name="action" value="delete">
+  <div class="field">
+    <label class="checkbox"><input type="checkbox" name="confirm" value="1" required> <%= t('events.delete.confirm') %></label>
+  </div>
+  <button type="submit" class="button button--danger"><%= t('events.delete.button') %></button>
+</form>
+<% } -%>
+<% } -%>
 <%- include('../partials/footer') %>
