@@ -54,12 +54,10 @@ async function shutdown() {
   if (stopping) process.exit(1);
   stopping = true;
   stopSessionCleanup();
-  await outbox.stop();
-  server.close(() => {
-    db.close();
-    process.exit(0);
-  });
   setTimeout(() => server.closeAllConnections(), 5000).unref();
+  await Promise.all([outbox.stop(), new Promise((resolve) => server.close(resolve))]);
+  db.close();
+  process.exit(0);
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

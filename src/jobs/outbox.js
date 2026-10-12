@@ -91,8 +91,9 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
       timer = setInterval(tick, intervalMs);
     },
     // Waits for the email being sent, but at most timeoutMs, so a mail server that does not answer
-    // cannot keep the process running. Stopping during a send loses nothing: a code's hash is
-    // stored only after its email has gone, and the row stays queued for the next start.
+    // cannot keep the process running. An email cut off this way stays queued and is sent on the
+    // next start. In the rare case that the mail server had already accepted a code email, that
+    // code never works (its hash was not stored yet), and the next email brings a working one.
     async stop(timeoutMs = 5000) {
       stopping = true;
       clearInterval(timer);

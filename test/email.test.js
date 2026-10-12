@@ -163,7 +163,8 @@ describe('mail transport (AGENT_START §8)', () => {
     });
 
     test('a mail server that never answers (such as a blocked port) fails quickly instead of hanging', async () => {
-      const silent = net.createServer(() => {}); // accepts the connection, never says hello
+      const sockets = [];
+      const silent = net.createServer((socket) => sockets.push(socket)); // accepts, never says hello
       await new Promise((resolve) => silent.listen(0, '127.0.0.1', resolve));
       try {
         const slow = createMailer(testConfig({
@@ -173,8 +174,8 @@ describe('mail transport (AGENT_START §8)', () => {
         await assert.rejects(slow.send(message), { code: 'ETIMEDOUT' });
         assert.ok(Date.now() - started < 3000, `gave up after ${Date.now() - started} ms`);
       } finally {
+        for (const socket of sockets) socket.destroy();
         silent.close();
-        for (const socket of await new Promise((resolve) => silent.getConnections(() => resolve([])))) socket.destroy();
       }
     });
 
