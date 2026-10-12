@@ -10,6 +10,9 @@
 <%- include('../partials/form-errors', { errors }) %>
 <form class="form" method="post" action="/login">
   <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <% if (locals.next) { -%>
+  <input type="hidden" name="next" value="<%= next %>">
+  <% } -%>
   <div class="field">
     <label class="field__label" for="kennitala"><%= t('login.kennitala') %></label>
     <p class="field__hint" id="kennitala-hint"><%= t('login.kennitalaHint') %></p>

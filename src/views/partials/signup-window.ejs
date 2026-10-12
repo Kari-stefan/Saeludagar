@@ -1,0 +1,3 @@
+<%# The sign-up window (BR-31): not set yet, opens later, open until, or closed. Takes `window`. -%>
+<% const times = { opens: window.opens && formatDateTime(window.opens), closes: window.closes && formatDateTime(window.closes) }; -%>
+<p class="signup-window"><%= t(`signups.window.${window.phase}`, times) %></p>

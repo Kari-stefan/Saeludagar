@@ -1,0 +1,28 @@
+<%#
+  The sign-up box on an event page (§6): "Skrá mig" or "Afskrá mig" for students, a login link
+  for guests. Takes event, window, signup and viewer. In the teacher's preview (`preview: true`)
+  it shows what a student sees, with the button disabled.
+-%>
+<section class="signup" aria-labelledby="signup-heading">
+  <h2 id="signup-heading"><%= t('signups.heading') %></h2>
+  <%- include('signup-window', { window }) %>
+  <% if (locals.preview) { -%>
+  <p><button type="button" class="button" disabled><%= t('signups.signUp') %></button></p>
+  <% } else if (!viewer) { -%>
+  <p><a class="button" href="/login?next=/events/<%= event.id %>"><%= t('signups.signUp') %></a></p>
+  <p class="field__hint"><%= t('signups.loginFirst') %></p>
+  <% } else if (signup) { -%>
+  <p><strong><%= t('signups.youAreSignedUp') %></strong><% if (signup.attended) { %> <%= t('signups.attended') %><% } %></p>
+  <% if (window.open && !signup.attended) { -%>
+  <form method="post" action="/events/<%= event.id %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <button type="submit" class="button button--secondary" name="action" value="cancel"><%= t('signups.cancel') %></button>
+  </form>
+  <% } -%>
+  <% } else { -%>
+  <form method="post" action="/events/<%= event.id %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <button type="submit" class="button" name="action" value="signup"><%= t('signups.signUp') %></button>
+  </form>
+  <% } -%>
+</section>

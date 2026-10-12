@@ -1,0 +1,82 @@
+import { MAX_SIGNUPS_PER_STUDENT } from '../config.js';
+import { toIso } from '../db/index.js';
+
+// BR-31: students sign up and cancel only between the opening and closing times. `phase` is
+// 'notSet', 'before', 'open' or 'after', for the messages on the pages.
+export function signupWindow(db, now = new Date()) {
+  const { signup_opens_at: opens, signup_closes_at: closes } = db
+    .prepare('SELECT signup_opens_at, signup_closes_at FROM settings WHERE id = 1').get();
+  const t = now.getTime();
+  let phase = 'notSet';
+  if (opens && closes) phase = t < Date.parse(opens) ? 'before' : t < Date.parse(closes) ? 'open' : 'after';
+  return { opens, closes, phase, open: phase === 'open' };
+}
+
+// BR-33: same date, and each starts before the other ends. Back-to-back events do not overlap.
+export function overlaps(a, b) {
+  return a.event_date === b.event_date && a.start_time < b.end_time && b.start_time < a.end_time;
+}
+
+function audit(db, action, actorId, eventId, studentId, details) {
+  db.prepare(`INSERT INTO audit_log (at, actor_id, action, event_id, student_id, details) VALUES (?, ?, ?, ?, ?, ?)`)
+    .run(toIso(), actorId, action, eventId, studentId, JSON.stringify(details));
+}
+
+// BR-32, BR-34, BR-35: every check and the insert run in one BEGIN IMMEDIATE transaction, so
+// simultaneous sign-ups can never push an event past its maximum. Returns { ok } or { error }
+// (an i18n key), with `params` or the clashing `event` for the message.
+export function signUp(db, studentId, eventId, now = new Date()) {
+  return db.transaction(() => {
+    if (!signupWindow(db, now).open) return { error: 'signups.errors.windowClosed' };
+    const event = db.prepare("SELECT * FROM events WHERE id = ? AND status = 'published'").get(eventId);
+    if (!event) return { error: 'signups.errors.notAvailable' };
+    if (db.prepare('SELECT 1 FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId)) {
+      return { error: 'signups.errors.already' };
+    }
+    const taken = db.prepare('SELECT COUNT(*) FROM registrations WHERE event_id = ?').pluck().get(eventId);
+    if (taken >= event.capacity) return { error: 'signups.errors.full' };
+
+    // BR-24: with the flag set, only students of the event's brautir.
+    if (event.braut_restricted) {
+      const brautir = db.prepare('SELECT braut FROM event_brautir WHERE event_id = ? ORDER BY braut').pluck().all(eventId);
+      const braut = db.prepare('SELECT braut FROM users WHERE id = ?').pluck().get(studentId);
+      if (!brautir.includes(braut)) return { error: 'signups.errors.braut', params: { brautir: brautir.join(', ') } };
+    }
+
+    const mine = db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time
+      FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?`).all(studentId);
+    if (mine.length >= MAX_SIGNUPS_PER_STUDENT) return { error: 'signups.errors.limit', params: { max: MAX_SIGNUPS_PER_STUDENT } };
+    const clash = mine.find((other) => overlaps(other, event));
+    if (clash) return { error: 'signups.errors.overlap', event: clash };
+
+    db.prepare('INSERT INTO registrations (event_id, student_id, created_at) VALUES (?, ?, ?)').run(eventId, studentId, toIso(now));
+    audit(db, 'signup.create', studentId, eventId, studentId, { by: 'student' }); // BR-56
+    return { ok: true };
+  }).immediate();
+}
+
+// BR-36: a student cancels while the window is open, and the place is free at once. A sign-up
+// with marked attendance is kept: it carries the attendance and course choice for the export.
+export function cancelSignup(db, studentId, eventId, now = new Date()) {
+  return db.transaction(() => {
+    if (!signupWindow(db, now).open) return { error: 'signups.errors.windowClosed' };
+    const signup = db.prepare('SELECT id, attended FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
+    if (!signup) return { error: 'signups.errors.notSignedUp' };
+    if (signup.attended) return { error: 'signups.errors.attended' };
+    db.prepare('DELETE FROM registrations WHERE id = ?').run(signup.id);
+    audit(db, 'signup.delete', studentId, eventId, studentId, { by: 'student' }); // BR-56
+    return { ok: true };
+  }).immediate();
+}
+
+// "Mínir viðburðir": the student's sign-ups, by date and time.
+export function studentSignups(db, studentId) {
+  return db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time, e.location, r.attended
+    FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?
+    ORDER BY e.event_date, e.start_time, e.id`).all(studentId);
+}
+
+// Whether a student is signed up for an event, with its attendance.
+export function signupFor(db, studentId, eventId) {
+  return db.prepare('SELECT attended FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
+}

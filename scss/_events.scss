@@ -154,3 +154,16 @@
   border-color: var(--color-error);
   background: var(--color-error);
 }
+
+// The sign-up box on the event page (milestone 5).
+.signup {
+  max-width: 48rem;
+  margin: var(--space-4) 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+
+  h2 {
+    margin-top: 0;
+  }
+}

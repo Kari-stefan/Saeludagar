@@ -341,5 +341,39 @@
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
       "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum."
     }
+  },
+  "signups": {
+    "heading": "Skráning",
+    "signUp": "Skrá mig",
+    "cancel": "Afskrá mig",
+    "actions": "Aðgerðir",
+    "loginFirst": "Þú skráir þig inn með kennitölu og kóða og kemur svo aftur hingað.",
+    "youAreSignedUp": "Þú hefur skráð þig á þennan viðburð.",
+    "attended": "Mæting hefur verið skráð.",
+    "signedUp": "Skráning tókst. Viðburðurinn er nú á Mínum viðburðum.",
+    "cancelled": "Þú hefur afskráð þig og plássið er laust fyrir aðra.",
+    "count": "Skráningar: {count} / {max}",
+    "none": "Þú hefur ekki skráð þig á neinn viðburð enn.",
+    "browse": "Skoða viðburði",
+    "attendance": "Mæting",
+    "attendedYes": "Skráð",
+    "attendedNo": "Ekki skráð",
+    "window": {
+      "notSet": "Ekki er búið að ákveða hvenær skráning opnar.",
+      "before": "Skráning opnar {opens} og lýkur {closes}.",
+      "open": "Skráning er opin til {closes}.",
+      "after": "Skráningu lauk {closes}."
+    },
+    "errors": {
+      "windowClosed": "Skráning er ekki opin núna.",
+      "notAvailable": "Ekki er hægt að skrá sig á þennan viðburð.",
+      "already": "Þú hefur þegar skráð þig á þennan viðburð.",
+      "full": "Uppselt: öll pláss eru tekin.",
+      "braut": "Þessi viðburður er aðeins fyrir nemendur þessara brauta: {brautir}.",
+      "limit": "Þú hefur þegar skráð þig á {max} viðburði, sem er hámarkið. Afskráðu þig af öðrum fyrst.",
+      "overlap": "Viðburðurinn skarast á við {title} ({when}), sem þú hefur skráð þig á.",
+      "notSignedUp": "Þú hefur ekki skráð þig á þennan viðburð.",
+      "attended": "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð."
+    }
   }
 }

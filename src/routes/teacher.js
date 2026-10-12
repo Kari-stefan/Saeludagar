@@ -10,6 +10,7 @@ import {
 import { deleteImage, imageType, MAX_IMAGE_BYTES, saveImage } from '../services/images.js';
 import { brautList } from '../services/import.js';
 import { getSettings } from '../services/settings.js';
+import { signupWindow } from '../services/signups.js';
 
 const collator = new Intl.Collator('is');
 
@@ -119,7 +120,9 @@ export function teacherRouter({ config, db }) {
   });
 
   // BR-22: exactly as students will see it, drafts included.
-  router.get('/events/:id/preview', access('editor'), (req, res) => res.render('teacher/preview', { event: req.event }));
+  router.get('/events/:id/preview', access('editor'), (req, res) => {
+    res.render('teacher/preview', { event: req.event, window: signupWindow(db) });
+  });
   router.get('/events/:id/attendance', access('editor'), (req, res) => res.render('teacher/attendance'));
   router.get('/events/:id/print', access('editor'), (req, res) => res.render('teacher/print'));
   router.get('/events/:id/message', access('editor'), (req, res) => res.render('teacher/message'));

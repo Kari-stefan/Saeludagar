@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 4 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, and everyone sees the published ones on the front page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (sign-ups, attendance, the office export) still show only their title.
+As of milestone 5 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (participant lists, attendance, course choices, the office export) still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -121,7 +121,7 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone 4):**
+**What you should see (milestone 5):**
 - A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons. **EN** switches the whole site to English and **ÍS** switches back.
 - **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
   ```
@@ -167,6 +167,8 @@ To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 secon
 - **Preview and publish.** On the event's page, **Forskoða** shows it exactly as students will, and **Birta** publishes it. It then appears on the front page, grouped by day; brautir from the student list can be used to filter it. Events with no braut are for everyone and show under every braut.
 - **Edit and delete.** **Breyta** edits the event, also after it is published. If the day, times or location of a published event change, every student signed up gets an email (printed in the terminal). On the edit page, the owner or an admin adds **samkennarar** (co-teachers), who can do everything except delete the event and change the co-teachers. Deleting asks you to tick a box first, and isn't possible once attendance has been marked.
 - **All events.** Stjórnendasvæði → **Allir viðburðir** lists every event with its owner; an admin can manage any of them.
+- **Sign up as a student.** First set **Skráning opnar** and **Skráningu lýkur** on Dagsetningar og frestir so that now is in between; outside that window nobody can sign up or cancel. On a published event's page, a student clicks **Skrá mig**. If it works, the event appears on **Mínir viðburðir** ("Skráningar: 1 / 4"); if not, the page says why: full ("Uppselt"), only for other brautir, already 4 sign-ups, or overlapping another event (named). **Afskrá mig**, on the event page or on Mínir viðburðir, frees the place at once.
+- **As a guest,** **Skrá mig** goes to the login page, and after logging in you come back to the event.
 
 Who can open which page:
 
@@ -217,7 +219,7 @@ Keep `NODE_ENV=development` in your `.env`. In production mode, views are cached
 npm test
 ```
 
-All tests should pass: the summary at the end shows `ℹ fail 0`. The tests use their own temporary databases and fake kennitölur. They never touch `data/` or your `.env`, so you can run them while `npm run dev` is running. A full run takes about 15 seconds.
+All tests should pass: the summary at the end shows `ℹ fail 0`. The tests use their own temporary databases and fake kennitölur. They never touch `data/` or your `.env`, so you can run them while `npm run dev` is running. A full run takes about 20 seconds.
 
 Some tests check error handling on purpose, so error messages in the output are normal as long as the summary says `fail 0`.
 
@@ -291,6 +293,8 @@ Find the message you see in the left column.
 | `Email 3 (teacher_code) could not be sent: …` in the terminal, or "Tókst ekki að senda: 1" / "Failed: 1" on Stjórnendasvæði | The site tried to send an email through `SMTP_HOST` and the mail server refused or didn't answer; the text after `could not be sent:` is the reason. A dropped or timed-out connection is tried once more a few seconds later before this message appears. A failed email is retried 5 times, 1, 2, 4, 8 and 16 minutes apart; after that it counts as failed | On your own computer, leave `SMTP_HOST=` empty, so emails are printed instead. On the server, check the `SMTP_` settings. A failed code email can be replaced with a new one: **Senda nýjan kóða** on the Kennarar page, or **Fá nýjan kóða**. |
 | "Lína 3: kennitala verður að vera 10 tölustafir" (or another "Lína …" error) on Innflutningur nemenda | That line of the CSV file is wrong. Nothing was imported | Fix every listed line and upload the file again. The header must be `kennitala;nafn;netfang;braut;afangi`. In Excel, save as **CSV (semicolon delimited)** or **CSV UTF-8**. |
 | "Lína …: kennitala verður að vera 10 tölustafir" for kennitölur that look right in Excel, or Excel shows `201` instead of `0000000201` | Excel and Google Sheets treat a kennitala without a hyphen as a number and drop its leading zeros. Saving from there writes the shortened value. Real kennitölur of people born on the 1st–9th of a month start with 0 | Don't save the CSV from a spreadsheet after only opening it. Write kennitölur with the hyphen (`000000-0201`), which spreadsheets keep as text, or import the CSV into Excel with the kennitala column set to **Text**. |
+| "Skráning er ekki opin núna." when a student clicks **Skrá mig** or **Afskrá mig** | The time now is outside the sign-up window, or the window isn't set | As admin, set **Skráning opnar** and **Skráningu lýkur** on Dagsetningar og frestir. The times are Icelandic time (UTC). |
+| "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð." | The student's attendance is already marked, so the sign-up is kept for the course choice and the office export | Nothing to fix. |
 | "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð" on Nýr viðburður | No Sæludagar days exist yet, and every event must be on one | As admin, add the days on Dagsetningar og frestir. |
 | "Ekki er hægt að fjarlægja … því viðburðir eru á deginum" on Dagsetningar og frestir | Events are on that day, and every event must stay on a Sæludagar day | Move the listed events to another day (Breyta) or delete them, then remove the day. |
 | "Myndin verður að vera JPG, PNG eða WebP." | The file isn't one of those image types (an iPhone photo is often HEIC), whatever its name says | Save or export the picture as JPG or PNG and choose it again. |

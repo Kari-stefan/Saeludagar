@@ -10,33 +10,41 @@ function regenerate(req) {
   });
 }
 
+// §5: a guest who clicks "Skrá mig" comes back to that event after logging in. Only event pages
+// are accepted, so everyone else lands on their own home page as BR-02 says.
+function eventPath(value) {
+  return typeof value === 'string' && /^\/events\/\d+$/.test(value) ? value : null;
+}
+
 export function authRouter({ accounts }) {
   const router = express.Router();
 
   router.get('/login', (req, res) => {
-    if (req.user) return res.redirect(303, homePathFor(req.user));
-    res.render('public/login');
+    const next = eventPath(req.query.next);
+    if (req.user) return res.redirect(303, next ?? homePathFor(req.user));
+    res.render('public/login', { next });
   });
 
   // BR-01 to BR-05 and AGENT_START §8. The kennitala is never echoed back into the form.
   router.post('/login', async (req, res) => {
     const body = req.body ?? {}; // undefined when the request has no form body
+    const next = eventPath(body.next);
     const kennitala = normalizeKennitala(body.kennitala);
     const code = typeof body.code === 'string' ? body.code.trim() : '';
     const errors = {};
     if (!kennitala) errors.kennitala = 'validation.kennitala';
     if (!/^\d{6}$/.test(code)) errors.code = 'login.errors.code';
-    if (Object.keys(errors).length > 0) return res.status(400).render('public/login', { errors });
+    if (Object.keys(errors).length > 0) return res.status(400).render('public/login', { errors, next });
 
     const user = await accounts.login(kennitala, code);
-    if (!user) return res.status(401).render('public/login', { failed: true });
+    if (!user) return res.status(401).render('public/login', { failed: true, next });
 
     // A new session ID at login (§9, item 6), keeping the language the visitor chose (BR-59).
     const lang = req.session.lang ?? DEFAULT_LANGUAGE;
     await regenerate(req);
     Object.assign(req.session, { userId: user.id, role: user.role, isAdmin: user.isAdmin, lang });
     req.session.cookie.maxAge = user.role === 'student' ? STUDENT_SESSION_MS : TEACHER_SESSION_MS; // BR-09
-    res.redirect(303, homePathFor(user));
+    res.redirect(303, next ?? homePathFor(user));
   });
 
   // A logged-in user goes to their home page, as on /login, where the confirmation would not show.
