@@ -47,13 +47,19 @@ const server = app.listen(config.port, (err) => {
   stopSessionCleanup = startSessionCleanup(sessionStore);
 });
 
+// Ctrl+C (or systemd's stop) waits a few seconds for an email being sent and for open requests.
+// A second Ctrl+C stops at once.
+let stopping = false;
 async function shutdown() {
+  if (stopping) process.exit(1);
+  stopping = true;
   stopSessionCleanup();
   await outbox.stop();
   server.close(() => {
     db.close();
     process.exit(0);
   });
+  setTimeout(() => server.closeAllConnections(), 5000).unref();
 }
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
