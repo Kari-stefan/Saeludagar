@@ -1,3 +1,49 @@
+<% const token = csrfToken(); -%>
 <%- include('../partials/header', { pageTitle: t('pages.myEvents') }) %>
 <h1><%= t('pages.myEvents') %></h1>
+<%- include('../partials/flash') %>
+<p class="lead"><%= t('signups.count', { count: signups.length, max }) %></p>
+<%- include('../partials/signup-window', { window }) %>
+<% if (signups.length === 0) { -%>
+<p><%= t('signups.none') %></p>
+<p><a class="button" href="/"><%= t('signups.browse') %></a></p>
+<% } else { -%>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t('events.title') %></th>
+        <th scope="col"><%= t('events.when') %></th>
+        <th scope="col"><%= t('events.where') %></th>
+        <th scope="col"><%= t('signups.attendance') %></th>
+        <% if (window.open) { -%>
+        <th scope="col"><span class="visually-hidden"><%= t('signups.actions') %></span></th>
+        <% } -%>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const signup of signups) { -%>
+      <tr>
+        <td><a href="/events/<%= signup.id %>"><%= eventText(signup, 'title') %></a></td>
+        <td><%= formatDate(signup.event_date) %>, <%= formatTimeRange(signup.start_time, signup.end_time) %></td>
+        <td><%= signup.location %></td>
+        <td><%= signup.attended ? t('signups.attendedYes') : t('signups.attendedNo') %></td>
+        <% if (window.open) { -%>
+        <td>
+          <% if (!signup.attended) { -%>
+          <form method="post" action="/my-events">
+            <input type="hidden" name="_csrf" value="<%= token %>">
+            <input type="hidden" name="event" value="<%= signup.id %>">
+            <button type="submit" class="button button--small button--secondary" name="action" value="cancel"><%= t('signups.cancel') %><span class="visually-hidden">: <%= eventText(signup, 'title') %></span></button>
+          </form>
+          <% } -%>
+        </td>
+        <% } -%>
+      </tr>
+      <% } -%>
+    </tbody>
+  </table>
+</div>
+<p><a href="/"><%= t('signups.browse') %></a></p>
+<% } -%>
 <%- include('../partials/footer') %>

@@ -80,7 +80,7 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
 
   app.use(publicRouter({ db }));
   app.use(authRouter({ accounts }));
-  app.use(studentRouter());
+  app.use(studentRouter({ db }));
   app.use('/teacher', teacherRouter({ config, db }));
   app.use('/admin', adminRouter({ config, db, kt, accounts }));
 

@@ -90,11 +90,16 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
     start(intervalMs = 5000) {
       timer = setInterval(tick, intervalMs);
     },
-    // Waits for the email being sent, so the database can be closed safely afterwards.
-    async stop() {
+    // Waits for the email being sent, but at most timeoutMs, so a mail server that does not answer
+    // cannot keep the process running. An email cut off this way stays queued and is sent on the
+    // next start. In the rare case that the mail server had already accepted a code email, that
+    // code never works (its hash was not stored yet), and the next email brings a working one.
+    async stop(timeoutMs = 5000) {
       stopping = true;
       clearInterval(timer);
-      await running;
+      let timeout;
+      await Promise.race([running, new Promise((resolve) => { timeout = setTimeout(resolve, timeoutMs); })]);
+      clearTimeout(timeout);
     },
   };
 }

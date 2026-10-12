@@ -1,7 +1,12 @@
+<% const viewer = locals.currentUser; -%>
 <%- include('../partials/header', { pageTitle: eventText(event, 'title') }) %>
 <% if (event.status !== 'published') { -%>
 <div class="alert"><p><%= t('events.draftNotice') %></p></div>
 <% } -%>
+<%- include('../partials/flash') %>
 <%- include('../partials/event-details', { event }) %>
+<% if (event.status === 'published' && (!viewer || viewer.role === 'student')) { -%>
+<%- include('../partials/signup-box', { event, window, signup, viewer }) %>
+<% } -%>
 <p><a href="/"><%= t('events.backToAll') %></a></p>
 <%- include('../partials/footer') %>

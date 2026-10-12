@@ -341,5 +341,39 @@
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
       "confirmDelete": "Tick the box to confirm that you want to delete the event."
     }
+  },
+  "signups": {
+    "heading": "Sign-up",
+    "signUp": "Sign me up",
+    "cancel": "Cancel my sign-up",
+    "actions": "Actions",
+    "loginFirst": "You log in with your kennitala and code, and then come back here.",
+    "youAreSignedUp": "You are signed up for this event.",
+    "attended": "Your attendance has been marked.",
+    "signedUp": "You are signed up. The event is now in My events.",
+    "cancelled": "Your sign-up is cancelled, and the place is free for others.",
+    "count": "Sign-ups: {count} / {max}",
+    "none": "You have not signed up for any events yet.",
+    "browse": "Browse events",
+    "attendance": "Attendance",
+    "attendedYes": "Marked",
+    "attendedNo": "Not marked",
+    "window": {
+      "notSet": "The sign-up period has not been set yet.",
+      "before": "Sign-up opens {opens} and closes {closes}.",
+      "open": "Sign-up is open until {closes}.",
+      "after": "Sign-up closed {closes}."
+    },
+    "errors": {
+      "windowClosed": "Sign-up is not open now.",
+      "notAvailable": "You cannot sign up for this event.",
+      "already": "You are already signed up for this event.",
+      "full": "Full: there are no places left.",
+      "braut": "This event is only for students of these brautir: {brautir}.",
+      "limit": "You are already signed up for {max} events, which is the maximum. Cancel another sign-up first.",
+      "overlap": "This event overlaps {title} ({when}), which you are signed up for.",
+      "notSignedUp": "You are not signed up for this event.",
+      "attended": "You cannot cancel after your attendance has been marked."
+    }
   }
 }

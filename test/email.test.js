@@ -162,6 +162,23 @@ describe('mail transport (AGENT_START §8)', () => {
       assert.equal(received.length, 0);
     });
 
+    test('a mail server that never answers (such as a blocked port) fails quickly instead of hanging', async () => {
+      const sockets = [];
+      const silent = net.createServer((socket) => sockets.push(socket)); // accepts, never says hello
+      await new Promise((resolve) => silent.listen(0, '127.0.0.1', resolve));
+      try {
+        const slow = createMailer(testConfig({
+          SMTP_HOST: '127.0.0.1', SMTP_PORT: String(silent.address().port), SMTP_SECURE: 'false', MAIL_FROM: 'noreply@example.is',
+        }), { retryDelayMs: 10, timeoutMs: 200 });
+        const started = Date.now();
+        await assert.rejects(slow.send(message), { code: 'ETIMEDOUT' });
+        assert.ok(Date.now() - started < 3000, `gave up after ${Date.now() - started} ms`);
+      } finally {
+        for (const socket of sockets) socket.destroy();
+        silent.close();
+      }
+    });
+
     test('an error that is not a network problem, such as a refused address, is not retried at once', async () => {
       connections = 0;
       rejectRecipients = true;

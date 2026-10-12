@@ -140,6 +140,22 @@ describe('email outbox worker (AGENT_START §8)', () => {
     db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(users[2].id);
   });
 
+  test('stop() gives up waiting after its time limit, so a stuck send cannot keep the server running', async () => {
+    let sending = false;
+    const outbox = worker(() => { // a mail server that never answers
+      sending = true;
+      return new Promise(() => {});
+    });
+    queueEmail(db, { kind: 'new_code', userId: users[4].id });
+    outbox.start(10);
+    while (!sending) await new Promise((resolve) => setTimeout(resolve, 5));
+    const started = Date.now();
+    await outbox.stop(100);
+    assert.ok(Date.now() - started < 1000, 'stop() returned');
+    assert.equal(rows().length, 1, 'the email stays queued for the next start');
+    db.exec('DELETE FROM email_outbox');
+  });
+
   test('stop() waits for the email being sent', async () => {
     let finish;
     const outbox = worker(() => new Promise((resolve) => {

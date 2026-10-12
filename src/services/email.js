@@ -13,7 +13,7 @@ const NETWORK_ERRORS = new Set(['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'EDNS']);
 
 // AGENT_START §8: SMTP when SMTP_HOST is set. Without it, development prints each email to the
 // console instead; production never does, because emails contain login codes (§9, item 10).
-export function createMailer(config, { log = console.log, retryDelayMs = 3000 } = {}) {
+export function createMailer(config, { log = console.log, retryDelayMs = 3000, timeoutMs = 15_000 } = {}) {
   const { host, port, secure, user, pass, from } = config.smtp;
 
   if (host) {
@@ -28,7 +28,12 @@ export function createMailer(config, { log = console.log, retryDelayMs = 3000 } 
     if (port === 587 && secure) {
       throw new Error('SMTP_PORT is 587, so SMTP_SECURE must be false (see README, "Environment variables").');
     }
-    const transport = nodemailer.createTransport({ host, port, secure, auth: user ? { user, pass } : undefined });
+    // A mail server that does not answer (often a provider blocking mail ports) fails within
+    // seconds instead of nodemailer's default two minutes, so the error shows up quickly.
+    const transport = nodemailer.createTransport({
+      host, port, secure, auth: user ? { user, pass } : undefined,
+      connectionTimeout: timeoutMs, greetingTimeout: timeoutMs, socketTimeout: timeoutMs * 4,
+    });
     const sendMail = (message) => transport.sendMail({ from, ...message });
     return {
       // A network hiccup is tried once more after a short pause, before the outbox counts the
@@ -92,9 +97,11 @@ export async function renderEmail(kind, data) {
     formatTimeRange: (start, end) => formatTimeRange(lang, start, end),
     eventText: (event, field) => eventText(lang, event, field),
   }));
-  const text = await ejs.renderFile(path.join(EMAIL_VIEWS, `${kind}.ejs`), { ...data, languages }, {
+  const rendered = await ejs.renderFile(path.join(EMAIL_VIEWS, `${kind}.ejs`), { ...data, languages }, {
     escape: (value) => (value == null ? '' : String(value)),
   });
+  // A Windows checkout gives the templates CRLF line endings; the email is the same either way.
+  const text = rendered.replace(/\r\n?/g, '\n');
   const subject = languages
     .map(({ t, lang }) => t(`emails.${kind}.subject`, { title: data.event ? eventText(lang, data.event, 'title') : '' }))
     .join(' / ');
