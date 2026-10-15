@@ -1,84 +1,327 @@
-.site-header {
-  // A light focus ring keeps 3:1 contrast against the dark header (WCAG 1.4.11).
-  --color-focus: var(--color-on-primary);
-  background: var(--color-primary);
-  color: var(--color-on-primary);
+// The shared header (AGENT_START §6) and footer. On narrow screens: logo, title and the menu
+// button, with the links and actions in a drawer. From 48rem: logo left, title in the centre
+// with the links under it, and the actions on the right.
 
-  a {
-    color: var(--color-on-primary);
-  }
+$wide: 48rem;
+
+.site-header {
+  background: var(--color-bg);
+  border-bottom: 4px solid var(--color-brand);
 }
 
 .site-header__inner {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2) var(--space-3);
+  gap: var(--space-3);
   padding-top: var(--space-2);
   padding-bottom: var(--space-2);
 }
 
-.site-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  text-decoration: none;
+.site-logo {
+  flex: none;
+  display: block;
+
+  img {
+    display: block;
+    width: auto;
+    height: 2.75rem;
+  }
 }
 
-.site-nav {
+.site-title {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  color: var(--color-text);
+  font-size: 1.375rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-decoration: none;
+
+  &:hover {
+    color: var(--color-link);
+  }
+}
+
+.site-title__school {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.site-nav,
+.site-header__actions {
+  display: none;
+}
+
+@media (min-width: $wide) {
+  .site-header__inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas:
+      "logo title actions"
+      "nav nav nav";
+    column-gap: var(--space-4);
+    row-gap: var(--space-1);
+    padding-top: var(--space-3);
+    padding-bottom: 0;
+  }
+
+  .site-logo {
+    grid-area: logo;
+    justify-self: start;
+
+    img {
+      height: 4rem;
+    }
+  }
+
+  .site-title {
+    grid-area: title;
+    align-items: center;
+    font-size: 2rem;
+    text-align: center;
+  }
+
+  .site-nav {
+    grid-area: nav;
+    display: block;
+  }
+
+  .site-header__actions {
+    grid-area: actions;
+    display: block;
+    justify-self: end;
+  }
+
+  .menu {
+    display: none;
+  }
+}
+
+// The navigation links: a centred row under the title, or a column in the drawer.
+.nav-links {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1) var(--space-3);
+  justify-content: center;
+  gap: 0 var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.site-nav__link {
+.nav-links__link {
   display: inline-flex;
   align-items: center;
   min-height: var(--tap-target);
-}
-
-.site-nav__user {
   font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover {
+    color: var(--color-link);
+    border-bottom-color: currentColor;
+  }
+
+  &[aria-current] {
+    color: var(--color-link);
+    border-bottom-color: var(--color-brand);
+  }
 }
 
-.site-nav__button {
-  min-height: var(--tap-target);
-  padding: 0;
-  font: inherit;
-  color: var(--color-on-primary);
-  text-decoration: underline;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-
-.lang-switch {
+// Log in or out, ÍS/EN and light/dark (BR-59, BR-62).
+.header-actions {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.header-actions__form {
+  margin: 0;
+}
+
+.header-actions__switches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.user-status {
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-1);
+  margin: 0;
+  font-weight: 600;
+
+  .icon {
+    color: var(--color-success);
+  }
+}
+
+// Two-button groups. The chosen button is filled, and aria-pressed says so to screen readers.
+.switch {
+  display: inline-flex;
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
 
   button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-width: var(--tap-target);
     min-height: var(--tap-target);
     padding: 0 var(--space-2);
     font: inherit;
-    font-weight: 600;
-    color: var(--color-on-primary);
+    font-weight: 700;
+    color: var(--color-text);
     background: transparent;
-    border: 2px solid transparent;
+    border: 0;
     border-radius: var(--radius);
     cursor: pointer;
+
+    &:hover {
+      color: var(--color-link);
+    }
+
+    &[aria-pressed="true"] {
+      color: var(--color-on-primary);
+      background: var(--color-primary);
+    }
+  }
+}
+
+.switch__label {
+  margin-left: var(--space-2);
+}
+
+// The mobile drawer: a <details> element, so it works without JavaScript. Open, its button turns
+// into a close button above the drawer.
+.menu {
+  flex: none;
+}
+
+.menu__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  list-style: none;
+  cursor: pointer;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+}
+
+.menu__when-open,
+.menu[open] .menu__when-closed {
+  display: none;
+}
+
+.menu[open] .menu__when-open {
+  display: inline-flex;
+}
+
+.menu[open] .menu__toggle {
+  position: fixed;
+  top: var(--space-2);
+  right: var(--space-2);
+  z-index: 52;
+}
+
+.menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--color-backdrop);
+}
+
+.menu__panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 51;
+  width: min(20rem, 85vw);
+  overflow-y: auto;
+  padding: calc(var(--tap-target) + var(--space-4)) var(--space-3) var(--space-4);
+  background: var(--color-bg);
+  border-left: 4px solid var(--color-brand);
+  box-shadow: -8px 0 24px var(--color-shadow);
+  animation: menu-in 0.2s ease-out;
+
+  .nav-links {
+    flex-direction: column;
+    gap: 0;
+    margin-bottom: var(--space-4);
   }
 
-  button[aria-pressed="true"] {
-    border-color: var(--color-on-primary);
+  .nav-links__link {
+    display: flex;
+    padding: 0 var(--space-3);
+    border-bottom: 0;
+    border-left: 4px solid transparent;
+
+    &[aria-current] {
+      border-left-color: var(--color-brand);
+      background: var(--color-surface);
+    }
+  }
+}
+
+.header-actions--drawer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-3);
+
+  .button,
+  .switch {
+    width: 100%;
+  }
+
+  .header-actions__switches {
+    flex-direction: column;
+  }
+
+  .switch button {
+    flex: 1;
+  }
+}
+
+@keyframes menu-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu__panel {
+    animation: none;
+  }
+}
+
+// The page behind an open drawer does not scroll.
+@media (max-width: 47.99rem) {
+  body:has(.menu[open]) {
+    overflow: hidden;
   }
 }
 
 .site-main {
+  flex: 1;
   padding-top: var(--space-4);
   padding-bottom: var(--space-5);
-  min-height: 60vh;
 }
 
 .site-footer {
@@ -86,4 +329,13 @@
   background: var(--color-surface);
   color: var(--color-muted);
   font-size: 0.875rem;
+}
+
+@media print {
+  .skip-link,
+  .site-nav,
+  .site-header__actions,
+  .menu {
+    display: none;
+  }
 }

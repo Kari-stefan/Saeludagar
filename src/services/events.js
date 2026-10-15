@@ -1,4 +1,5 @@
 import { toIso } from '../db/index.js';
+import { eventText } from '../i18n/index.js';
 import { queueEmail } from './email.js';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -117,6 +118,52 @@ export function publishedEvents(db, braut = null) {
       OR EXISTS (SELECT 1 FROM event_brautir b WHERE b.event_id = e.id AND b.braut = @braut))
     ORDER BY e.event_date, e.start_time, e.id`).all({ braut });
   return withBrautir(db, events);
+}
+
+// BR-63: the front page's sort orders, the default first.
+export const SORTS = ['date', 'date-desc', 'fee', 'fee-desc', 'name', 'name-desc'];
+const MAX_SEARCH_LENGTH = 100;
+const titleCollators = { is: new Intl.Collator('is'), en: new Intl.Collator('en-GB') };
+
+// A search term from the query string: text only, trimmed, at most 100 characters.
+export function searchTerm(value) {
+  return typeof value === 'string' ? value.trim().slice(0, MAX_SEARCH_LENGTH) : '';
+}
+
+export function sortOrder(value) {
+  return SORTS.includes(value) ? value : SORTS[0];
+}
+
+const byTime = (a, b) => a.event_date.localeCompare(b.event_date) || a.start_time.localeCompare(b.start_time) || a.id - b.id;
+
+// BR-63: the events whose Icelandic or English title contains `search` (ignoring case), in the
+// `sort` order. Names sort as the page shows them (BR-60), and ties keep date and time order.
+export function browseEvents(events, { search = '', sort = SORTS[0], lang = 'is' } = {}) {
+  const term = search.toLocaleLowerCase('is');
+  const found = term
+    ? events.filter((event) => [event.title_is, event.title_en].some((title) => title?.toLocaleLowerCase('is').includes(term)))
+    : [...events];
+  const collator = titleCollators[lang] ?? titleCollators.is;
+  const title = (event) => eventText(lang, event, 'title');
+  const compare = {
+    date: byTime,
+    'date-desc': (a, b) => byTime(b, a),
+    fee: (a, b) => a.fee_isk - b.fee_isk || byTime(a, b),
+    'fee-desc': (a, b) => b.fee_isk - a.fee_isk || byTime(a, b),
+    name: (a, b) => collator.compare(title(a), title(b)) || byTime(a, b),
+    'name-desc': (a, b) => collator.compare(title(b), title(a)) || byTime(a, b),
+  }[sort] ?? byTime;
+  return found.sort(compare);
+}
+
+// §6: an event card's short description. Line breaks become spaces, and a long text is cut at a
+// word with "…".
+export function excerpt(text, max = 140) {
+  const flat = String(text ?? '').replace(/\s+/g, ' ').trim();
+  if (flat.length <= max) return flat;
+  const cut = flat.slice(0, max);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > max / 2 ? cut.slice(0, space) : cut).replace(/[\s.,;:!?–-]+$/, '')}…`;
 }
 
 function setBrautir(db, eventId, brautir) {

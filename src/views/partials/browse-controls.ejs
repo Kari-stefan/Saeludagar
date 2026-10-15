@@ -1,0 +1,58 @@
+<%#
+  Search and "Sía" for one list on the front page (BR-63), as a plain GET form.
+  Takes:
+  - `id`, unique on the page
+  - `label`, the form's name for screen readers
+  - `names`, this form's query parameters: { search, sort, braut }, where braut is null for a list without the braut filter
+  - `values`, the list's { search, sort, braut }
+  - `state`, every choice on the page that is not the default
+  - `anchor`, the section to come back to
+  Uses `brautir` and `sorts` from the page. The other list's choices travel as hidden fields, so
+  using one list's controls keeps the other's (BR-64).
+-%>
+<%
+  const own = [names.search, names.sort, names.braut].filter(Boolean);
+  const kept = Object.entries(state).filter(([key]) => !own.includes(key));
+  const keptQuery = new URLSearchParams(kept).toString();
+  const hash = anchor ? `#${anchor}` : '';
+  const active = [];
+  if (values.search) active.push(t('home.activeSearch', { search: values.search }));
+  if (values.sort !== sorts[0]) active.push(t('home.activeSort', { sort: t(`home.sort.${values.sort}`) }));
+  if (values.braut) active.push(t('home.activeBraut', { braut: values.braut }));
+-%>
+<form class="browse" method="get" action="/<%= hash %>" role="search" aria-label="<%= label %>">
+  <% for (const [key, value] of kept) { -%>
+  <input type="hidden" name="<%= key %>" value="<%= value %>">
+  <% } -%>
+  <div class="browse__controls">
+    <label class="visually-hidden" for="<%= id %>-search"><%= t('home.searchLabel') %></label>
+    <input class="field__input browse__search" id="<%= id %>-search" type="search" name="<%= names.search %>" value="<%= values.search %>" maxlength="100" placeholder="<%= t('home.searchPlaceholder') %>">
+    <button type="submit" class="button"><%= t('home.search') %></button>
+    <details class="browse__menu">
+      <summary class="button button--secondary"><%= t('home.filter') %></summary>
+      <div class="browse__panel">
+        <fieldset class="browse__fieldset">
+          <legend><%= t('home.sortLabel') %></legend>
+          <% for (const sort of sorts) { -%>
+          <label class="radio"><input type="radio" name="<%= names.sort %>" value="<%= sort %>"<% if (sort === values.sort) { %> checked<% } %>> <%= t(`home.sort.${sort}`) %></label>
+          <% } -%>
+        </fieldset>
+        <% if (names.braut) { -%>
+        <div class="field">
+          <label class="field__label" for="<%= id %>-braut"><%= t('home.filterLabel') %></label>
+          <select class="field__input" id="<%= id %>-braut" name="<%= names.braut %>">
+            <option value=""><%= t('home.allBrautir') %></option>
+            <% for (const name of brautir) { -%>
+            <option value="<%= name %>"<% if (name === values.braut) { %> selected<% } %>><%= name %></option>
+            <% } -%>
+          </select>
+        </div>
+        <% } -%>
+        <button type="submit" class="button"><%= t('home.apply') %></button>
+      </div>
+    </details>
+  </div>
+  <% if (active.length > 0) { -%>
+  <p class="browse__active"><%= active.join(' · ') %> <a href="/<%= keptQuery ? `?${keptQuery}` : '' %><%= hash %>"><%= t('home.clear') %></a></p>
+  <% } -%>
+</form>

@@ -39,10 +39,12 @@ export function authRouter({ accounts }) {
     const user = await accounts.login(kennitala, code);
     if (!user) return res.status(401).render('public/login', { failed: true, next });
 
-    // A new session ID at login (§9, item 6), keeping the language the visitor chose (BR-59).
-    const lang = req.session.lang ?? DEFAULT_LANGUAGE;
+    // A new session ID at login (§9, item 6), keeping the language and theme the visitor chose
+    // (BR-59, BR-62).
+    const { lang = DEFAULT_LANGUAGE, theme } = req.session;
     await regenerate(req);
     Object.assign(req.session, { userId: user.id, role: user.role, isAdmin: user.isAdmin, lang });
+    if (theme) req.session.theme = theme;
     req.session.cookie.maxAge = user.role === 'student' ? STUDENT_SESSION_MS : TEACHER_SESSION_MS; // BR-09
     res.redirect(303, next ?? homePathFor(user));
   });
@@ -65,11 +67,12 @@ export function authRouter({ accounts }) {
     res.redirect(303, '/login');
   });
 
-  // The old session is destroyed (§9, item 6); the new one only remembers the language.
+  // The old session is destroyed (§9, item 6); the new one only remembers the language and theme.
   router.post('/logout', async (req, res) => {
-    const { lang } = req.session;
+    const { lang, theme } = req.session;
     await regenerate(req);
     if (lang) req.session.lang = lang;
+    if (theme) req.session.theme = theme;
     res.redirect(303, '/');
   });
 

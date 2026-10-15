@@ -35,6 +35,7 @@ describe('app shell', () => {
   test('every page in AGENT_START §6 renders in Icelandic for the role it is for', async () => {
     const pages = [
       ['guest', '/', 'Viðburðir á Sæludögum'],
+      ['guest', '/info', 'Upplýsingar'],
       ['guest', `/events/${eventId}`, 'Prófunarviðburður'],
       ['guest', '/login', 'Innskráning'],
       ['guest', '/login/new-code', 'Fá nýjan kóða'],

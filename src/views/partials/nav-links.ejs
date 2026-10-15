@@ -1,0 +1,17 @@
+<%#
+  The header's links (§6), shown in the wide-screen bar and in the mobile drawer. The current page
+  is marked "page", and a page inside an area (such as an event under Kennarasvæði) marks the
+  area "true". Takes `user`.
+-%>
+<%
+  const links = [['/', t('nav.home')], ['/info', t('nav.info')]];
+  if (user?.role === 'student') links.push(['/my-events', t('pages.myEvents')]);
+  if (user && user.role !== 'student') links.push(['/teacher', t('pages.teacherHome')]);
+  if (user?.isAdmin) links.push(['/admin', t('pages.adminHome')]);
+  const here = locals.navPath ?? '';
+-%>
+<ul class="nav-links">
+  <% for (const [href, label] of links) { const current = here === href ? 'page' : (href !== '/' && here.startsWith(`${href}/`) ? 'true' : null); -%>
+  <li><a class="nav-links__link" href="<%= href %>"<% if (current) { %> aria-current="<%= current %>"<% } %>><%= label %></a></li>
+  <% } -%>
+</ul>

@@ -10,6 +10,7 @@ import { flash } from './middleware/flash.js';
 import { languageMiddleware } from './middleware/language.js';
 import { errorHandler, notFound } from './middleware/errors.js';
 import { createAccounts } from './services/accounts.js';
+import { excerpt } from './services/events.js';
 import { IMAGE_NAME } from './services/images.js';
 import { kennitalaCrypto } from './services/crypto.js';
 import { publicRouter } from './routes/public.js';
@@ -31,6 +32,7 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   if (config.trustProxy) app.set('trust proxy', 1);
 
   app.locals.schoolName = config.schoolName;
+  app.locals.excerpt = excerpt;
 
   app.use(helmet({
     contentSecurityPolicy: {

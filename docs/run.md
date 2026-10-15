@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 5 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (participant lists, attendance, course choices, the office export) still show only their title.
+As of milestone M5b you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. The site has the school's logo and colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (participant lists, attendance, course choices, the office export) still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -83,6 +83,12 @@ Open `.env` and **replace** the three empty lines (`SESSION_SECRET=`, `KENNITALA
 - Every developer generates their own values, once, and keeps them.
 - Changing the kennitala keys later makes the kennitölur already in your local database unreadable, so nobody can log in. If you ever change them, [reset the database](#8-reset-your-local-database).
 
+Also replace the empty `SCHOOL_NAME=` line with the school's name, so the header and page titles show it:
+```
+SCHOOL_NAME=Fjölbrautaskólinn í Breiðholti
+```
+Save `.env` as UTF-8 (the default in VS Code), or "ö" and "ð" show up garbled.
+
 You can leave the other settings as they are; [README → Environment variables](../README.md#environment-variables) explains each one. Keep `SMTP_HOST` empty on your own computer, so emails are printed instead of sent.
 
 **4. Create the database:**
@@ -121,8 +127,16 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone 5):**
-- A header with "Sæludagar" (followed by the school's name, if `SCHOOL_NAME` is set in `.env`), an "Innskráning" link and **ÍS / EN** buttons. **EN** switches the whole site to English and **ÍS** switches back.
+**What you should see (milestone M5b):**
+- **The header:**
+  - The red school logo on the left.
+  - "Sæludagar" in the middle, with the school's name under it if `SCHOOL_NAME` is set in `.env`.
+  - The links **Heimasíða** and **Upplýsingar**.
+  - On the right: **Innskráning**, the **ÍS / EN** buttons and a sun/moon pair for light and dark mode. **EN** switches the whole site to English and **ÍS** switches back.
+  - The site starts in your computer's light or dark setting; the sun and moon override it for the rest of the session, as the language buttons do.
+  - In a narrow window (or on a phone) the links and buttons move into a menu behind the ☰ button.
+- **The front page:** the events as cards, grouped by day. Above them are a search box, **Leita**, and **Sía**, which holds the sort order and the braut filter. Logged in as a student, you see **Þínir viðburðir** (your sign-ups) above **Aðrir viðburðir** (the rest).
+- **Upplýsingar:** how the site works, with the current dates.
 - **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
   ```
   npm run seed:dev

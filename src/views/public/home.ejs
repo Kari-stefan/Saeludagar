@@ -4,29 +4,41 @@
 <p><%= t('home.noDays') %></p>
 <% } else { -%>
 <p class="lead"><%= t('home.days', { days: days.map((day) => formatDate(day)).join(', ') }) %></p>
-
-<nav class="filter" aria-label="<%= t('home.filterLabel') %>">
-  <ul>
-    <li><a href="/"<% if (!braut) { %> aria-current="page"<% } %>><%= t('home.allBrautir') %></a></li>
-    <% for (const name of brautir) { -%>
-    <li><a href="/?braut=<%= encodeURIComponent(name) %>"<% if (name === braut) { %> aria-current="page"<% } %>><%= name %></a></li>
+<% const otherNames = { search: 'q', sort: 'sort', braut: 'braut' }; -%>
+<% if (mine) { -%>
+<%# BR-64: a student's own events first, then the rest, each list with its own search and sort. -%>
+<section class="home-section home-section--mine" id="mine-events" aria-labelledby="mine-heading">
+  <div class="home-section__head">
+    <h2 id="mine-heading"><%= t('home.mine') %></h2>
+    <% if (mine.total > 0) { -%>
+    <%- include('../partials/browse-controls', { id: 'mine', label: t('home.searchMine'), names: { search: 'mq', sort: 'msort', braut: null }, values: mine, anchor: 'mine-events' }) %>
     <% } -%>
-  </ul>
-</nav>
-
-<% for (const day of days) { const dayEvents = events.filter((event) => event.event_date === day); -%>
-<section class="day" aria-labelledby="day-<%= day %>">
-  <h2 id="day-<%= day %>"><%= formatDate(day) %></h2>
-  <% if (dayEvents.length === 0) { -%>
-  <p><%= t('home.noEvents') %></p>
+  </div>
+  <% if (mine.total === 0) { -%>
+  <p class="empty"><%= t('home.mineNone') %></p>
+  <p><a class="button button--secondary" href="#other-events"><%= t('home.seeOthers') %></a></p>
+  <% } else if (mine.events.length === 0) { -%>
+  <p class="empty"><%= t('home.noMatches') %></p>
   <% } else { -%>
   <div class="card-grid">
-    <% for (const event of dayEvents) { -%>
-    <%- include('../partials/event-card', { event }) %>
+    <% for (const event of mine.events) { -%>
+    <%- include('../partials/event-card', { event, level: 3 }) %>
     <% } -%>
   </div>
   <% } -%>
 </section>
+<section class="home-section" id="other-events" aria-labelledby="others-heading">
+  <div class="home-section__head">
+    <h2 id="others-heading"><%= t('home.others') %></h2>
+    <%- include('../partials/browse-controls', { id: 'others', label: t('home.searchOthers'), names: otherNames, values: others, anchor: 'other-events' }) %>
+  </div>
+  <%- include('../partials/event-groups', { groups: others.groups, filtered: others.filtered, level: 3 }) %>
+</section>
+<% } else { -%>
+<div class="home-section__head home-section__head--end">
+  <%- include('../partials/browse-controls', { id: 'events', label: t('home.searchLabel'), names: otherNames, values: others, anchor: null }) %>
+</div>
+<%- include('../partials/event-groups', { groups: others.groups, filtered: others.filtered, level: 2 }) %>
 <% } -%>
 <% } -%>
 <%- include('../partials/footer') %>

@@ -1,6 +1,6 @@
 ---
 name: spec-reviewer
-description: Read-only reviewer for the Sæludagar project. Use after finishing a milestone or before opening a pull request. Checks the changes against docs/AGENT_START.md: business rules (BR-01 to BR-61), security and privacy requirements (§9), and scope (nothing beyond the current milestone, no dependencies outside §10). Reports findings and never edits files.
+description: Read-only reviewer for the Sæludagar project. Use after finishing a milestone or before opening a pull request. Checks the changes against docs/AGENT_START.md: business rules (BR-01 to BR-64), security and privacy requirements (§9), and scope (nothing beyond the current milestone, no dependencies outside §10). Reports findings and never edits files.
 tools: Read, Grep, Glob, Bash
 ---
 

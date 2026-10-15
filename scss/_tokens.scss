@@ -1,21 +1,70 @@
-// Brand tokens: the one place to swap in the school's colours and logo.
-// Neutral placeholders until they are supplied (AGENT_START §15, open question 3).
-// Text colours keep at least 4.5:1 contrast on their backgrounds (WCAG 2.1 AA).
-:root {
+// Brand tokens: the one place for the school's colours (AGENT_START §11). White is the main
+// colour and red the accent. The logo's red, #eb2c32, is too light for white text (4.25:1), so
+// buttons and red text use darker shades. Every text colour keeps at least 4.5:1 on its
+// background, and borders that mark a control at least 3:1 (WCAG 2.1 AA).
+
+@mixin light {
+  color-scheme: light;
   --color-bg: #ffffff;
-  --color-surface: #f3f5f7;
-  --color-text: #1b1f24;
-  --color-muted: #4a5561;
-  --color-border: #c9d1d9;
-  --color-primary: #1f4e79;
+  --color-surface: #f5f5f6;
+  --color-text: #1c1c1f;
+  --color-muted: #565961;
+  --color-border: #d8d9dd;
+  --color-brand: #eb2c32;
+  --color-primary: #c81e26;
+  --color-primary-hover: #a5161d;
   --color-on-primary: #ffffff;
-  --color-focus: #b35900;
+  --color-link: #c81e26;
+  --color-focus: #1c1c1f;
   --color-error: #a4161a;
   --color-error-bg: #fdecea;
+  --color-danger: #a4161a;
   --color-success: #1e6b34;
   --color-success-bg: #e8f5ec;
-  --color-info-bg: #e8f0f8;
+  --color-info-bg: #f5f5f6;
+  --color-shadow: rgb(0 0 0 / 0.1);
+  --color-backdrop: rgb(0 0 0 / 0.5);
+}
 
+@mixin dark {
+  color-scheme: dark;
+  --color-bg: #141417;
+  --color-surface: #1e1f23;
+  --color-text: #f1f1f3;
+  --color-muted: #b3b5bc;
+  --color-border: #3b3d44;
+  --color-brand: #eb2c32;
+  --color-primary: #c81e26;
+  --color-primary-hover: #de2a32;
+  --color-on-primary: #ffffff;
+  --color-link: #ff7a7a;
+  --color-focus: #f1f1f3;
+  --color-error: #ff8f8f;
+  --color-error-bg: #3b1618;
+  --color-danger: #c81e26;
+  --color-success: #7fd99a;
+  --color-success-bg: #10301a;
+  --color-info-bg: #1e1f23;
+  --color-shadow: rgb(0 0 0 / 0.45);
+  --color-backdrop: rgb(0 0 0 / 0.65);
+}
+
+// BR-62: the device's setting unless the visitor chose a mode (data-theme on <html>).
+:root {
+  @include light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    @include dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  @include dark;
+}
+
+:root {
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
   --space-1: 0.25rem;
@@ -25,6 +74,7 @@
   --space-5: 2rem;
 
   --radius: 6px;
+  --radius-large: 12px;
   --max-width: 72rem;
   --tap-target: 44px;
 }

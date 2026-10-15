@@ -3,8 +3,8 @@
 A bilingual (ÍS/EN) school website. Students sign up for Sæludagar events (viðburðir), and after attending they choose which of their courses gets absence points removed. Stack: Node.js 24, Express 5, EJS, SCSS, SQLite (better-sqlite3), plain browser JavaScript.
 
 ## Source of truth
-- `docs/AGENT_START.md` is the full specification: business rules (BR-01 to BR-61), pages, data model, build plan and open questions. Read the relevant sections before doing any work.
-- `docs/requirements.md` and `docs/saeludagar-notes.txt` are the original planning notes, kept for reference only. Where they differ from AGENT_START.md, AGENT_START.md wins.
+- `docs/AGENT_START.md` is the full specification: business rules (BR-01 to BR-64), pages, data model, build plan and open questions. Read the relevant sections before doing any work.
+- `docs/requirements.md` and `docs/saeludagar-notes.txt` are the original planning notes, and `docs/design-requirements.md` is the project owner's design brief (built in milestone M5b). All three are kept for reference only. Where they differ from AGENT_START.md, AGENT_START.md wins.
 - `README.md` is the overview for people. Milestone 1 fills in its Setup section.
 
 ## Current phase

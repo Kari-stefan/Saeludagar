@@ -1,12 +1,19 @@
 {
   "site": {
     "name": "Sæludagar",
-    "skipToContent": "Fara beint í efni"
+    "skipToContent": "Fara beint í efni",
+    "logoAlt": "Merki skólans – heimasíða"
   },
   "nav": {
     "main": "Aðalvalmynd",
     "login": "Innskráning",
-    "logout": "Útskráning"
+    "logout": "Útskráning",
+    "home": "Heimasíða",
+    "info": "Upplýsingar",
+    "openMenu": "Opna valmynd",
+    "closeMenu": "Loka valmynd",
+    "signedIn": "Skráð inn: {name}",
+    "backHome": "Til baka á heimasíðu"
   },
   "language": {
     "label": "Tungumál",
@@ -42,7 +49,8 @@
     "adminEvents": "Allir viðburðir",
     "export": "Útflutningur fyrir skrifstofu",
     "purge": "Hreinsun gagna",
-    "audit": "Aðgerðaskrá"
+    "audit": "Aðgerðaskrá",
+    "info": "Upplýsingar"
   },
   "validation": {
     "kennitala": "Kennitala verður að vera 10 tölustafir"
@@ -246,7 +254,32 @@
     "days": "Sæludagar: {days}",
     "filterLabel": "Sía eftir braut",
     "allBrautir": "Allar brautir",
-    "noEvents": "Engir viðburðir enn."
+    "noEvents": "Engir viðburðir enn.",
+    "searchLabel": "Leita að viðburði",
+    "searchMine": "Leita í þínum viðburðum",
+    "searchOthers": "Leita í öðrum viðburðum",
+    "searchPlaceholder": "Nafn viðburðar",
+    "search": "Leita",
+    "filter": "Sía",
+    "sortLabel": "Röðun",
+    "apply": "Nota",
+    "clear": "Hreinsa",
+    "sort": {
+      "date": "Dagsetning, elst fyrst",
+      "date-desc": "Dagsetning, nýjast fyrst",
+      "fee": "Verð, lægst fyrst",
+      "fee-desc": "Verð, hæst fyrst",
+      "name": "Nafn, A til Ö",
+      "name-desc": "Nafn, Ö til A"
+    },
+    "activeSearch": "Leit: „{search}“",
+    "activeSort": "Röðun: {sort}",
+    "activeBraut": "Braut: {braut}",
+    "noMatches": "Enginn viðburður passar við leitina. Prófaðu annað orð eða hreinsaðu síuna.",
+    "mine": "Þínir viðburðir",
+    "others": "Aðrir viðburðir",
+    "mineNone": "Þú hefur ekki skráð þig á neina viðburði ennþá.",
+    "seeOthers": "Skoða aðra viðburði"
   },
   "events": {
     "restricted": "Aðeins fyrir nemendur brautar",
@@ -340,7 +373,8 @@
       "imageType": "Myndin verður að vera JPG, PNG eða WebP.",
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
       "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum."
-    }
+    },
+    "more": "Nánar"
   },
   "signups": {
     "heading": "Skráning",
@@ -375,5 +409,28 @@
       "notSignedUp": "Þú hefur ekki skráð þig á þennan viðburð.",
       "attended": "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð."
     }
+  },
+  "theme": {
+    "label": "Útlit",
+    "light": "Ljóst útlit",
+    "dark": "Dökkt útlit"
+  },
+  "info": {
+    "intro": "Sæludagar eru nokkrir dagar á skólaárinu þar sem mæting er valfrjáls. Þá heldur skólinn viðburði, og nemendur skrá sig á þá sem þeir vilja.",
+    "datesHeading": "Dagsetningar",
+    "howHeading": "Svona virkar þetta",
+    "steps": {
+      "login": "Þú færð 6 stafa kóða í tölvupósti og skráir þig inn með kennitölunni þinni og kóðanum. Ef kóðinn týnist geturðu fengið nýjan á innskráningarsíðunni.",
+      "signup": "Á meðan skráning er opin skráir þú þig á allt að {max} viðburði. Viðburðirnir mega ekki skarast í tíma, og sumir eru aðeins fyrir nemendur ákveðinna brauta.",
+      "cancel": "Á meðan skráning er opin geturðu líka afskráð þig, og þá losnar plássið strax.",
+      "attend": "Þú mætir á viðburðinn og kennarinn skráir mætinguna.",
+      "choose": "Þegar mætingin hefur verið skráð velur þú á „Mínum viðburðum“ hvaða áfangi fær fjarvistarstigin dregin frá. Þú getur breytt valinu fram að frestinum hér að ofan."
+    },
+    "pointsHeading": "Fjarvistarstig",
+    "points": "Hver mæting á viðburð gildir sem {points} stig í einum áfanga. Hægt er að fá að hámarki {perCourse} stig dregin frá í hverjum áfanga, í allt að {max} áföngum (samtals {total} stig).",
+    "pointsOffice": "Vefurinn heldur ekki utan um fjarvistarstigin sjálf. Skrifstofa skólans færir frádráttinn inn í Innu eftir að fresturinn rennur út.",
+    "contactHeading": "Spurningar",
+    "contactPlaceholder": "Upplýsingar um hvert á að leita með spurningar koma hér þegar skólinn hefur sent þær.",
+    "toEvents": "Skoða viðburði"
   }
 }
