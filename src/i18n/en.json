@@ -1,12 +1,19 @@
 {
   "site": {
     "name": "Sæludagar",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "logoAlt": "School logo – home page"
   },
   "nav": {
     "main": "Main menu",
     "login": "Log in",
-    "logout": "Log out"
+    "logout": "Log out",
+    "home": "Home",
+    "info": "Information",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu",
+    "signedIn": "Signed in: {name}",
+    "backHome": "Back to the home page"
   },
   "language": {
     "label": "Language",
@@ -42,7 +49,8 @@
     "adminEvents": "All events",
     "export": "Export for the office",
     "purge": "Purge data",
-    "audit": "Audit log"
+    "audit": "Audit log",
+    "info": "Information"
   },
   "validation": {
     "kennitala": "Kennitala must be 10 digits"
@@ -246,7 +254,32 @@
     "days": "Sæludagar: {days}",
     "filterLabel": "Filter by braut",
     "allBrautir": "All brautir",
-    "noEvents": "No events yet."
+    "noEvents": "No events yet.",
+    "searchLabel": "Search events",
+    "searchMine": "Search your events",
+    "searchOthers": "Search other events",
+    "searchPlaceholder": "Event name",
+    "search": "Search",
+    "filter": "Filter",
+    "sortLabel": "Sort by",
+    "apply": "Apply",
+    "clear": "Clear",
+    "sort": {
+      "date": "Date, earliest first",
+      "date-desc": "Date, latest first",
+      "fee": "Price, lowest first",
+      "fee-desc": "Price, highest first",
+      "name": "Name, A to Z",
+      "name-desc": "Name, Z to A"
+    },
+    "activeSearch": "Search: “{search}”",
+    "activeSort": "Sorted by: {sort}",
+    "activeBraut": "Braut: {braut}",
+    "noMatches": "No events match. Try another word or clear the filter.",
+    "mine": "Your events",
+    "others": "Other events",
+    "mineNone": "You haven't signed up for any events yet.",
+    "seeOthers": "See other events"
   },
   "events": {
     "restricted": "Only for students of these brautir",
@@ -340,7 +373,8 @@
       "imageType": "The image must be JPG, PNG or WebP.",
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
       "confirmDelete": "Tick the box to confirm that you want to delete the event."
-    }
+    },
+    "more": "Details"
   },
   "signups": {
     "heading": "Sign-up",
@@ -375,5 +409,28 @@
       "notSignedUp": "You are not signed up for this event.",
       "attended": "You cannot cancel after your attendance has been marked."
     }
+  },
+  "theme": {
+    "label": "Appearance",
+    "light": "Light mode",
+    "dark": "Dark mode"
+  },
+  "info": {
+    "intro": "Sæludagar are a few days in the school year when attendance is optional. The school runs events, and students sign up for the ones they want.",
+    "datesHeading": "Dates",
+    "howHeading": "How it works",
+    "steps": {
+      "login": "You get a 6-digit code by email and log in with your kennitala and the code. If you lose the code, you can get a new one on the login page.",
+      "signup": "While sign-up is open, you sign up for up to {max} events. The events must not overlap in time, and some are only for students of certain brautir.",
+      "cancel": "While sign-up is open you can also cancel, and the place becomes free straight away.",
+      "attend": "You go to the event, and the teacher records your attendance.",
+      "choose": "Once your attendance is recorded, you choose on \"My events\" which course gets absence points removed. You can change your choice until the deadline above."
+    },
+    "pointsHeading": "Absence points",
+    "points": "Each attendance at an event counts as {points} points in one course. At most {perCourse} points can be removed per course, in up to {max} courses ({total} points in total).",
+    "pointsOffice": "The site does not keep track of absence points itself. The school office enters the deductions into Inna after the deadline.",
+    "contactHeading": "Questions",
+    "contactPlaceholder": "Who to contact with questions will be added here once the school has sent it.",
+    "toEvents": "See the events"
   }
 }

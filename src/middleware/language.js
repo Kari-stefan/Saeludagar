@@ -2,6 +2,8 @@ import {
   DEFAULT_LANGUAGE, eventText, formatDate, formatDateTime, formatFee, formatTimeRange, LANGUAGES, translator,
 } from '../i18n/index.js';
 
+export const THEMES = ['light', 'dark'];
+
 export function applyLanguage(req, res, lang) {
   const t = translator(lang);
   const { schoolName } = req.app.locals;
@@ -14,6 +16,10 @@ export function applyLanguage(req, res, lang) {
   res.locals.eventText = (event, field) => eventText(lang, event, field);
   res.locals.siteTitle = schoolName ? `${t('site.name')} – ${schoolName}` : t('site.name');
   res.locals.currentPath = req.originalUrl;
+  // For the header: the page's path without the query (to mark the current link), and the
+  // chosen theme (BR-62), or null to follow the device.
+  res.locals.navPath = req.path;
+  res.locals.theme = THEMES.includes(req.session?.theme) ? req.session.theme : null;
 }
 
 // BR-59: the chosen language lives in the session; Icelandic is the default.

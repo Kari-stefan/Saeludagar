@@ -1,0 +1,37 @@
+<%#
+  §6 "Upplýsingar". The text comes from AGENT_START §2 and the business rules, and the dates from
+  the settings. Nothing about contacts or school rules is made up: the contact section is a marked
+  placeholder until the school supplies it.
+-%>
+<%- include('../partials/header', { pageTitle: t('pages.info') }) %>
+<article class="prose">
+  <h1><%= t('pages.info') %></h1>
+  <p class="lead"><%= t('info.intro') %></p>
+
+  <h2><%= t('info.datesHeading') %></h2>
+  <dl class="facts">
+    <dt><%= t('admin.settings.daysHeading') %></dt>
+    <dd><%= settings.days.length > 0 ? settings.days.map((day) => formatDate(day)).join(', ') : t('admin.settings.notSet') %></dd>
+    <% for (const name of ['signupOpens', 'signupCloses', 'choiceDeadline']) { -%>
+    <dt><%= t(`admin.settings.${name}`) %></dt>
+    <dd><%= settings[name] ? formatDateTime(settings[name]) : t('admin.settings.notSet') %></dd>
+    <% } -%>
+  </dl>
+
+  <h2><%= t('info.howHeading') %></h2>
+  <ol class="steps">
+    <% for (const step of ['login', 'signup', 'cancel', 'attend', 'choose']) { -%>
+    <li><%= t(`info.steps.${step}`, numbers) %></li>
+    <% } -%>
+  </ol>
+
+  <h2><%= t('info.pointsHeading') %></h2>
+  <p><%= t('info.points', numbers) %></p>
+  <p><%= t('info.pointsOffice') %></p>
+
+  <h2><%= t('info.contactHeading') %></h2>
+  <p class="placeholder"><%= t('info.contactPlaceholder') %></p>
+
+  <p><a class="button" href="/"><%= t('info.toEvents') %></a></p>
+</article>
+<%- include('../partials/footer') %>

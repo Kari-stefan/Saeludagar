@@ -253,8 +253,8 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     const browser = site.browser();
     await browser.login(admin.kennitala, admin.code);
     const res = await browser.get('/teacher');
-    assert.match(res.html, /<span class="site-nav__user">Anna Stjórnandi<\/span>/);
-    assert.match(res.html, /<form class="site-nav__form" method="post" action="\/logout">/);
+    assert.match(res.html, /<span>Skráð inn: Anna Stjórnandi<\/span>/);
+    assert.match(res.html, /<form class="header-actions__form" method="post" action="\/logout">/);
     assert.match(res.html, /href="\/admin">Stjórnendasvæði</);
     assert.doesNotMatch(res.html, /href="\/login"/);
   });

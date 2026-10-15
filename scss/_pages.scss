@@ -1,0 +1,74 @@
+// The login pages and the Upplýsingar page (AGENT_START §6).
+
+// A back link in the top-left corner and the form in a box, centred when there is room.
+.auth {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  justify-items: center;
+  gap: var(--space-3);
+  min-height: 60vh;
+}
+
+.back-link {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-target);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.auth__box {
+  align-self: center;
+  width: 100%;
+  max-width: 26rem;
+  padding: var(--space-3);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-top: 4px solid var(--color-brand);
+  border-radius: var(--radius-large);
+  box-shadow: 0 8px 24px var(--color-shadow);
+
+  @media (min-width: 30rem) {
+    padding: var(--space-4) var(--space-5);
+  }
+
+  h1 {
+    text-align: center;
+  }
+
+  .form {
+    max-width: none;
+    margin-bottom: var(--space-3);
+  }
+}
+
+.auth__links {
+  margin: 0;
+  text-align: center;
+}
+
+.prose {
+  max-width: 44rem;
+
+  h2 {
+    margin-top: var(--space-5);
+  }
+}
+
+.steps li {
+  margin-bottom: var(--space-2);
+}
+
+// Text the school has not supplied yet, marked so nobody takes it for the real thing.
+.placeholder {
+  padding: var(--space-3);
+  color: var(--color-muted);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+}

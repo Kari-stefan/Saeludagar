@@ -10,7 +10,7 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestones 1 to 5 are built: the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); and student sign-up and cancelling within the sign-up window. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up. The next step is milestone 6 (teacher tools and attendance). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+Milestones 1 to 5 are built: the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); and student sign-up and cancelling within the sign-up window. Milestone M5b, added from the project owner's design brief, gave the site the school's logo and red-and-white colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up. The next step is milestone 6 (teacher tools and attendance). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
@@ -20,9 +20,10 @@ Milestones 1 to 5 are built: the project scaffold and data model; login, account
 | [docs/run.md](docs/run.md) | **How to run the site on your computer**, with Windows notes and troubleshooting |
 | [docs/requirements.md](docs/requirements.md) | Original requirements (reference only) |
 | [docs/saeludagar-notes.txt](docs/saeludagar-notes.txt) | Original meeting notes (reference only) |
+| [docs/design-requirements.md](docs/design-requirements.md) | The project owner's design brief, built in milestone M5b (reference only) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code loads automatically in this repo |
 
-Where the original notes and AGENT_START.md disagree, AGENT_START.md wins. Unresolved items, such as SMTP access and the school's logo, are listed in section 15 of AGENT_START.md.
+Where the original notes and AGENT_START.md disagree, AGENT_START.md wins. Unresolved items, such as SMTP access and the server details, are listed in section 15 of AGENT_START.md.
 
 ## Tech stack
 
@@ -130,7 +131,7 @@ You need **Node.js 24 LTS**, a recent version: `node -v` prints `v24.something` 
 | `NODE_ENV` | `development` or `production` | `development` |
 | `PORT` | Port the site listens on | `3000` |
 | `BASE_URL` | Public address of the site, used in emails | `http://localhost:3000` |
-| `SCHOOL_NAME` | Shown in the title: "Sæludagar – {SCHOOL_NAME}" | empty |
+| `SCHOOL_NAME` | Shown in the header and the title: "Sæludagar – {SCHOOL_NAME}". Set it to `Fjölbrautaskólinn í Breiðholti` | empty |
 | `DATABASE_PATH` | SQLite database file | `./data/saeludagar.db` |
 | `UPLOAD_DIR` | Event images | `./uploads` |
 | `BACKUP_DIR` | Database backups | `./backups` |

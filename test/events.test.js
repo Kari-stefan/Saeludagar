@@ -212,14 +212,17 @@ describe('what guests and students see (BR-23 to BR-26, BR-60)', () => {
   });
 
   test('BR-25: filtering by braut shows that braut\'s events and the events for everyone', async () => {
-    const titles = (html) => [...html.matchAll(/<h3 class="event-card__title"><a href="\/events\/\d+">([^<]+)<\/a>/g)].map((m) => m[1]);
-    assert.deepEqual(titles((await as.guest.get('/')).html), ['Rafmagnsviðburður', 'Opinn viðburður', 'Starfsbrautarviðburður']);
+    const titles = (html) => [...html.matchAll(/<h3 class="event-card__title">([^<]+)<\/h3>/g)].map((m) => m[1]);
+    const chosen = (html) => [...html.matchAll(/<option value="([^"]*)" selected>/g)].map((m) => m[1]);
+    const all = (await as.guest.get('/')).html;
+    assert.deepEqual(titles(all), ['Rafmagnsviðburður', 'Opinn viðburður', 'Starfsbrautarviðburður']);
+    assert.match(all, /<option value="">Allar brautir<\/option>\s*<option value="Rafmagnsbraut">Rafmagnsbraut<\/option>/);
+    assert.deepEqual(chosen(all), []);
     const electricOnly = await as.guest.get('/?braut=Rafmagnsbraut');
     assert.deepEqual(titles(electricOnly.html), ['Rafmagnsviðburður', 'Opinn viðburður']);
-    assert.match(electricOnly.html, /<a href="\/\?braut=Rafmagnsbraut" aria-current="page">Rafmagnsbraut<\/a>/);
+    assert.deepEqual(chosen(electricOnly.html), ['Rafmagnsbraut']);
     assert.deepEqual(titles((await as.guest.get('/?braut=Starfsbraut')).html), ['Opinn viðburður', 'Starfsbrautarviðburður']);
     assert.deepEqual(titles((await as.guest.get('/?braut=Engin')).html).length, 3, 'an unknown braut shows everything');
-    assert.match((await as.guest.get('/')).html, /<a href="\/" aria-current="page">Allar brautir<\/a>/);
   });
 
   test('BR-26: the fee is shown in whole krónur, and 0 as "Ókeypis" / "Free"', async () => {

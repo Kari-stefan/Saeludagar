@@ -1,0 +1,31 @@
+<%#
+  The header's actions (§6): "Innskráning", or the signed-in status and "Útskráning"; the ÍS/EN
+  toggle (BR-59) and the light/dark switch (BR-62). Shown in the wide-screen bar and in the mobile
+  drawer, where the theme buttons show their names too. Takes `user`, `token` and `drawer`.
+-%>
+<div class="header-actions<%= drawer ? ' header-actions--drawer' : '' %>">
+  <% if (user) { -%>
+  <p class="user-status"><%- include('icon', { name: 'check' }) %><span><%= t('nav.signedIn', { name: user.name }) %></span></p>
+  <form class="header-actions__form" method="post" action="/logout">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <button type="submit" class="button button--small button--secondary"><%= t('nav.logout') %></button>
+  </form>
+  <% } else { -%>
+  <a class="button button--small" href="/login"<% if (locals.navPath === '/login') { %> aria-current="page"<% } %>><%= t('nav.login') %></a>
+  <% } -%>
+  <div class="header-actions__switches">
+    <form class="switch" method="post" action="/language" role="group" aria-label="<%= t('language.label') %>">
+      <input type="hidden" name="_csrf" value="<%= token %>">
+      <input type="hidden" name="returnTo" value="<%= currentPath %>">
+      <button type="submit" name="lang" value="is" lang="is" aria-label="<%= t('language.is') %>" aria-pressed="<%= lang === 'is' %>">ÍS</button>
+      <button type="submit" name="lang" value="en" lang="en" aria-label="<%= t('language.en') %>" aria-pressed="<%= lang === 'en' %>">EN</button>
+    </form>
+    <form class="switch" method="post" action="/theme" role="group" aria-label="<%= t('theme.label') %>">
+      <input type="hidden" name="_csrf" value="<%= token %>">
+      <input type="hidden" name="returnTo" value="<%= currentPath %>">
+      <% for (const [value, icon] of [['light', 'sun'], ['dark', 'moon']]) { -%>
+      <button type="submit" name="theme" value="<%= value %>" aria-pressed="<%= locals.theme === value %>"><%- include('icon', { name: icon }) %><span class="<%= drawer ? 'switch__label' : 'visually-hidden' %>"><%= t(`theme.${value}`) %></span></button>
+      <% } -%>
+    </form>
+  </div>
+</div>

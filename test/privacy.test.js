@@ -12,6 +12,8 @@ describe('privacy (BR-57, BR-19)', () => {
       const pages = [];
       const visit = async (path) => pages.push((await browser.get(path)).html);
       await visit('/');
+      await visit('/info');
+      await browser.post('/theme', { theme: 'dark', returnTo: '/' });
       await visit('/login/new-code');
       await browser.post('/login/new-code', { kennitala: admin.kennitala });
       await browser.post('/language', { lang: 'en', returnTo: '/' });
@@ -24,7 +26,9 @@ describe('privacy (BR-57, BR-19)', () => {
       assert.deepEqual([...browser.cookies.keys()], ['sid']);
       for (const html of pages) {
         assert.doesNotMatch(html, /(?:src|href|action)="(?:https?:)?\/\//, 'no third-party requests');
-        assert.doesNotMatch(html, /<script/, 'no scripts yet, and none from other sites');
+        for (const [script] of html.matchAll(/<script[^>]*>[\s\S]*?<\/script>/g)) {
+          assert.match(script, /^<script src="\/js\/[\w-]+\.js" defer><\/script>$/, 'only the site\'s own script files, nothing inline');
+        }
       }
       const cookie = (await site.browser().get('/')).setCookies[0];
       assert.match(cookie, /^sid=[^;]+; Path=\/; Expires=[^;]+; HttpOnly; SameSite=Lax$/);

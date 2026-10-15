@@ -78,7 +78,7 @@ The site has four roles. A co-teacher is a teacher acting on an event they were 
 
 | Role | Can do | Cannot do |
 |---|---|---|
-| **Guest** (not logged in) | View the front page (Sæludagar days, published events, braut filter). View published event pages with sign-up counts. Switch language. Log in. Request a new code. | Sign up for events. See drafts. See anyone's name. |
+| **Guest** (not logged in) | View the front page (Sæludagar days, published events, search, sort and braut filter) and the Upplýsingar page. View published event pages with sign-up counts. Switch language and light/dark mode. Log in. Request a new code. | Sign up for events. See drafts. See anyone's name. |
 | **Student** | Everything a guest can. Sign up for and cancel events within the rules in section 4. Use "Mínir viðburðir". Choose a course for each attended event, and change it until the deadline. | Have more than 4 sign-ups. Sign up for overlapping events. Sign up or cancel outside the sign-up window. See who else signed up. Choose a course that is not theirs, or the same course twice. Change choices after the deadline. Open teacher or admin pages. |
 | **Teacher** (as event owner) | Create events as drafts. Preview an event exactly as students will see it, then publish it. Edit and delete events (rules apply). Add and remove co-teachers. See participants (name, braut, email). Add students by searching for their name, and remove students. Copy all participant emails. Send a message to all participants from the site. Print the participant list. Mark attendance. | See or edit other teachers' events unless added as a co-teacher. See any kennitala. Delete an event once attendance has been marked. Push a student past 4 sign-ups or into an overlap when adding them. Open admin pages. |
 | ↳ **Co-teacher** (a teacher added to an event by its owner or an admin) | Everything the owner can do on that event, except the two things in the next column. | Delete the event. Add or remove co-teachers. |
@@ -209,23 +209,28 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **BR-60** In English, an event shows its English title and description if they exist, and the Icelandic text otherwise.
 - **BR-61** The Icelandic UI says "viðburður", never "atburður".
 
+### Appearance and the front page
+- **BR-62** Every page has a light and a dark mode. By default the site follows the device's setting. A switch in the header (and in the mobile menu) chooses light or dark, and the choice is remembered for the session, like the language (BR-59).
+- **BR-63** On the front page, guests and students can search the events by name and sort them: by date (earliest or latest first), by fee (lowest or highest first) or by name (A to Ö or Ö to A). Search, sort and the braut filter (BR-25) work together: applying one keeps the others. When nothing matches, the page says so.
+- **BR-64** A logged-in student's front page has two sections: "Þínir viðburðir" (the events they are signed up for, sorted by date and time by default) above "Aðrir viðburðir" (every other published event). Each section has its own search and sort, and changing one section's keeps the other's. Signing up or cancelling moves the event between the sections.
+
 ---
 
 ## 5. Core user flows
 
 ### Guest
 1. Opens saeludagar.is. The front page shows:
-   - a header: school logo, "Sæludagar – {school name}", ÍS/EN toggle, log in
+   - a header: school logo, "Sæludagar" and the school name, the links "Heimasíða" and "Upplýsingar", ÍS/EN toggle, light/dark switch, "Innskráning" (§6)
    - the Sæludagar days
-   - a braut filter
+   - a name search and a "Sía" menu with the sort order and the braut filter (BR-63)
    - published events, grouped by day and sorted by start time
-2. Filters by braut and opens an event page.
+2. Searches, sorts or filters by braut, and opens an event page with "Nánar".
 3. Clicks "Skrá mig" (sign me up), is sent to the login page, and returns to the event after logging in.
 
 ### Student
 1. Gets a 6-digit code by email, either from the admin's "Senda kóða" (BR-07) or by requesting one with "Fá nýjan kóða" (BR-08).
 2. Logs in with kennitala + code (BR-02).
-3. Browses or filters events. On an event page, clicks "Skrá mig":
+3. Browses, searches or filters events. The front page shows "Þínir viðburðir" above "Aðrir viðburðir" (BR-64). On an event page, clicks "Skrá mig":
    - If it works, a confirmation shows on screen and the event appears in "Mínir viðburðir".
    - If it is refused, the reason shows (BR-34).
 4. In "Mínir viðburðir", sees their sign-ups as "n / 4", and can cancel while the window is open (BR-36).
@@ -263,7 +268,19 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 ## 6. Pages/screens
 
 **On every page:**
-- A header with the logo, the site title "Sæludagar – {SCHOOL_NAME}", the ÍS/EN toggle, and log in / log out with the user's name.
+- One shared header (milestone M5b):
+  - **Wide screens (48rem and up):**
+    - The school logo on the left, linking to the front page.
+    - "Sæludagar" in the centre, with `SCHOOL_NAME` under it when set.
+    - Under the title, the navigation: "Heimasíða" (`/`), "Upplýsingar" (`/info`) and the user's own area ("Mínir viðburðir", "Kennarasvæði", "Stjórnendasvæði", as their role allows). The current page is marked with `aria-current`.
+    - Top right: "Innskráning" for guests. For logged-in users, a status reading "Skráð inn: {name}" and "Útskráning".
+    - The ÍS/EN toggle and the light/dark switch (BR-62).
+  - **Narrow screens:**
+    - The logo and the title, and a menu button on the right.
+    - The button opens a drawer from the side with the same links and actions.
+    - The drawer closes with its close button, with Escape, by tapping outside it, and when a link is chosen.
+    - The menu is a `<details>` element, so it opens and closes without JavaScript. `public/js/menu.js` adds Escape, tapping outside, and keeping focus inside the open drawer.
+- The page title (`<title>`) and the footer keep "Sæludagar – {SCHOOL_NAME}".
 - Every visible string comes from the i18n dictionaries.
 
 **Copy and paths:**
@@ -273,12 +290,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 ### Public
 | Path | Purpose | Key elements |
 |---|---|---|
-| `GET /` | Front page | The Sæludagar days. A braut filter ("Allar brautir" + each braut). Published events grouped by day and sorted by start time. Each event card shows the image, title, time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, the fee, "n / max", and an "Uppselt" badge when full. |
+| `GET /` | Front page | The Sæludagar days. Above the events (right-aligned on wide screens), a plain GET form: a name search field, a "Leita" button, and a "Sía" menu with the six sort orders and the braut filter ("Allar brautir" + each braut) (BR-63). Sorted by date, the events are grouped by day; otherwise they form one grid. When anything other than the defaults is chosen, a line under the controls names the choices, with a "Hreinsa" (clear) link. A message when nothing matches. For a logged-in student, the two sections of BR-64, each with its own search and "Sía": "Þínir viðburðir" (at most 4 events) is always one grid and its "Sía" has the sort order only, and when it is empty it says so and links down to "Aðrir viðburðir"; "Aðrir viðburðir" works like the guest list, braut filter included. The search matches the Icelandic and the English title, whatever the page's language. Each event card shows the image, title, date and time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, a short description, the fee, "n / max", an "Uppselt" badge when full, and a "Nánar" button to the event page. |
 | `GET /events/:id` | Event page (published only, or preview rights) | All event fields, "n / max" and "Uppselt". A "Skrá mig" or "Afskrá mig" button depending on state (guests are sent to log in). The refusal reason when a sign-up fails. |
-| `GET/POST /login` | Login | Kennitala and 6-digit code fields. The generic error from BR-04. A link to "Fá nýjan kóða". |
-| `GET/POST /login/new-code` | Request a new code | A kennitala field. The same confirmation message whatever happens (BR-08). |
+| `GET /info` | "Upplýsingar" | What Sæludagar is and how the site works: logging in, signing up for at most 4 events, attendance, and the course choice (§2 and the business rules). The current dates and deadlines from the settings. Contact details are a marked placeholder until the school supplies them; no rules or contacts are made up. |
+| `GET/POST /login` | Login | In a centred box, with a back link to the front page in the top-left corner. Kennitala and 6-digit code fields; the browser checks their format before sending. The generic error from BR-04. A link to "Fá nýjan kóða". There is no self-registration: accounts come from the CSV import and the admin. |
+| `GET/POST /login/new-code` | Request a new code | The same centred box, with a back link to the login page. A kennitala field. The same confirmation message whatever happens (BR-08). |
 | `POST /logout` | Log out | |
 | `POST /language` | Switch ÍS/EN | Returns to the same page. |
+| `POST /theme` | Switch light/dark (BR-62) | Returns to the same page. |
 
 ### Student
 | Path | Purpose | Key elements |
@@ -479,7 +498,7 @@ CREATE INDEX audit_at ON audit_log(at);
 3. If `locked_until` is in the future, fail with the BR-04 message.
 4. Verify the code with scrypt and `crypto.timingSafeEqual`.
 5. On failure, increment `failed_logins`. On the 5th failure, set `locked_until = now + 15 min` and reset the counter.
-6. On success, reset `failed_logins` and `locked_until`, regenerate the session ID, and store `{ userId, role, isAdmin, lang }` in the session. Set the cookie's maxAge to 2 h for students or 12 h for teachers, renewed on each request (BR-09).
+6. On success, reset `failed_logins` and `locked_until`, regenerate the session ID, and store `{ userId, role, isAdmin, lang }` in the session, plus `theme` if the visitor chose one (BR-62). Logout also keeps the language and theme. Set the cookie's maxAge to 2 h for students or 12 h for teachers, renewed on each request (BR-09).
 
 **Inactive accounts** fail exactly like a wrong code.
 
@@ -493,7 +512,7 @@ CREATE INDEX audit_at ON audit_log(at);
 - The store fills `user_id` from the session and deletes expired rows every 15 minutes.
 - Cookie: name `sid`, HttpOnly, SameSite=Lax, Secure in production. Options `rolling: true` and `saveUninitialized: false`.
 - The secret comes from `SESSION_SECRET`. Call `app.set('trust proxy', 1)` when `TRUST_PROXY=1`.
-- A guest who toggles the language gets a session to remember it. This is the same session cookie (BR-57).
+- A guest who toggles the language or the light/dark mode gets a session to remember it. This is the same session cookie (BR-57).
 
 **Authorization:** use middleware such as `requireStudent`, `requireTeacher`, `requireAdmin` and `requireEventAccess(level)`. The level is `owner` (owner or admin) or `editor` (owner, co-teacher or admin). Check on every request and every action. Never trust hidden form fields for identity or permissions.
 
@@ -722,6 +741,7 @@ docs/
   run.md               how to run the site locally; keep it current as milestones change commands
   requirements.md      original requirements (reference only)
   saeludagar-notes.txt original meeting notes (reference only)
+  design-requirements.md  design requirements from the project owner (reference only; built in M5b)
 src/
   server.js            entry point: env, start app, start jobs
   app.js               express app (helmet, session, csrf, i18n, routes, errors)
@@ -733,14 +753,15 @@ src/
   i18n/                is.json, en.json, index.js (t() with fallback to Icelandic)
   jobs/                outbox.js, sessionCleanup.js, autoPurge.js
   views/
-    partials/          head, header, footer, flash messages, event card
+    partials/          header (with nav-links, header-actions, icon), footer, flash messages, event card,
+                       browse-controls and event-groups (front page)
     public/ student/ teacher/ admin/ errors/
     emails/            plain-text bilingual email templates
 scss/                  main.scss, _tokens.scss (brand colours), partials
 public/
   css/                 compiled output (git-ignored)
-  js/                  small vanilla scripts (attendance autosave, copy emails, image preview)
-  img/                 default-event.svg, logo placeholder
+  js/                  small vanilla scripts (attendance autosave, copy emails, image preview, mobile menu)
+  img/                 default-event.svg, logo.svg (the school logo)
 scripts/               create-admin.js, backup.js, loadtest.js, seed-dev.js
 test/                  node:test files, named by feature, referencing BR IDs
 data/                  SQLite database (git-ignored)
@@ -793,13 +814,31 @@ These were decided in the interview; the items marked "assumed" still need confi
   - Set `<html lang="is">` or `<html lang="en">` to match.
   - Every string lives in `src/i18n/is.json` and `en.json`; no hard-coded text in views.
   - The Icelandic UI uses "viðburður" (BR-61). Emails are bilingual (BR-52).
-- **Branding:**
-  - Use the school's logo and colours, which will be supplied later (open questions 2–3).
-  - Until then, use a neutral placeholder palette defined in one tokens file (`scss/_tokens.scss` → CSS custom properties), so the brand can be swapped in one place. Use a text placeholder for the logo.
-  - Site title: "Sæludagar – {SCHOOL_NAME}".
+- **Branding (from `docs/design-requirements.md`, source DES; open question 3 is answered):**
+  - **The logo:** `public/img/logo.svg`, the school's red logo, supplied by the project owner. It is served from the site like everything else (§9).
+  - **The colours:** white is the main colour and red the accent.
+    - The logo's red is `#EB2C32`. White text on it reaches only 4.25:1.
+    - Buttons and red text therefore use the darker `#C81E26` (5.7:1 with white).
+    - In dark mode, red text uses a lighter red, so it keeps 4.5:1 on the dark background.
+  - **Where red is used:** primary buttons, the current navigation item and other important elements.
+  - **Tokens:** every colour lives in one tokens file (`scss/_tokens.scss` → CSS custom properties).
+  - **Site title:** "Sæludagar – {SCHOOL_NAME}".
+- **Light and dark mode (BR-62):**
+  - Light mode has white and light-grey backgrounds, dark text and red accents. Dark mode has dark backgrounds, light text and red accents.
+  - Both modes keep the contrast rules below.
+  - With no choice made, the site follows the device's setting (`prefers-color-scheme`).
+  - A choice sets `data-theme` on `<html>` and is kept in the session, so no extra cookie is needed (BR-57).
 - **Responsive (original NFR-02):**
-  - Mobile first, usable from 320 px wide; a card grid on wider screens.
-  - The attendance checklist is built for phones, with tap targets of at least 44 px.
+  - Mobile first, usable from 320 px wide, with no sideways scrolling.
+  - **The event card grid:**
+    - one column below 22.5rem (360 px)
+    - two columns from 22.5rem, so two per row on most phones
+    - three from 56rem
+    - at most four from 72rem
+  - **Controls:** the search and sort controls wrap onto new lines on narrow screens.
+  - **Header:** the header switches to the menu button below 48rem.
+  - **Phones:** the attendance checklist is built for phones, with tap targets of at least 44 px.
+- **Look and feel:** consistent spacing, buttons, borders and cards, with subtle hover and focus states on buttons, links and event cards. A whole event card opens the event page.
 - **Browsers (original NFR-03):** current Chrome, Firefox and Safari, on desktop and on mobile (iOS Safari, Android Chrome).
 - **Accessibility (WCAG 2.1 AA basics):**
   - keyboard access everywhere, with a visible focus indicator
@@ -809,10 +848,11 @@ These were decided in the interview; the items marked "assumed" still need confi
   - no information carried by colour alone (for example, "Uppselt" is written as text)
   - the event title as alt text for event images
   - a skip-to-content link
-- **JavaScript:** core flows work without JavaScript, using plain forms. JavaScript only adds:
+- **JavaScript:** core flows work without JavaScript, using plain forms. Search, sort and the theme switch are plain forms too. JavaScript only adds:
   - attendance autosave, with a "Vista" (save) button as fallback
   - copy-emails-to-clipboard
   - image preview on upload
+  - for the mobile menu and the front page's "Sía" menus: closing with Escape or by tapping outside; for the mobile menu also closing when a link is chosen and keeping focus inside it while open (both menus work without JavaScript)
 - **Fonts:** system font stack only, with no external requests.
 - **Formats:**
 
@@ -838,11 +878,12 @@ Everything in sections 3–11:
   - attendance checklist
 - **Student:** browse and filter by braut, sign up and cancel with every rule, "Mínir viðburðir", course choices.
 - **Site-wide:** public front page and event pages, ÍS/EN throughout, responsive, WCAG AA basics.
+- **Design (M5b):** the school's logo and colours, light and dark mode, the shared header with the mobile menu, search and sort on the front page, the two sections for students, and the Upplýsingar page (BR-62 to BR-64).
 - **Operations:** daily backups, the 1,000-user load test, deployment notes in the README.
 
 ### Later: Should (first after the MVP)
 - An email reminder, a few days before the deadline, to students who attended but have not chosen a course. The exact timing is open question 18.
-- A search box and a filter by day on the front page.
+- A filter by day on the front page. (The search box moved into the MVP with M5b.)
 - A confirmation email when a student signs up or cancels.
 - Statistics for the admin: sign-ups and attendance per event and per braut.
 
@@ -950,6 +991,25 @@ Acceptance:
 - A 5th sign-up is refused.
 - Sign-up and cancel fail outside the window.
 
+### M5b: Design and layout
+Added on 15 October 2026 from `docs/design-requirements.md` (source DES), and built before M6. It changes no data model and adds no packages.
+
+Do:
+- **Brand and theme:** the logo, the red-and-white tokens for light and dark mode, and the light/dark switch (BR-62).
+- **Header:** the shared header from §6, with the wide-screen navigation and the mobile drawer (`public/js/menu.js` only enhances it).
+- **Front page:** the new event card and grid (§11), search and "Sía" (BR-63), and the two sections for students (BR-64).
+- **Pages:** the Upplýsingar page (`GET /info`), and the login and new-code pages in a centred box with a back link.
+- **Restyle:** the existing pages, using the new tokens. Their content does not change.
+
+Acceptance:
+- **Tests:** they cover BR-62 to BR-64 and the new §6 rows (`GET /info`, `POST /theme`).
+- **Search and sort:** search, sort and the braut filter combine, and changing one keeps the others. The same holds between the two student sections.
+- **The two sections:** an event the student signs up for shows in "Þínir viðburðir" and not in "Aðrir viðburðir". After cancelling, it moves back.
+- **Without JavaScript:** the menu opens and closes, and the theme switch, search and sort all work.
+- **Cookies:** the theme choice sets no cookie beyond the session cookie (BR-57).
+- **Rules kept:** no new packages, no inline scripts or styles (§9 item 2), and no "atburður" (BR-61).
+- **Checked by hand:** in the browser's device emulation at 320 px, 360 px, 768 px and 1280 px, in both modes. No page scrolls sideways, the grid has the §11 column counts, and the menu works with mouse, touch and keyboard.
+
 ### M6: Teacher tools and attendance
 Do:
 - **Participants:** the participant table, name search and manual add (BR-37), and removing students.
@@ -1011,8 +1071,8 @@ Each item names the section or milestone it blocks and what to do until it is an
 | # | Question | Blocks | Until answered |
 |---|---|---|---|
 | 1 | **Final student verification method.** The working plan is kennitala + a 6-digit code sent by email; the team said "we'll figure it out later". | §8, M2 | Build the working plan. |
-| 2 | **School name** for the site title. | §11 | Use `SCHOOL_NAME` (empty placeholder). |
-| 3 | **School logo files and colour codes.** | §11 | Use the placeholder tokens and a text logo. |
+| 2 | **School name** for the site title. Answered on 15 October 2026: Fjölbrautaskólinn í Breiðholti (FB), the school of the supplied logo. | §11 | Set `SCHOOL_NAME` in `.env`; the code keeps no default. |
+| 3 | **School logo files and colour codes.** Answered on 15 October 2026: the red logo (`#EB2C32`) and red and white (DES, §11). | §11 | Built in M5b. |
 | 4 | **SMTP access** from the kerfisstjóri: host, port, account, noreply address, per-minute sending limit. | §8, §10, real sending in M2–M3 | Use the console transport. |
 | 5 | **Server details:** OS (assumed Linux), Node 24 availability, nginx/HTTPS, who sets it up. | §10, M8 deployment notes | Write the notes for Linux. |
 | 6 | **Domain saeludagar.is:** who controls the DNS, and what is on the site now. | §10 deployment | Nothing to build. |
@@ -1040,6 +1100,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 - **NOTES**: `docs/saeludagar-notes.txt` (originally `Sæludagar.txt`), the meeting notes: people, needs, the data source, kennitala checks.
 - **INT**: the interview with the project owner on 2 October 2026, including its confirmation round.
 - **EMAIL**: the school's email to students of 8 March 2026, pasted by the project owner during the interview (INT).
+- **DES**: `docs/design-requirements.md`, the design requirements and logo from the project owner on 15 October 2026, with the owner's decisions of that day. The site stays bilingual. The login stays kennitala + code, with no self-registration. The rest is built in M5b.
 
 Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur" and "Áfangastjóri" and some teacher notes. They were used only to prompt interview questions; every decision they touched is listed as INT.
 
@@ -1107,6 +1168,9 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | BR-59 | INT (bilingual from the start, changed during the interview) |
 | BR-60 | INT |
 | BR-61 | INT; EMAIL (the school uses "viðburður") |
+| BR-62 | DES (light and dark mode, theme switch) |
+| BR-63 | DES (search, "Leita", "Sía" and the six sort orders); BR-25 (the braut filter, kept inside "Sía") |
+| BR-64 | DES ("Þínir atburðir" / "Aðrir atburðir", written "viðburðir" per BR-61) |
 
 ### Non-functional requirements and stack
 | Item | Source | Where |
@@ -1114,6 +1178,7 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | NFR-01 (kennitala protection) | REQ, resolved in INT | §8, §9 |
 | NFR-02 (responsive) | REQ | §11 |
 | NFR-03 (Chrome, Firefox, Safari) | REQ | §11 |
+| The logo, red and white, the header and mobile menu, the card grid, the Upplýsingar page | DES | §6, §11, M5b |
 | NFR-04 (1,000 concurrent users) | REQ; INT (load test) | §10, M8 |
 | Stack: Node.js, EJS, SCSS, SQLite, JavaScript | REQ ("Tæki") | §10 |
 | Express 5, express-session, better-sqlite3, Node 24 LTS, school server, saeludagar.is, school SMTP, daily backups kept 7 days, WCAG AA, school branding, timeline (1 February 2027 / March 2027), MVP, Should, Could, Later and Out of scope lists | INT | §10–§13 |

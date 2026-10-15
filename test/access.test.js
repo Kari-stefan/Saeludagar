@@ -26,6 +26,7 @@ describe('role guards (AGENT_START §8, §9 item 8)', () => {
   // [path, guest, student, teacher, admin]
   const expected = [
     ['/', 200, 200, 200, 200],
+    ['/info', 200, 200, 200, 200],
     ['/events/1', 200, 200, 200, 200],
     ['/my-events', '/login', 200, 403, 403],
     ['/teacher', '/login', 403, 200, 200],
@@ -124,7 +125,7 @@ describe('CSRF protection (AGENT_START §8, §9 item 3)', () => {
     const browser = site.browser();
     const page = await browser.get('/login');
     const tokens = [...page.html.matchAll(/name="_csrf" value="([^"]+)"/g)].map((m) => m[1]);
-    assert.equal(tokens.length, 2, 'the login form and the language switch');
+    assert.equal(tokens.length, 5, 'the login form, and the language and theme switches in the header bar and the drawer');
     assert.equal(new Set(tokens).size, 1);
     assert.equal(await browser.csrfToken('/'), tokens[0]);
   });

@@ -1,13 +1,17 @@
-<%# One published event on the front page (§6). Takes `event`, with brautir and signups. -%>
-<% const title = eventText(event, 'title'); -%>
+<%#
+  One published event on the front page (§6). Takes `event` (with brautir and signups) and the
+  heading `level`. The "Nánar" link stretches over the whole card, so the card opens the event.
+-%>
+<% const title = eventText(event, 'title'); const level = locals.level ?? 3; -%>
 <article class="event-card">
   <img class="event-card__image" src="<%= event.image_file ? `/uploads/${event.image_file}` : '/img/default-event.svg' %>" alt="<%= title %>" loading="lazy">
   <div class="event-card__body">
-    <h3 class="event-card__title"><a href="/events/<%= event.id %>"><%= title %></a></h3>
-    <p class="event-card__meta"><%= formatTimeRange(event.start_time, event.end_time) %> · <%= event.location %></p>
+    <h<%= level %> class="event-card__title"><%= title %></h<%= level %>>
+    <p class="event-card__meta"><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %><br><%= event.location %></p>
     <% if (event.brautir.length > 0) { -%>
     <p class="event-card__brautir"><%= event.brautir.join(', ') %></p>
     <% } -%>
+    <p class="event-card__summary"><%= excerpt(eventText(event, 'description')) %></p>
     <ul class="badges">
       <% if (event.braut_restricted) { -%>
       <li class="badge"><%= t('events.restricted') %></li>
@@ -18,5 +22,6 @@
       <li class="badge badge--full"><%= t('events.full') %></li>
       <% } -%>
     </ul>
+    <a class="button event-card__more" href="/events/<%= event.id %>"><%= t('events.more') %><span class="visually-hidden">: <%= title %></span></a>
   </div>
 </article>
