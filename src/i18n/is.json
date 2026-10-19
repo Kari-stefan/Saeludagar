@@ -332,6 +332,32 @@
       "choose": "Bæta við samkennara",
       "add": "Bæta við"
     },
+    "participants": {
+      "heading": "Þátttakendur",
+      "count": "{count} / {capacity} skráðir",
+      "name": "Nafn",
+      "braut": "Braut",
+      "email": "Netfang",
+      "actions": "Aðgerðir",
+      "none": "Engir þátttakendur enn.",
+      "remove": "Fjarlægja",
+      "removed": "Nemandinn var fjarlægður af viðburðinum.",
+      "add": "Bæta við nemanda",
+      "searchLabel": "Leita eftir nafni nemanda",
+      "search": "Leita",
+      "results": "Leitarniðurstöður",
+      "noResults": "Engir nemendur fundust.",
+      "addStudent": "Bæta við",
+      "added": "Nemandinn var skráður á viðburðinn.",
+      "errors": {
+        "notFound": "Valinn nemandi fannst ekki.",
+        "already": "Nemandinn er þegar skráður á þennan viðburð.",
+        "limit": "Nemandinn er þegar skráður á {max} viðburði, sem er hámarkið.",
+        "overlap": "Viðburðurinn skarast á við {title} ({when}), sem nemandinn er þegar skráður á.",
+        "notSignedUp": "Nemandinn er ekki skráður á þennan viðburð.",
+        "attended": "Ekki er hægt að fjarlægja nemanda eftir að mæting hefur verið skráð."
+      }
+    },
     "form": {
       "noDays": "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð.",
       "titleIs": "Heiti",

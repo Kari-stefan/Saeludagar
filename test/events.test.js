@@ -5,7 +5,7 @@ import path from 'node:path';
 import { toIso } from '../src/db/index.js';
 import { ROOT_DIR } from '../src/config.js';
 import { createEvent, getEvent, updateEvent, validateEvent } from '../src/services/events.js';
-import { startSite } from './helpers.js';
+import { insertEvent, startSite } from './helpers.js';
 
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200, 1)]);
 const JPG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 2)]);
@@ -482,5 +482,99 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
     await as.admin.post(`/teacher/events/${id}`, { action: 'remove-coteacher', teacher: String(people.coteacher.id) });
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE event_id = ?').pluck().get(id), 0);
     assert.equal((await as.coteacher.get(`/teacher/events/${id}`)).status, 403, 'removed co-teachers lose access');
+  });
+});
+
+describe('participant management (BR-37, BR-56)', () => {
+  beforeEach(() => {
+    site.db.exec('DELETE FROM registrations; DELETE FROM event_brautir; DELETE FROM events; DELETE FROM audit_log');
+  });
+
+  test('BR-37: teachers see participants (name, braut, email), search by name and never see kennitala', async () => {
+    const id = await create(as.owner, { capacity: '10', brautir: ['Rafmagnsbraut'], braut_restricted: '1' });
+    register(id, people.student.id);
+
+    const page = (await as.owner.get(`/teacher/events/${id}?search=Nemandi`)).html;
+    assert.match(page, /<h2>Þátttakendur<\/h2>/);
+    assert.match(page, /Jóna Nemandi/);
+    assert.match(page, /Rafmagnsbraut/);
+    assert.match(page, /profun@example\.is/);
+    assert.match(page, /Leitarniðurstöður[\s\S]*Páll Nemandi[\s\S]*Starfsbraut/);
+    assert.doesNotMatch(page, new RegExp(people.student.kennitala));
+    assert.doesNotMatch(page, /Kennitala/);
+  });
+
+  test('BR-37: manual add may bypass event limits but not 4-event and overlap student limits; BR-56 audit log', async () => {
+    const target = await create(as.owner, {
+      title_is: 'Takmarkaður viðburður',
+      capacity: '1',
+      brautir: ['Starfsbraut'],
+      braut_restricted: '1',
+    });
+    register(target, people.student2.id);
+    const add = await as.owner.post(`/teacher/events/${target}`, { action: 'add-student', student: String(people.student.id), search: 'Jóna' });
+    assert.equal(add.location, `/teacher/events/${target}?search=J%C3%B3na`);
+    const targetRows = site.db.prepare('SELECT student_id, added_by FROM registrations WHERE event_id = ? ORDER BY student_id').all(target);
+    assert.deepEqual(targetRows, [
+      { student_id: people.student.id, added_by: people.owner.id },
+      { student_id: people.student2.id, added_by: null },
+    ]);
+    assert.match((await as.owner.get(`/teacher/events/${target}`)).html, /2 \/ 1 skráðir/);
+
+    const limited = await site.addUser({ role: 'student', name: 'Lína Hámark', email: 'limit@example.is' });
+    const overlap = await site.addUser({ role: 'student', name: 'Óli Skörun', email: 'overlap@example.is' });
+    site.db.prepare('UPDATE users SET braut = ? WHERE id IN (?, ?)').run('Rafmagnsbraut', limited.id, overlap.id);
+    for (let i = 0; i < 4; i += 1) {
+      const day = `2027-03-${String(20 + i).padStart(2, '0')}`;
+      const eventId = insertEvent(site.db, people.owner.id, { event_date: day, start_time: '08:00', end_time: '09:00' });
+      register(eventId, limited.id);
+    }
+    const clash = insertEvent(site.db, people.owner.id, {
+      title_is: 'Skarast',
+      event_date: '2027-03-11',
+      start_time: '11:00',
+      end_time: '13:00',
+    });
+    register(clash, overlap.id);
+
+    await as.owner.post(`/teacher/events/${target}`, { action: 'add-student', student: String(limited.id), search: 'Lína' });
+    assert.match((await as.owner.get(`/teacher/events/${target}?search=L%C3%ADna`)).html, /Nemandinn er þegar skráður á 4 viðburði, sem er hámarkið\./);
+    await as.owner.post(`/teacher/events/${target}`, { action: 'add-student', student: String(overlap.id), search: 'Óli' });
+    assert.match((await as.owner.get(`/teacher/events/${target}?search=%C3%93li`)).html, /Viðburðurinn skarast á við Skarast/);
+
+    const audit = site.db.prepare('SELECT actor_id, action, event_id, student_id, details FROM audit_log').all();
+    assert.deepEqual(audit, [{
+      actor_id: people.owner.id,
+      action: 'signup.create',
+      event_id: target,
+      student_id: people.student.id,
+      details: '{"by":"teacher"}',
+    }]);
+  });
+
+  test('BR-37: owner/co-teacher/admin can remove students when allowed; removal is audited', async () => {
+    const id = await create(as.owner, { title_is: 'Fjarlægjanlegur viðburður' });
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, people.coteacher.id);
+    register(id, people.student.id);
+    register(id, people.student2.id, 1);
+
+    const blocked = await as.coteacher.post(`/teacher/events/${id}`, { action: 'remove-student', student: String(people.student2.id) });
+    assert.equal(blocked.location, `/teacher/events/${id}`);
+    assert.match((await as.coteacher.get(`/teacher/events/${id}`)).html, /Ekki er hægt að fjarlægja nemanda eftir að mæting hefur verið skráð\./);
+
+    const byCoteacher = await as.coteacher.post(`/teacher/events/${id}`, { action: 'remove-student', student: String(people.student.id) });
+    assert.equal(byCoteacher.location, `/teacher/events/${id}`);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM registrations WHERE event_id = ? AND student_id = ?').pluck().get(id, people.student.id), 0);
+
+    const added = await site.addUser({ role: 'student', name: 'Arna Ný', email: 'arna@example.is' });
+    register(id, added.id);
+    const byAdmin = await as.admin.post(`/teacher/events/${id}`, { action: 'remove-student', student: String(added.id) });
+    assert.equal(byAdmin.location, `/teacher/events/${id}`);
+
+    const audit = site.db.prepare("SELECT actor_id, action, student_id FROM audit_log WHERE action = 'signup.delete' ORDER BY id").all();
+    assert.deepEqual(audit, [
+      { actor_id: people.coteacher.id, action: 'signup.delete', student_id: people.student.id },
+      { actor_id: people.admin.id, action: 'signup.delete', student_id: added.id },
+    ]);
   });
 });

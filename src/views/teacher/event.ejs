@@ -33,6 +33,92 @@
 <p><%= t('events.draftHelp') %></p>
 <% } -%>
 
+<h2><%= t('events.participants.heading') %></h2>
+<p><%= t('events.participants.count', { count: participants.length, capacity: event.capacity }) %></p>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t('events.participants.name') %></th>
+        <th scope="col"><%= t('events.participants.braut') %></th>
+        <th scope="col"><%= t('events.participants.email') %></th>
+        <th scope="col"><%= t('signups.attendance') %></th>
+        <th scope="col"><span class="visually-hidden"><%= t('events.participants.actions') %></span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const student of participants) { -%>
+      <tr>
+        <td><%= student.name %></td>
+        <td><%= student.braut || '—' %></td>
+        <td><a href="mailto:<%= student.email %>"><%= student.email %></a></td>
+        <td><%= student.attended ? t('signups.attendedYes') : t('signups.attendedNo') %></td>
+        <td>
+          <% if (!student.attended) { -%>
+          <form method="post" action="/teacher/events/<%= event.id %>" class="table__actions">
+            <input type="hidden" name="_csrf" value="<%= token %>">
+            <input type="hidden" name="action" value="remove-student">
+            <input type="hidden" name="student" value="<%= student.id %>">
+            <button type="submit" class="button button--small button--secondary"><%= t('events.participants.remove') %><span class="visually-hidden">: <%= student.name %></span></button>
+          </form>
+          <% } -%>
+        </td>
+      </tr>
+      <% } -%>
+      <% if (participants.length === 0) { -%>
+      <tr>
+        <td colspan="5"><%= t('events.participants.none') %></td>
+      </tr>
+      <% } -%>
+    </tbody>
+  </table>
+</div>
+
+<h2><%= t('events.participants.add') %></h2>
+<form class="form" method="get" action="/teacher/events/<%= event.id %>">
+  <div class="field">
+    <label class="field__label" for="student-search"><%= t('events.participants.searchLabel') %></label>
+    <input class="field__input" id="student-search" name="search" type="search" maxlength="100" value="<%= studentSearch %>">
+  </div>
+  <button type="submit" class="button"><%= t('events.participants.search') %></button>
+</form>
+<% if (studentSearch) { -%>
+<h3><%= t('events.participants.results') %></h3>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t('events.participants.name') %></th>
+        <th scope="col"><%= t('events.participants.braut') %></th>
+        <th scope="col"><span class="visually-hidden"><%= t('events.participants.actions') %></span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const student of studentResults) { -%>
+      <tr>
+        <td><%= student.name %></td>
+        <td><%= student.braut || '—' %></td>
+        <td>
+          <form method="post" action="/teacher/events/<%= event.id %>" class="table__actions">
+            <input type="hidden" name="_csrf" value="<%= token %>">
+            <input type="hidden" name="action" value="add-student">
+            <input type="hidden" name="student" value="<%= student.id %>">
+            <input type="hidden" name="search" value="<%= studentSearch %>">
+            <button type="submit" class="button button--small"><%= t('events.participants.addStudent') %><span class="visually-hidden">: <%= student.name %></span></button>
+          </form>
+        </td>
+      </tr>
+      <% } -%>
+      <% if (studentResults.length === 0) { -%>
+      <tr>
+        <td colspan="3"><%= t('events.participants.noResults') %></td>
+      </tr>
+      <% } -%>
+    </tbody>
+  </table>
+</div>
+<% } -%>
+
 <% if (access === 'owner') { -%>
 <h2><%= t('events.delete.heading') %></h2>
 <% if (event.attended > 0) { -%>
