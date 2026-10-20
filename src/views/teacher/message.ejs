@@ -1,3 +1,22 @@
-<%- include('../partials/header', { pageTitle: t('pages.message') }) %>
-<h1><%= t('pages.message') %></h1>
+<%#
+  BR-50: a message to everyone signed up. Subject and text, written in any language. It is sent
+  from the school's noreply address, with the teacher as Reply-To.
+-%>
+<% const title = eventText(event, 'title'); -%>
+<%- include('../partials/header', { pageTitle: `${t('pages.message')}: ${title}` }) %>
+<p class="eyebrow"><%= t('pages.message') %></p>
+<h1><%= title %></h1>
+<%- include('../partials/form-errors', { errors }) %>
+<% if (errors.recipients) { -%>
+<div class="alert alert--error"><p><%= t(errors.recipients) %></p></div>
+<% } -%>
+<p class="lead"><%= t('message.recipients', { count: recipients }) %></p>
+<p class="field__hint"><%= t('message.help') %></p>
+<form class="form form--wide" method="post" action="/teacher/events/<%= event.id %>/message">
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <%- include('../partials/field', { name: 'subject', label: t('message.subject'), value: values.subject ?? '', required: true, maxlength: limits.subject, error: errors.subject }) %>
+  <%- include('../partials/field', { name: 'body', label: t('message.body'), hint: t('message.bodyHint'), type: 'textarea', value: values.body ?? '', required: true, maxlength: limits.body, error: errors.body }) %>
+  <button type="submit" class="button"<% if (recipients === 0) { %> disabled<% } %>><%= t('message.send') %></button>
+</form>
+<p><a href="/teacher/events/<%= event.id %>"><%= t('attendance.back') %></a></p>
 <%- include('../partials/footer') %>

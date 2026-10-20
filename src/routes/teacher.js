@@ -3,6 +3,8 @@ import multer from 'multer';
 import { requireEventAccess, requireTeacher } from '../middleware/auth.js';
 import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
+import { attendanceWindow, setAttendance } from '../services/attendance.js';
+import { queueTeacherMessage, validateMessage } from '../services/email.js';
 import {
   addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, teacherEvents, updateEvent,
   validateEvent,
@@ -36,8 +38,10 @@ function uploadedImage(req) {
   return type ? { bytes: req.file.buffer, type } : { error: 'events.errors.imageType' };
 }
 
-// Mounted at /teacher; teachers and admins only. Attendance, print and message are stubs until
-// milestone 6.
+// A request from the attendance page's script, which wants a JSON answer instead of a page.
+const wantsJson = (req) => Boolean(req.get('Accept')?.includes('application/json'));
+
+// Mounted at /teacher; teachers and admins only.
 export function teacherRouter({ config, db }) {
   const router = express.Router();
   router.use(requireTeacher);
@@ -125,9 +129,78 @@ export function teacherRouter({ config, db }) {
   router.get('/events/:id/preview', access('editor'), (req, res) => {
     res.render('teacher/preview', { event: req.event, window: signupWindow(db) });
   });
-  router.get('/events/:id/attendance', access('editor'), (req, res) => res.render('teacher/attendance'));
-  router.get('/events/:id/print', access('editor'), (req, res) => res.render('teacher/print'));
-  router.get('/events/:id/message', access('editor'), (req, res) => res.render('teacher/message'));
+  // BR-38, BR-39: the checklist for the event day. Each tick saves on its own from the page's
+  // script; without JavaScript the "Vista" button saves the whole list.
+  router.get('/events/:id/attendance', access('editor'), (req, res) => {
+    res.render('teacher/attendance', {
+      event: req.event,
+      participants: eventParticipants(db, req.event.id),
+      window: attendanceWindow(db, req.event),
+    });
+  });
+
+  router.post('/events/:id/attendance', access('editor'), (req, res, next) => {
+    const { event } = req;
+    const body = req.body ?? {};
+    const single = body.student !== undefined;
+    const ids = (value) => [].concat(value ?? []).map(Number).filter(Number.isSafeInteger);
+    let changes;
+    if (single) {
+      const studentId = Number(body.student);
+      if (!Number.isSafeInteger(studentId)) return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
+      changes = [{ studentId, attended: body.attended === '1' }];
+    } else {
+      // Only the rows changed on this page: one loaded earlier must not undo newer ticks (and,
+      // through BR-41, delete a course choice).
+      const present = new Set(ids(body.present));
+      const marked = new Set(ids(body.marked));
+      changes = ids(body.listed)
+        .filter((studentId) => present.has(studentId) !== marked.has(studentId))
+        .map((studentId) => ({ studentId, attended: present.has(studentId) }));
+    }
+    const result = setAttendance(db, req.user.id, event, changes);
+    const error = result.error ?? (single && result.missing > 0 ? 'attendance.errors.notSignedUp' : null);
+
+    if (wantsJson(req)) {
+      if (error) return res.status(409).json({ ok: false, message: res.locals.t(error) });
+      const counts = db.prepare('SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE attended = 1) AS count FROM registrations WHERE event_id = ?')
+        .get(event.id);
+      return res.json({ ok: true, message: res.locals.t('attendance.saved'), summary: res.locals.t('attendance.count', counts) });
+    }
+    if (error) setFlash(req, 'error', error);
+    else setFlash(req, 'success', 'attendance.savedAll');
+    res.redirect(303, `/teacher/events/${event.id}/attendance`);
+  });
+
+  // BR-51: name, braut and an empty box per participant, for printing.
+  router.get('/events/:id/print', access('editor'), (req, res) => {
+    res.render('teacher/print', { event: req.event, participants: eventParticipants(db, req.event.id) });
+  });
+
+  // BR-50: a message to everyone signed up, sent from the noreply address with the teacher as Reply-To.
+  const recipientsOf = (event) => eventParticipants(db, event.id).filter((student) => student.active);
+  const renderMessage = (req, res, status, { values = {}, errors = {} } = {}) => res.status(status).render('teacher/message', {
+    event: req.event,
+    recipients: recipientsOf(req.event).length,
+    values,
+    errors,
+    limits: validateMessage({}).limits,
+  });
+
+  router.get('/events/:id/message', access('editor'), (req, res) => renderMessage(req, res, 200));
+
+  router.post('/events/:id/message', access('editor'), (req, res) => {
+    const { event } = req;
+    const { values, errors } = validateMessage(req.body ?? {});
+    const recipients = recipientsOf(event);
+    if (recipients.length === 0) errors.recipients = 'message.errors.noRecipients';
+    if (Object.keys(errors).length > 0) return renderMessage(req, res, 400, { values, errors });
+    const count = queueTeacherMessage(db, {
+      event, teacherId: req.user.id, studentIds: recipients.map((student) => student.id), ...values,
+    });
+    setFlash(req, 'success', 'message.sent', { count });
+    res.redirect(303, `/teacher/events/${event.id}`);
+  });
 
   function refusalParams(result, res) {
     if (!result.event) return result.params ?? {};

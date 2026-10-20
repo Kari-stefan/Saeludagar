@@ -1,3 +1,52 @@
-<%- include('../partials/header', { pageTitle: t('pages.attendance') }) %>
-<h1><%= t('pages.attendance') %></h1>
+<%#
+  BR-38, BR-39: the attendance checklist, built for a phone. Large checkboxes; with JavaScript each
+  tick saves at once (public/js/attendance.js), without it the "Vista" button saves the list.
+  Read-only before the event's date and after the course-choice deadline.
+-%>
+<% const title = eventText(event, 'title'); const count = participants.filter((student) => student.attended).length; -%>
+<%- include('../partials/header', { pageTitle: `${t('pages.attendance')}: ${title}` }) %>
+<p class="eyebrow"><%= t('pages.attendance') %></p>
+<h1><%= title %></h1>
+<p><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %> · <%= event.location %></p>
+<%- include('../partials/flash') %>
+
+<div class="alert">
+  <% if (window.phase === 'before') { -%>
+  <p><%= t('attendance.before', { opens: formatDateTime(window.opens) }) %></p>
+  <% } else if (window.phase === 'after') { -%>
+  <p><%= t('attendance.after', { deadline: formatDateTime(window.deadline) }) %></p>
+  <% } else { -%>
+  <p><%= t('attendance.open') %> <%= window.deadline ? t('attendance.deadline', { deadline: formatDateTime(window.deadline) }) : t('attendance.noDeadline') %></p>
+  <% } -%>
+</div>
+
+<% if (participants.length === 0) { -%>
+<p class="empty"><%= t('attendance.none') %></p>
+<% } else { -%>
+<p class="attendance-count" data-attendance-count><%= t('attendance.count', { count, total: participants.length }) %></p>
+<form class="attendance" method="post" action="/teacher/events/<%= event.id %>/attendance"<% if (window.open) { %> data-autosave data-error="<%= t('attendance.errors.network') %>"<% } %>>
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <ul class="attendance__list">
+    <% for (const student of participants) { -%>
+    <li>
+      <input type="hidden" name="listed" value="<%= student.id %>">
+      <%# The state when the page loaded, so "Vista" saves only what was changed here, never an older state over someone else's tick. -%>
+      <input type="hidden" name="marked" value="<%= student.id %>"<% if (!student.attended) { %> disabled<% } %>>
+      <label class="attendance__item">
+        <input type="checkbox" name="present" value="<%= student.id %>"<% if (student.attended) { %> checked<% } %><% if (!window.open) { %> disabled<% } %>>
+        <span class="attendance__name"><%= student.name %><% if (student.braut) { %> <span class="attendance__braut"><%= student.braut %></span><% } %></span>
+      </label>
+    </li>
+    <% } -%>
+  </ul>
+  <% if (window.open) { -%>
+  <p><button type="submit" class="button" data-save-all><%= t('attendance.save') %></button></p>
+  <% } -%>
+</form>
+<p class="attendance__status" role="status" data-attendance-status></p>
+<% if (window.open) { -%>
+<script src="/js/attendance.js" defer></script>
+<% } -%>
+<% } -%>
+<p><a href="/teacher/events/<%= event.id %>"><%= t('attendance.back') %></a></p>
 <%- include('../partials/footer') %>

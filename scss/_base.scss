@@ -31,6 +31,12 @@ img {
   max-width: 100%;
 }
 
+// `hidden` must win over classes that set display, such as .button, so scripts can hide and
+// show controls (the attendance "Vista" button, the copy-emails button).
+[hidden] {
+  display: none !important;
+}
+
 h1 {
   font-size: 1.75rem;
   line-height: 1.25;

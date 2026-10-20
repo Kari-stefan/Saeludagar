@@ -59,10 +59,11 @@ export function createMailer(config, { log = console.log, retryDelayMs = 3000, t
   }
 
   return {
-    async send({ to, subject, text }) {
+    async send({ to, replyTo, subject, text }) {
       log([
         '--- Email (not sent, because SMTP_HOST is empty) ---',
         `To: ${to.name} <${to.address}>`,
+        ...(replyTo ? [`Reply-To: ${replyTo.name} <${replyTo.address}>`] : []),
         `Subject: ${subject}`,
         '',
         text.trimEnd(),
@@ -78,6 +79,43 @@ export function queueEmail(db, { kind, userId, priority = 0, payload = null }) {
   const now = toIso();
   db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, payload, created_at, next_try_at)
     VALUES (?, ?, ?, ?, ?, ?)`).run(kind, priority, userId, payload && JSON.stringify(payload), now, now);
+}
+
+// BR-50: a teacher's message to an event's participants. One subject line of at most 150
+// characters and a text of at most 5,000; line breaks are allowed in the text only. Returns
+// { values, errors }, errors as i18n keys by field.
+const MESSAGE_LIMITS = { subject: 150, body: 5000 };
+const CONTROL_CHARACTERS = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/;
+export function validateMessage(input) {
+  const values = {
+    subject: typeof input.subject === 'string' ? input.subject.trim() : '',
+    body: typeof input.body === 'string' ? input.body.replace(/\r\n?/g, '\n').trim() : '',
+  };
+  const errors = {};
+  for (const field of ['subject', 'body']) {
+    if (!values[field]) errors[field] = 'message.errors.required';
+    else if (values[field].length > MESSAGE_LIMITS[field]) errors[field] = `message.errors.${field}Long`;
+    // A line break in the subject could start a new email header, so it is refused here rather than left to nodemailer.
+    else if (CONTROL_CHARACTERS.test(values[field]) || (field === 'subject' && /[\r\n]/.test(values[field]))) errors[field] = 'message.errors.characters';
+  }
+  return { values, errors, limits: MESSAGE_LIMITS };
+}
+
+// BR-50: one email per participant, from the school's noreply address with the teacher as
+// Reply-To. The payload holds the event's details as they are now. Returns the number queued.
+export function queueTeacherMessage(db, { event, teacherId, studentIds, subject, body }) {
+  const teacher = db.prepare('SELECT name, email FROM users WHERE id = ?').get(teacherId);
+  const payload = {
+    event: Object.fromEntries(['id', 'title_is', 'title_en', 'event_date', 'start_time', 'end_time', 'location'].map((key) => [key, event[key]])),
+    teacher: teacher.name,
+    replyTo: { name: teacher.name, address: teacher.email },
+    subject,
+    body,
+  };
+  db.transaction(() => {
+    for (const userId of studentIds) queueEmail(db, { kind: 'teacher_message', userId, payload });
+  })();
+  return studentIds.length;
 }
 
 // A row whose next_try_at is NULL has used up its retries and stays for the admin to see.
@@ -102,8 +140,12 @@ export async function renderEmail(kind, data) {
   });
   // A Windows checkout gives the templates CRLF line endings; the email is the same either way.
   const text = rendered.replace(/\r\n?/g, '\n');
-  const subject = languages
-    .map(({ t, lang }) => t(`emails.${kind}.subject`, { title: data.event ? eventText(lang, data.event, 'title') : '' }))
-    .join(' / ');
+  // A subject that reads the same in both languages, such as a teacher's own subject line, is
+  // given once.
+  const subjects = languages.map(({ t, lang }) => t(`emails.${kind}.subject`, {
+    title: data.event ? eventText(lang, data.event, 'title') : '',
+    subject: data.subject ?? '',
+  }));
+  const subject = [...new Set(subjects)].join(' / ');
   return { subject, text };
 }

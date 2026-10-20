@@ -49,19 +49,21 @@
   --color-backdrop: rgb(0 0 0 / 0.65);
 }
 
-// BR-62: the device's setting unless the visitor chose a mode (data-theme on <html>).
+// BR-62: light mode unless the visitor chose dark (data-theme on <html>), whatever the device's setting.
 :root {
   @include light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    @include dark;
-  }
-}
-
 :root[data-theme="dark"] {
   @include dark;
+}
+
+// Paper is white, whatever the screen's mode (BR-51's printable list).
+@media print {
+  :root,
+  :root[data-theme] {
+    @include light;
+  }
 }
 
 :root {

@@ -492,6 +492,7 @@ describe('participant management (BR-37, BR-56)', () => {
 
   test('BR-37: teachers see participants (name, braut, email), search by name and never see kennitala', async () => {
     const id = await create(as.owner, { capacity: '10', brautir: ['Rafmagnsbraut'], braut_restricted: '1' });
+    await publish(id);
     register(id, people.student.id);
 
     const page = (await as.owner.get(`/teacher/events/${id}?search=Nemandi`)).html;
@@ -511,6 +512,7 @@ describe('participant management (BR-37, BR-56)', () => {
       brautir: ['Starfsbraut'],
       braut_restricted: '1',
     });
+    await publish(target);
     register(target, people.student2.id);
     const add = await as.owner.post(`/teacher/events/${target}`, { action: 'add-student', student: String(people.student.id), search: 'Jóna' });
     assert.equal(add.location, `/teacher/events/${target}?search=J%C3%B3na`);

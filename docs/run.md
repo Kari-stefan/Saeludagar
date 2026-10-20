@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone M5b you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. The site has the school's logo and colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (participant lists, attendance, course choices, the office export) still show only their title.
+As of milestone 6 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. Teachers manage the participants, email them, take attendance on the day and print the list. The site has the school's logo and colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. Pages from later milestones (course choices, the office export, the audit log) still show only their title.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -127,13 +127,13 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone M5b):**
+**What you should see (milestone 6):**
 - **The header:**
   - The red school logo on the left.
   - "Sæludagar" in the middle, with the school's name under it if `SCHOOL_NAME` is set in `.env`.
   - The links **Heimasíða** and **Upplýsingar**.
   - On the right: **Innskráning**, the **ÍS / EN** buttons and a sun/moon pair for light and dark mode. **EN** switches the whole site to English and **ÍS** switches back.
-  - The site starts in your computer's light or dark setting; the sun and moon override it for the rest of the session, as the language buttons do.
+  - The site starts in light mode. The moon switches to dark mode, and the sun back, for the rest of the session, as the language buttons do.
   - In a narrow window (or on a phone) the links and buttons move into a menu behind the ☰ button.
 - **The front page:** the events as cards, grouped by day. Above them are a search box, **Leita**, and **Sía**, which holds the sort order and the braut filter. Logged in as a student, you see **Þínir viðburðir** (your sign-ups) above **Aðrir viðburðir** (the rest).
 - **Upplýsingar:** how the site works, with the current dates.
@@ -183,6 +183,13 @@ To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 secon
 - **All events.** Stjórnendasvæði → **Allir viðburðir** lists every event with its owner; an admin can manage any of them.
 - **Sign up as a student.** First set **Skráning opnar** and **Skráningu lýkur** on Dagsetningar og frestir so that now is in between; outside that window nobody can sign up or cancel. On a published event's page, a student clicks **Skrá mig**. If it works, the event appears on **Mínir viðburðir** ("Skráningar: 1 / 4"); if not, the page says why: full ("Uppselt"), only for other brautir, already 4 sign-ups, or overlapping another event (named). **Afskrá mig**, on the event page or on Mínir viðburðir, frees the place at once.
 - **As a guest,** **Skrá mig** goes to the login page, and after logging in you come back to the event.
+- **Participants (milestone 6).** On a published event's page (Kennarasvæði → the event), under **Þátttakendur**:
+  - **Add a student:** search by name and click **Bæta við**. You may go over the maximum, past the braut rule and outside the sign-up window, but not past a student's 4 sign-ups or into an overlap.
+  - **Remove a student:** **Fjarlægja**. A student whose attendance is marked can't be removed until it is unticked.
+  - **Copy the emails:** **Netföng** jumps to every participant's email, with an **Afrita netföng** button, ready to paste into BCC.
+- **Send a message.** **Senda póst** sends an email to everyone signed up. Each one is printed in the terminal with `Reply-To:` set to your address.
+- **Take attendance.** **Mætingarlisti** opens a phone-friendly checklist, where each tick saves at once. It only opens from 00:00 on the event's date, so to try it, add today as a Sæludagar day and give an event today's date. Without a course-choice deadline it stays open; after the deadline it is read-only.
+- **Print the list.** **Prenta lista** shows the participants with an empty box each. Your browser's print command (`Ctrl+P`) prints only the list.
 
 Who can open which page:
 
