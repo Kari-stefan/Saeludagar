@@ -45,9 +45,10 @@ describe('app shell', () => {
       ['teacher', `/teacher/events/${eventId}/edit`, 'Breyta viðburði'],
       ['teacher', `/teacher/events/${eventId}/preview`, 'Prófunarviðburður'],
       ['teacher', `/teacher/events/${eventId}`, 'Prófunarviðburður'],
-      ['teacher', `/teacher/events/${eventId}/attendance`, 'Mæting'],
-      ['teacher', `/teacher/events/${eventId}/print`, 'Þátttakendalisti'],
-      ['teacher', `/teacher/events/${eventId}/message`, 'Senda póst á þátttakendur'],
+      // These three are headed by the event's title; the page's name is in <title>.
+      ['teacher', `/teacher/events/${eventId}/attendance`, 'Prófunarviðburður', 'Mæting'],
+      ['teacher', `/teacher/events/${eventId}/print`, 'Prófunarviðburður', 'Þátttakendalisti'],
+      ['teacher', `/teacher/events/${eventId}/message`, 'Prófunarviðburður', 'Senda póst á þátttakendur'],
       ['admin', '/admin', 'Stjórnendasvæði'],
       ['admin', '/admin/settings', 'Dagsetningar og frestir'],
       ['admin', '/admin/import', 'Innflutningur nemenda'],
@@ -58,10 +59,11 @@ describe('app shell', () => {
       ['admin', '/admin/purge', 'Hreinsun gagna'],
       ['admin', '/admin/audit', 'Aðgerðaskrá'],
     ];
-    for (const [role, pagePath, title] of pages) {
+    for (const [role, pagePath, title, pageName] of pages) {
       const res = await as[role].get(pagePath);
       assert.equal(res.status, 200, pagePath);
       assert.match(res.html, new RegExp(`<h1>${title}</h1>`), pagePath);
+      if (pageName) assert.match(res.html, new RegExp(`<title>${pageName}: ${title} · `), pagePath);
     }
   });
 

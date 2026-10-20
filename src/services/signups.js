@@ -1,5 +1,6 @@
 import { MAX_SIGNUPS_PER_STUDENT } from '../config.js';
 import { toIso } from '../db/index.js';
+import { audit } from './audit.js';
 
 // BR-31: students sign up and cancel only between the opening and closing times. `phase` is
 // 'notSet', 'before', 'open' or 'after', for the messages on the pages.
@@ -15,11 +16,6 @@ export function signupWindow(db, now = new Date()) {
 // BR-33: same date, and each starts before the other ends. Back-to-back events do not overlap.
 export function overlaps(a, b) {
   return a.event_date === b.event_date && a.start_time < b.end_time && b.start_time < a.end_time;
-}
-
-function audit(db, action, actorId, eventId, studentId, details) {
-  db.prepare(`INSERT INTO audit_log (at, actor_id, action, event_id, student_id, details) VALUES (?, ?, ?, ?, ?, ?)`)
-    .run(toIso(), actorId, action, eventId, studentId, JSON.stringify(details));
 }
 
 // BR-32, BR-34, BR-35: every check and the insert run in one BEGIN IMMEDIATE transaction, so
@@ -81,27 +77,36 @@ export function signupFor(db, studentId, eventId) {
   return db.prepare('SELECT attended FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
 }
 
+// Names sort in Icelandic order (Á after A, Þ and Ö at the end), which SQLite's ORDER BY does not do.
+const collator = new Intl.Collator('is');
+const byName = (a, b) => collator.compare(a.name, b.name);
+
+// Everyone signed up. A student deactivated by a re-import keeps a sign-up with marked attendance
+// (BR-17), so `active` is included: emails leave those students out, since the outbox never
+// sends to them (BR-03).
 export function eventParticipants(db, eventId) {
-  return db.prepare(`SELECT u.id, u.name, u.braut, u.email, r.attended
+  return db.prepare(`SELECT u.id, u.name, u.braut, u.email, u.active, r.attended
     FROM registrations r JOIN users u ON u.id = r.student_id
-    WHERE r.event_id = ?
-    ORDER BY u.name`).all(eventId);
+    WHERE r.event_id = ?`).all(eventId).sort(byName);
 }
 
 const MAX_STUDENT_SEARCH_RESULTS = 20;
 
+// BR-37: the name search ignores case for Icelandic letters too ("þór" finds "Þórunn"), which
+// SQLite's LIKE does only for A–Z, so the matching is done here.
 export function searchStudentsForEvent(db, eventId, query) {
   const search = typeof query === 'string' ? query.trim().slice(0, 100) : '';
   if (!search) return { search: '', students: [] };
+  const term = search.toLocaleLowerCase('is');
   const students = db.prepare(`SELECT u.id, u.name, u.braut
     FROM users u
     WHERE u.role = 'student' AND u.active = 1
-      AND u.name LIKE ? COLLATE NOCASE
       AND NOT EXISTS (
         SELECT 1 FROM registrations r WHERE r.event_id = ? AND r.student_id = u.id
-      )
-    ORDER BY u.name
-    LIMIT ?`).all(`%${search}%`, eventId, MAX_STUDENT_SEARCH_RESULTS);
+      )`).all(eventId)
+    .filter((student) => student.name.toLocaleLowerCase('is').includes(term))
+    .sort(byName)
+    .slice(0, MAX_STUDENT_SEARCH_RESULTS);
   return { search, students };
 }
 
@@ -118,9 +123,13 @@ function registrationLimits(db, studentId, eventId) {
 }
 
 // BR-37: teachers may bypass the event's own limits, but not the student's 4-event and overlap
-// limits. Returns { ok } or { error } (+ params/event for the message).
+// limits. As for every sign-up, the event must be published (BR-32): a draft is hidden from
+// students. Returns { ok } or { error } (+ params/event for the message).
 export function addStudentToEvent(db, teacherId, eventId, studentId, now = new Date()) {
   return db.transaction(() => {
+    if (!db.prepare("SELECT 1 FROM events WHERE id = ? AND status = 'published'").get(eventId)) {
+      return { error: 'events.participants.errors.notPublished' };
+    }
     if (!db.prepare(`SELECT 1 FROM users WHERE id = ? AND role = 'student' AND active = 1`).get(studentId)) {
       return { error: 'events.participants.errors.notFound' };
     }

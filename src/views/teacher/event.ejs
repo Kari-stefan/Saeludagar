@@ -35,6 +35,15 @@
 
 <h2><%= t('events.participants.heading') %></h2>
 <p><%= t('events.participants.count', { count: participants.length, capacity: event.capacity }) %></p>
+<%# BR-38, BR-50, BR-51: the event-day tools. -%>
+<div class="button-row">
+  <a class="button" href="/teacher/events/<%= event.id %>/attendance"><%= t('events.participants.links.attendance') %></a>
+  <a class="button button--secondary" href="/teacher/events/<%= event.id %>/message"><%= t('events.participants.links.message') %></a>
+  <a class="button button--secondary" href="/teacher/events/<%= event.id %>/print"><%= t('events.participants.links.print') %></a>
+  <% if (participants.length > 0) { -%>
+  <a class="button button--secondary" href="#emails"><%= t('events.participants.links.emails') %></a>
+  <% } -%>
+</div>
 <div class="table-wrap">
   <table class="table">
     <thead>
@@ -61,6 +70,8 @@
             <input type="hidden" name="student" value="<%= student.id %>">
             <button type="submit" class="button button--small button--secondary"><%= t('events.participants.remove') %><span class="visually-hidden">: <%= student.name %></span></button>
           </form>
+          <% } else { -%>
+          <span class="field__hint"><%= t('events.participants.removeBlocked') %></span>
           <% } -%>
         </td>
       </tr>
@@ -74,7 +85,23 @@
   </table>
 </div>
 
+<% if (participants.length > 0) { -%>
+<%# BR-50: every participant's email, to paste into BCC. The copy button needs JavaScript, so it starts hidden. -%>
+<h3 id="emails"><%= t('events.participants.emailsHeading') %></h3>
+<p class="field__hint" id="emails-hint"><%= t('events.participants.emailsHelp') %></p>
+<label class="visually-hidden" for="emails-list"><%= t('events.participants.emailsHeading') %></label>
+<textarea class="field__input copy-box" id="emails-list" rows="3" readonly aria-describedby="emails-hint"><%= participants.filter((student) => student.active).map((student) => student.email).join("; ") %></textarea>
+<p class="copy-row">
+  <button type="button" class="button button--secondary" data-copy="emails-list" data-copied="<%= t('events.participants.copied') %>" data-failed="<%= t('events.participants.copyFailed') %>" hidden><%= t('events.participants.copy') %></button>
+  <span class="copy-row__status" role="status" data-copy-status="emails-list"></span>
+</p>
+<script src="/js/copy-emails.js" defer></script>
+<% } -%>
+
 <h2><%= t('events.participants.add') %></h2>
+<% if (event.status !== 'published') { -%>
+<p><%= t('events.participants.draftNote') %></p>
+<% } else { -%>
 <form class="form" method="get" action="/teacher/events/<%= event.id %>">
   <div class="field">
     <label class="field__label" for="student-search"><%= t('events.participants.searchLabel') %></label>
@@ -117,6 +144,7 @@
     </tbody>
   </table>
 </div>
+<% } -%>
 <% } -%>
 
 <% if (access === 'owner') { -%>

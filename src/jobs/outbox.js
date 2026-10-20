@@ -52,7 +52,8 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
         const payload = JSON.parse(row.payload ?? '{}');
         const eventUrl = payload.event?.id ? new URL(`/events/${payload.event.id}`, config.baseUrl).href : null;
         const { subject, text } = await renderEmail(row.kind, { ...payload, name: user.name, eventUrl });
-        await mailer.send({ to, subject, text });
+        // A teacher's message (BR-50) comes from the noreply address, but replies go to the teacher.
+        await mailer.send({ to, subject, text, ...(payload.replyTo ? { replyTo: payload.replyTo } : {}) });
         remove.run(row.id);
       }
     } catch (err) {

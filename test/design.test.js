@@ -220,7 +220,8 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
   test('BR-62: the light/dark choice is kept in the session, through login and logout, with no new cookie', async () => {
     const browser = site.browser();
     let html = (await browser.get('/')).html;
-    assert.match(html, /<html lang="is">/, 'no choice: the page follows the device');
+    assert.match(html, /<html lang="is">/, 'no choice: no data-theme');
+    assert.match(html, /name="theme" value="light" aria-pressed="true"/, 'light mode by default');
     assert.match(html, /name="theme" value="dark" aria-pressed="false"/);
 
     const res = await browser.post('/theme', { theme: 'dark', returnTo: '/info' });

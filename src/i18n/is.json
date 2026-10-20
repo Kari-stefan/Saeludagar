@@ -188,6 +188,11 @@
       "subject": "Viðburði aflýst: {title}",
       "intro": "Viðburðinum hér fyrir neðan, sem þú skráðir þig á, hefur verið aflýst:",
       "signups": "Skráning þín hefur verið felld niður og telst ekki lengur með í skráningunum þínum."
+    },
+    "teacher_message": {
+      "subject": "{subject}",
+      "header": "Skilaboð frá {teacher} til þeirra sem eru skráð á viðburðinn {title} ({when}):",
+      "footer": "Ef þú svarar þessum pósti fer svarið til kennarans. Nánar um viðburðinn:"
     }
   },
   "errors": {
@@ -355,8 +360,22 @@
         "limit": "Nemandinn er þegar skráður á {max} viðburði, sem er hámarkið.",
         "overlap": "Viðburðurinn skarast á við {title} ({when}), sem nemandinn er þegar skráður á.",
         "notSignedUp": "Nemandinn er ekki skráður á þennan viðburð.",
-        "attended": "Ekki er hægt að fjarlægja nemanda eftir að mæting hefur verið skráð."
-      }
+        "attended": "Ekki er hægt að fjarlægja nemanda eftir að mæting hefur verið skráð.",
+        "notPublished": "Aðeins er hægt að bæta nemendum við birta viðburði."
+      },
+      "links": {
+        "attendance": "Mætingarlisti",
+        "message": "Senda póst",
+        "print": "Prenta lista",
+        "emails": "Netföng"
+      },
+      "emailsHeading": "Netföng þátttakenda",
+      "emailsHelp": "Til að líma í BCC í þínu eigin póstforriti.",
+      "copy": "Afrita netföng",
+      "copied": "Netföngin voru afrituð.",
+      "copyFailed": "Ekki tókst að afrita. Veldu textann og afritaðu hann handvirkt.",
+      "draftNote": "Birtu viðburðinn til að geta bætt nemendum við.",
+      "removeBlocked": "Mæting skráð. Taktu hakið af í mætingarlistanum til að geta fjarlægt."
     },
     "form": {
       "noDays": "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð.",
@@ -458,5 +477,44 @@
     "contactHeading": "Spurningar",
     "contactPlaceholder": "Upplýsingar um hvert á að leita með spurningar koma hér þegar skólinn hefur sent þær.",
     "toEvents": "Skoða viðburði"
+  },
+  "attendance": {
+    "open": "Hakaðu við þau sem mættu. Hvert hak vistast strax.",
+    "deadline": "Hægt er að breyta mætingunni til {deadline}.",
+    "noDeadline": "Frestur til að velja áfanga hefur ekki verið settur, svo listinn er opinn þangað til.",
+    "before": "Hægt er að skrá mætingu frá {opens}. Þangað til er listinn aðeins til lestrar.",
+    "after": "Fresturinn rann út {deadline}. Listinn er aðeins til lestrar.",
+    "count": "{count} af {total} mættu",
+    "none": "Enginn er skráður á viðburðinn.",
+    "save": "Vista",
+    "saved": "Vistað.",
+    "savedAll": "Mætingin var vistuð.",
+    "back": "Til baka í umsjón viðburðar",
+    "errors": {
+      "closed": "Ekki er hægt að breyta mætingu núna.",
+      "notSignedUp": "Nemandinn er ekki lengur skráður á viðburðinn. Endurhlaðaðu síðuna.",
+      "network": "Ekki tókst að vista. Athugaðu nettenginguna og reyndu aftur, eða notaðu Vista-hnappinn."
+    }
+  },
+  "print": {
+    "hint": "Prentaðu listann með prentskipun vafrans (Ctrl+P, eða Cmd+P á Mac).",
+    "count": "Skráðir: {count}",
+    "box": "Mætti"
+  },
+  "message": {
+    "recipients": "Viðtakendur: {count} (allir sem eru skráðir á viðburðinn).",
+    "help": "Pósturinn er sendur frá netfangi skólans, en svör berast beint til þín. Efst í honum kemur fram, á íslensku og ensku, frá hverjum hann er og um hvaða viðburð.",
+    "subject": "Efni",
+    "body": "Texti",
+    "bodyHint": "Skrifaðu á því tungumáli sem þú vilt.",
+    "send": "Senda",
+    "sent": "Pósturinn er kominn í biðröð og fer út á næstu mínútum. Viðtakendur: {count}.",
+    "errors": {
+      "required": "Fylltu út þennan reit.",
+      "subjectLong": "Efnið má vera að hámarki 150 stafir.",
+      "bodyLong": "Textinn má vera að hámarki 5.000 stafir.",
+      "characters": "Textinn inniheldur ógild tákn.",
+      "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn."
+    }
   }
 }

@@ -166,11 +166,11 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **BR-34** When a sign-up is refused, the student is told why. For an overlap, the message names the event it clashes with.
 - **BR-35** Student sign-ups never push an event past its maximum, even when many students sign up at the same moment. The only exception is a teacher adding a student by hand (BR-37).
 - **BR-36** A student can cancel a sign-up while the window is open, and the place becomes free immediately.
-- **BR-37** Teachers can add students to their event and remove them. To add a student, the teacher searches by name; results show name and braut, never the kennitala. A teacher adding a student may override the event's own limits (maximum, braut rule, sign-up window), but not the student's limits (at most 4 sign-ups, no overlaps).
+- **BR-37** Teachers can add students to their event and remove them. To add a student, the teacher searches by name; results show name and braut, never the kennitala. A teacher adding a student may override the event's own limits (maximum, braut rule, sign-up window), but not the student's limits (at most 4 sign-ups, no overlaps). A student whose attendance is marked cannot be removed: the teacher unmarks the attendance first (open question 13).
 
 ### Attendance and absence points
 - **BR-38** Attendance is one checkbox per participant ("mætti" / present). It starts unticked and is saved as soon as it changes.
-- **BR-39** Attendance can be marked or changed from 00:00 on the event's date until the course-choice deadline. After that it is read-only.
+- **BR-39** Attendance can be marked or changed from 00:00 on the event's date until the course-choice deadline. After that it is read-only. While the admin has not set the deadline, attendance stays open from the event's date (decided 15 October 2026), so a forgotten deadline never stops a teacher on the day.
 - **BR-40** Each marked attendance entitles the student to have 4 absence points removed from exactly one course.
 - **BR-41** On "Mínir viðburðir", the student chooses a course for each event where their attendance is marked. They choose from their own course list, which comes from the CSV. A choice exists only while the attendance is marked; unmarking attendance deletes the choice.
 - **BR-42** A student can choose each course for at most one event, because a course can lose at most 4 points.
@@ -210,7 +210,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **BR-61** The Icelandic UI says "viðburður", never "atburður".
 
 ### Appearance and the front page
-- **BR-62** Every page has a light and a dark mode. By default the site follows the device's setting. A switch in the header (and in the mobile menu) chooses light or dark, and the choice is remembered for the session, like the language (BR-59).
+- **BR-62** Every page has a light and a dark mode. By default the site is in light mode, whatever the device's setting (changed from following the device on 20 October 2026). A switch in the header (and in the mobile menu) chooses light or dark, and the choice is remembered for the session, like the language (BR-59).
 - **BR-63** On the front page, guests and students can search the events by name and sort them: by date (earliest or latest first), by fee (lowest or highest first) or by name (A to Ö or Ö to A). Search, sort and the braut filter (BR-25) work together: applying one keeps the others. When nothing matches, the page says so.
 - **BR-64** A logged-in student's front page has two sections: "Þínir viðburðir" (the events they are signed up for, sorted by date and time by default) above "Aðrir viðburðir" (every other published event). Each section has its own search and sort, and changing one section's keeps the other's. Signing up or cancelling moves the event between the sections.
 
@@ -313,7 +313,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. |
 | `GET /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. |
 | `GET /teacher/events/:id/print` | Printable list | Event title, date, time and location, then a table of name, braut and an empty box. Uses a print stylesheet. |
-| `GET/POST /teacher/events/:id/message` | Message to participants | Subject and body (free text, written in any language) and a Send button. Shows the number of recipients. |
+| `GET/POST /teacher/events/:id/message` | Message to participants | Subject and body (free text, written in any language) and a Send button. Shows the number of recipients. A deactivated student, kept on the event because their attendance is marked (BR-17), gets no email (BR-03) and is left out of the count and the copied email list. |
 
 ### Admin
 | Path | Purpose | Key elements |
@@ -826,7 +826,7 @@ These were decided in the interview; the items marked "assumed" still need confi
 - **Light and dark mode (BR-62):**
   - Light mode has white and light-grey backgrounds, dark text and red accents. Dark mode has dark backgrounds, light text and red accents.
   - Both modes keep the contrast rules below.
-  - With no choice made, the site follows the device's setting (`prefers-color-scheme`).
+  - With no choice made, the site is in light mode; it does not follow the device's setting (`prefers-color-scheme`).
   - A choice sets `data-theme` on `<html>` and is kept in the session, so no extra cookie is needed (BR-57).
 - **Responsive (original NFR-02):**
   - Mobile first, usable from 320 px wide, with no sideways scrolling.
@@ -1082,7 +1082,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 10 | **Does the office accept** the export columns for entering into Inna? | §8 export, M7 | Build as specified. |
 | 11 | **Data protection officer:** must the school's persónuverndarfulltrúi review the site before launch, and would they require a privacy notice (currently there is none, BR-58)? | §9, launch | Build without a privacy page. |
 | 12 | **"Senda kóða" a second time:** currently it gives everyone new codes and the old ones stop working (BR-07). Should it skip students who have already received a code? | BR-07, M3 | Build BR-07 as written. |
-| 13 | **Removing a marked attendee:** may a teacher remove a student whose attendance is already marked? That would also delete the attendance and the course choice. | BR-37, M6 | Ask at M6 before implementing. |
+| 13 | **Removing a marked attendee:** may a teacher remove a student whose attendance is already marked? That would also delete the attendance and the course choice. Answered on 15 October 2026: no. While attendance is marked there is no remove button, only a note to unmark the attendance first (BR-37). | BR-37, M6 | Built in M6. |
 | 14 | **Course list changes on re-import:** if a re-import removes a course from a student's list after they chose it, is the choice kept or cleared? | BR-17 / BR-41, M7 | Ask at M7 before implementing. |
 | 15 | **Unpublishing:** can a teacher take a published event back to draft? This is not specified, so it is not built. | §6 | Do not build. |
 | 16 | **Who is "gögn gæji"** in the planning notes? | Nothing | — |

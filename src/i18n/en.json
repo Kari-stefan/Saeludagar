@@ -188,6 +188,11 @@
       "subject": "Event cancelled: {title}",
       "intro": "The event below, which you signed up for, has been cancelled:",
       "signups": "Your sign-up has been removed and no longer counts towards your sign-ups."
+    },
+    "teacher_message": {
+      "subject": "{subject}",
+      "header": "A message from {teacher} to everyone signed up for {title} ({when}):",
+      "footer": "If you reply to this email, the reply goes to the teacher. More about the event:"
     }
   },
   "errors": {
@@ -355,8 +360,22 @@
         "limit": "The student is already signed up for {max} events, which is the maximum.",
         "overlap": "This event overlaps {title} ({when}), which the student is already signed up for.",
         "notSignedUp": "The student is not signed up for this event.",
-        "attended": "You cannot remove a student after attendance has been marked."
-      }
+        "attended": "You cannot remove a student after attendance has been marked.",
+        "notPublished": "Students can only be added to published events."
+      },
+      "links": {
+        "attendance": "Attendance list",
+        "message": "Send an email",
+        "print": "Print the list",
+        "emails": "Emails"
+      },
+      "emailsHeading": "Participants' emails",
+      "emailsHelp": "To paste into BCC in your own email program.",
+      "copy": "Copy emails",
+      "copied": "The emails were copied.",
+      "copyFailed": "Copying didn't work. Select the text and copy it yourself.",
+      "draftNote": "Publish the event to add students.",
+      "removeBlocked": "Attendance marked. Untick it in the attendance list to remove the student."
     },
     "form": {
       "noDays": "The admin has not set the Sæludagar days yet, so events cannot be created.",
@@ -458,5 +477,44 @@
     "contactHeading": "Questions",
     "contactPlaceholder": "Who to contact with questions will be added here once the school has sent it.",
     "toEvents": "See the events"
+  },
+  "attendance": {
+    "open": "Tick everyone who came. Each tick saves straight away.",
+    "deadline": "Attendance can be changed until {deadline}.",
+    "noDeadline": "The course-choice deadline hasn't been set, so the list stays open until it is.",
+    "before": "Attendance can be marked from {opens}. Until then the list is read-only.",
+    "after": "The deadline passed on {deadline}. The list is read-only.",
+    "count": "{count} of {total} came",
+    "none": "Nobody is signed up for the event.",
+    "save": "Save",
+    "saved": "Saved.",
+    "savedAll": "Attendance saved.",
+    "back": "Back to the event",
+    "errors": {
+      "closed": "Attendance can't be changed now.",
+      "notSignedUp": "The student is no longer signed up for the event. Reload the page.",
+      "network": "Couldn't save. Check your connection and try again, or use the Save button."
+    }
+  },
+  "print": {
+    "hint": "Print the list with your browser's print command (Ctrl+P, or Cmd+P on a Mac).",
+    "count": "Signed up: {count}",
+    "box": "Came"
+  },
+  "message": {
+    "recipients": "Recipients: {count} (everyone signed up for the event).",
+    "help": "The email is sent from the school's address, but replies come straight to you. At the top it says, in Icelandic and English, who it's from and which event it's about.",
+    "subject": "Subject",
+    "body": "Message",
+    "bodyHint": "Write in whichever language you like.",
+    "send": "Send",
+    "sent": "The email is queued and goes out in the next few minutes. Recipients: {count}.",
+    "errors": {
+      "required": "Fill in this field.",
+      "subjectLong": "The subject can be at most 150 characters.",
+      "bodyLong": "The message can be at most 5,000 characters.",
+      "characters": "The text contains characters that aren't allowed.",
+      "noRecipients": "Nobody is signed up for the event, so nobody would get the email."
+    }
   }
 }

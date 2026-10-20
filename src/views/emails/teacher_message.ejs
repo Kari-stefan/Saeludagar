@@ -1,0 +1,19 @@
+<%#
+  BR-50: a teacher's message to everyone signed up for an event. A header naming the event in
+  Icelandic, then English (BR-52), then the teacher's text as written, in whatever language they
+  wrote it. Replies go to the teacher (Reply-To).
+-%>
+<% languages.forEach(({ t, formatDate, formatTimeRange, eventText }) => { -%>
+<%= t('emails.teacher_message.header', { teacher, title: eventText(event, 'title'), when: `${formatDate(event.event_date)}, ${formatTimeRange(event.start_time, event.end_time)}` }) %>
+<% }) -%>
+
+----------------------------------------
+
+<%= body %>
+
+----------------------------------------
+
+<% languages.forEach(({ t }) => { -%>
+<%= t('emails.teacher_message.footer') %>
+<% }) -%>
+<%= eventUrl %>

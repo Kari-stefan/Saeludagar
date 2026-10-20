@@ -1,0 +1,113 @@
+// Teacher tools (milestone 6): the attendance checklist, copying emails and the printable list.
+
+// BR-38: built for a phone on the event day. Each row is one large tap target (§11: at least 44px).
+.attendance__list {
+  max-width: 40rem;
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.attendance__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 3.5rem;
+  padding: var(--space-2) var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+
+  input {
+    flex: none;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin: 0;
+    accent-color: var(--color-primary);
+    cursor: inherit;
+  }
+
+  &:has(input:disabled) {
+    cursor: default;
+  }
+}
+
+.attendance__name {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.attendance__braut {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--color-muted);
+}
+
+.attendance-count {
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+// Room for the save message, so the page does not jump when it appears.
+.attendance__status {
+  min-height: 1.5em;
+}
+
+// BR-50: the participants' emails, to copy into BCC.
+.copy-box {
+  max-width: 40rem;
+  resize: vertical;
+}
+
+.copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+// BR-51: the printable list. On screen it is an ordinary table; on paper only the list prints,
+// in the light colours (scss/_tokens.scss), with an empty box per name.
+.print-meta {
+  font-size: 1.125rem;
+}
+
+.print-table {
+  max-width: 48rem;
+}
+
+.print-table__box {
+  width: 5rem;
+  text-align: center;
+}
+
+.print-box {
+  display: inline-block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid currentColor;
+  vertical-align: middle;
+}
+
+@media print {
+  .site-header,
+  .site-footer,
+  .no-print {
+    display: none;
+  }
+
+  .site-main {
+    padding: 0;
+  }
+
+  .print-table {
+    max-width: none;
+
+    th,
+    td {
+      border: 1px solid var(--color-text);
+      background: none;
+    }
+  }
+}

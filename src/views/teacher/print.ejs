@@ -1,3 +1,37 @@
-<%- include('../partials/header', { pageTitle: t('pages.print') }) %>
-<h1><%= t('pages.print') %></h1>
+<%#
+  BR-51: the printable participant list, a paper backup for the event day. Title, date, time and
+  location, then each participant's name and braut with an empty box. The print stylesheet
+  (scss/_teacher.scss) hides everything else.
+-%>
+<% const title = eventText(event, 'title'); -%>
+<%- include('../partials/header', { pageTitle: `${t('pages.print')}: ${title}` }) %>
+<div class="no-print">
+  <p><a href="/teacher/events/<%= event.id %>"><%= t('attendance.back') %></a></p>
+  <p class="alert"><%= t('print.hint') %></p>
+</div>
+<h1><%= title %></h1>
+<p class="print-meta"><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %><br><%= event.location %></p>
+<p><%= t('print.count', { count: participants.length }) %></p>
+<% if (participants.length === 0) { -%>
+<p class="empty"><%= t('events.participants.none') %></p>
+<% } else { -%>
+<table class="table print-table">
+  <thead>
+    <tr>
+      <th scope="col"><%= t('events.participants.name') %></th>
+      <th scope="col"><%= t('events.participants.braut') %></th>
+      <th scope="col" class="print-table__box"><%= t('print.box') %></th>
+    </tr>
+  </thead>
+  <tbody>
+    <% for (const student of participants) { -%>
+    <tr>
+      <td><%= student.name %></td>
+      <td><%= student.braut ?? '' %></td>
+      <td class="print-table__box"><span class="print-box"></span></td>
+    </tr>
+    <% } -%>
+  </tbody>
+</table>
+<% } -%>
 <%- include('../partials/footer') %>

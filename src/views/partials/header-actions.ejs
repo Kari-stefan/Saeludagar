@@ -24,7 +24,7 @@
       <input type="hidden" name="_csrf" value="<%= token %>">
       <input type="hidden" name="returnTo" value="<%= currentPath %>">
       <% for (const [value, icon] of [['light', 'sun'], ['dark', 'moon']]) { -%>
-      <button type="submit" name="theme" value="<%= value %>" aria-pressed="<%= locals.theme === value %>"><%- include('icon', { name: icon }) %><span class="<%= drawer ? 'switch__label' : 'visually-hidden' %>"><%= t(`theme.${value}`) %></span></button>
+      <button type="submit" name="theme" value="<%= value %>" aria-pressed="<%= (locals.theme ?? 'light') === value %>"><%- include('icon', { name: icon }) %><span class="<%= drawer ? 'switch__label' : 'visually-hidden' %>"><%= t(`theme.${value}`) %></span></button>
       <% } -%>
     </form>
   </div>
