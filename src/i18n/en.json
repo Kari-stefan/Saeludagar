@@ -332,6 +332,32 @@
       "choose": "Add a co-teacher",
       "add": "Add"
     },
+    "participants": {
+      "heading": "Participants",
+      "count": "{count} / {capacity} signed up",
+      "name": "Name",
+      "braut": "Braut",
+      "email": "Email",
+      "actions": "Actions",
+      "none": "No participants yet.",
+      "remove": "Remove",
+      "removed": "The student was removed from the event.",
+      "add": "Add a student",
+      "searchLabel": "Search by student name",
+      "search": "Search",
+      "results": "Search results",
+      "noResults": "No students found.",
+      "addStudent": "Add",
+      "added": "The student was added to the event.",
+      "errors": {
+        "notFound": "The selected student was not found.",
+        "already": "The student is already signed up for this event.",
+        "limit": "The student is already signed up for {max} events, which is the maximum.",
+        "overlap": "This event overlaps {title} ({when}), which the student is already signed up for.",
+        "notSignedUp": "The student is not signed up for this event.",
+        "attended": "You cannot remove a student after attendance has been marked."
+      }
+    },
     "form": {
       "noDays": "The admin has not set the Sæludagar days yet, so events cannot be created.",
       "titleIs": "Title (Icelandic)",

@@ -10,7 +10,9 @@ import {
 import { deleteImage, imageType, MAX_IMAGE_BYTES, saveImage } from '../services/images.js';
 import { brautList } from '../services/import.js';
 import { getSettings } from '../services/settings.js';
-import { signupWindow } from '../services/signups.js';
+import {
+  addStudentToEvent, eventParticipants, removeStudentFromEvent, searchStudentsForEvent, signupWindow,
+} from '../services/signups.js';
 
 const collator = new Intl.Collator('is');
 
@@ -127,8 +129,25 @@ export function teacherRouter({ config, db }) {
   router.get('/events/:id/print', access('editor'), (req, res) => res.render('teacher/print'));
   router.get('/events/:id/message', access('editor'), (req, res) => res.render('teacher/message'));
 
+  function refusalParams(result, res) {
+    if (!result.event) return result.params ?? {};
+    const other = result.event;
+    return {
+      title: res.locals.eventText(other, 'title'),
+      when: `${res.locals.formatDate(other.event_date)}, ${res.locals.formatTimeRange(other.start_time, other.end_time)}`,
+    };
+  }
+
   router.get('/events/:id', access('editor'), (req, res) => {
-    res.render('teacher/event', { event: req.event, access: req.eventAccess });
+    const participants = eventParticipants(db, req.event.id);
+    const search = searchStudentsForEvent(db, req.event.id, req.query.search);
+    res.render('teacher/event', {
+      event: req.event,
+      access: req.eventAccess,
+      participants,
+      studentSearch: search.search,
+      studentResults: search.students,
+    });
   });
 
   // Publish (owner, co-teacher or admin); delete and co-teachers (owner or admin only, BR-29, §6).
@@ -141,9 +160,21 @@ export function teacherRouter({ config, db }) {
       setFlash(req, 'success', 'events.published');
       return res.redirect(303, back);
     }
-    if (!['delete', 'add-coteacher', 'remove-coteacher'].includes(body.action)) {
+    if (!['delete', 'add-coteacher', 'remove-coteacher', 'add-student', 'remove-student'].includes(body.action)) {
       return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
     }
+
+    if (body.action === 'add-student' || body.action === 'remove-student') {
+      const studentId = Number(body.student);
+      if (!Number.isSafeInteger(studentId)) return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
+      const result = body.action === 'add-student'
+        ? addStudentToEvent(db, req.user.id, event.id, studentId)
+        : removeStudentFromEvent(db, req.user.id, event.id, studentId);
+      if (result.ok) setFlash(req, 'success', `events.participants.${body.action === 'add-student' ? 'added' : 'removed'}`);
+      else setFlash(req, 'error', result.error, refusalParams(result, res));
+      return res.redirect(303, body.action === 'add-student' ? `${back}?search=${encodeURIComponent(String(body.search ?? ''))}` : back);
+    }
+
     if (req.eventAccess !== 'owner') return res.status(403).render('errors/403');
 
     if (body.action === 'delete') {

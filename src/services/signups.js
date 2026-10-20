@@ -80,3 +80,69 @@ export function studentSignups(db, studentId) {
 export function signupFor(db, studentId, eventId) {
   return db.prepare('SELECT attended FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
 }
+
+export function eventParticipants(db, eventId) {
+  return db.prepare(`SELECT u.id, u.name, u.braut, u.email, r.attended
+    FROM registrations r JOIN users u ON u.id = r.student_id
+    WHERE r.event_id = ?
+    ORDER BY u.name`).all(eventId);
+}
+
+const MAX_STUDENT_SEARCH_RESULTS = 20;
+
+export function searchStudentsForEvent(db, eventId, query) {
+  const search = typeof query === 'string' ? query.trim().slice(0, 100) : '';
+  if (!search) return { search: '', students: [] };
+  const students = db.prepare(`SELECT u.id, u.name, u.braut
+    FROM users u
+    WHERE u.role = 'student' AND u.active = 1
+      AND u.name LIKE ? COLLATE NOCASE
+      AND NOT EXISTS (
+        SELECT 1 FROM registrations r WHERE r.event_id = ? AND r.student_id = u.id
+      )
+    ORDER BY u.name
+    LIMIT ?`).all(`%${search}%`, eventId, MAX_STUDENT_SEARCH_RESULTS);
+  return { search, students };
+}
+
+function registrationLimits(db, studentId, eventId) {
+  const mine = db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time
+    FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?`).all(studentId);
+  if (mine.length >= MAX_SIGNUPS_PER_STUDENT) {
+    return { error: 'events.participants.errors.limit', params: { max: MAX_SIGNUPS_PER_STUDENT } };
+  }
+  const event = db.prepare('SELECT id, title_is, title_en, event_date, start_time, end_time FROM events WHERE id = ?').get(eventId);
+  const clash = event && mine.find((other) => overlaps(other, event));
+  if (clash) return { error: 'events.participants.errors.overlap', event: clash };
+  return null;
+}
+
+// BR-37: teachers may bypass the event's own limits, but not the student's 4-event and overlap
+// limits. Returns { ok } or { error } (+ params/event for the message).
+export function addStudentToEvent(db, teacherId, eventId, studentId, now = new Date()) {
+  return db.transaction(() => {
+    if (!db.prepare(`SELECT 1 FROM users WHERE id = ? AND role = 'student' AND active = 1`).get(studentId)) {
+      return { error: 'events.participants.errors.notFound' };
+    }
+    if (db.prepare('SELECT 1 FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId)) {
+      return { error: 'events.participants.errors.already' };
+    }
+    const blocked = registrationLimits(db, studentId, eventId);
+    if (blocked) return blocked;
+    db.prepare('INSERT INTO registrations (event_id, student_id, added_by, created_at) VALUES (?, ?, ?, ?)')
+      .run(eventId, studentId, teacherId, toIso(now));
+    audit(db, 'signup.create', teacherId, eventId, studentId, { by: 'teacher' }); // BR-56
+    return { ok: true };
+  }).immediate();
+}
+
+export function removeStudentFromEvent(db, teacherId, eventId, studentId) {
+  return db.transaction(() => {
+    const signup = db.prepare('SELECT id, attended FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId);
+    if (!signup) return { error: 'events.participants.errors.notSignedUp' };
+    if (signup.attended) return { error: 'events.participants.errors.attended' };
+    db.prepare('DELETE FROM registrations WHERE id = ?').run(signup.id);
+    audit(db, 'signup.delete', teacherId, eventId, studentId, { by: 'teacher' }); // BR-56
+    return { ok: true };
+  }).immediate();
+}
