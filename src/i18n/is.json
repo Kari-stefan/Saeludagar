@@ -33,7 +33,7 @@
     "login": "Innskráning",
     "newCode": "Fá nýjan kóða",
     "myEvents": "Mínir viðburðir",
-    "teacherHome": "Kennarasvæði",
+    "teacherHome": "Svæði viðburðastjóra",
     "eventNew": "Nýr viðburður",
     "eventEdit": "Breyta viðburði",
     "eventPreview": "Forskoðun viðburðar",
@@ -45,7 +45,7 @@
     "settings": "Dagsetningar og frestir",
     "import": "Innflutningur nemenda",
     "codes": "Senda kóða",
-    "teachers": "Kennarar",
+    "teachers": "Viðburðastjórar",
     "adminEvents": "Allir viðburðir",
     "export": "Útflutningur fyrir skrifstofu",
     "purge": "Hreinsun gagna",
@@ -82,8 +82,8 @@
       "changeDates": "Breyta dagsetningum og frestum"
     },
     "teachers": {
-      "listHeading": "Kennaraaðgangar",
-      "none": "Engir kennaraaðgangar enn.",
+      "listHeading": "Aðgangar viðburðastjóra",
+      "none": "Engir aðgangar viðburðastjóra enn.",
       "name": "Nafn",
       "email": "Netfang",
       "admin": "Stjórnandi",
@@ -97,8 +97,8 @@
       "activate": "Virkja",
       "grantAdmin": "Gera að stjórnanda",
       "revokeAdmin": "Taka stjórnandaréttindi",
-      "createHeading": "Stofna kennaraaðgang",
-      "createHelp": "Kennarinn fær kóða sendan í tölvupósti til að skrá sig inn með.",
+      "createHeading": "Stofna aðgang viðburðastjóra",
+      "createHelp": "Viðburðastjóri fær kóða sendan í tölvupósti til að skrá sig inn með.",
       "create": "Stofna aðgang",
       "created": "Aðgangur stofnaður: {name}. Kóði verður sendur á {email}.",
       "codeQueued": "Nýr kóði verður sendur á {email}.",
@@ -168,7 +168,7 @@
     },
     "teacher_code": {
       "subject": "Kóði fyrir Sæludagavefinn",
-      "intro": "Hér er kóðinn þinn til að skrá þig inn á Sæludagavefinn sem kennari:",
+      "intro": "Hér er kóðinn þinn til að skrá þig inn á Sæludagavefinn sem viðburðastjóri:",
       "oldCode": "Ef þú áttir eldri kóða virkar hann ekki lengur."
     },
     "student_code": {
@@ -192,7 +192,7 @@
     "teacher_message": {
       "subject": "{subject}",
       "header": "Skilaboð frá {teacher} til þeirra sem eru skráð á viðburðinn {title} ({when}):",
-      "footer": "Ef þú svarar þessum pósti fer svarið til kennarans. Nánar um viðburðinn:"
+      "footer": "Ef þú svarar þessum pósti fer svarið til viðburðastjóra. Nánar um viðburðinn:"
     }
   },
   "errors": {
@@ -245,13 +245,13 @@
       "name": "Lína {line}: nafn vantar eða er ógilt",
       "email": "Lína {line}: netfangið er ekki gilt",
       "mismatch": "Lína {line}: nafn, netfang og braut verða að vera eins og í línu {first} fyrir sama nemanda",
-      "teacher": "Lína {line}: kennitalan tilheyrir kennara",
+      "teacher": "Lína {line}: kennitalan tilheyrir viðburðastjóra",
       "noStudents": "Skráin inniheldur enga nemendur",
       "tooLarge": "Skráin er of stór. Hámarkið er 5 MB.",
       "upload": "Ekki tókst að taka við skránni. Reyndu aftur.",
       "noFile": "Veldu skrá til að hlaða upp.",
       "expired": "Innflutningurinn rann út eða var þegar staðfestur. Hladdu skránni upp aftur.",
-      "changed": "Kennari er kominn með eina af kennitölunum í skránni síðan henni var hlaðið upp. Ekkert var vistað. Hladdu skránni upp aftur."
+      "changed": "Viðburðastjóri er kominn með eina af kennitölunum í skránni síðan henni var hlaðið upp. Ekkert var vistað. Hladdu skránni upp aftur."
     }
   },
   "home": {
@@ -314,8 +314,8 @@
     "saved": "Breytingarnar voru vistaðar.",
     "published": "Viðburðurinn hefur verið birtur.",
     "deleted": "Viðburðinum var eytt: {title}",
-    "coteacherAdded": "Samkennara bætt við.",
-    "coteacherRemoved": "Samkennari fjarlægður.",
+    "coteacherAdded": "Meðviðburðastjóra bætt við.",
+    "coteacherRemoved": "Meðviðburðastjóri fjarlægður.",
     "preview": {
       "banner": "Forskoðun.",
       "help": "Svona sjá nemendur viðburðinn.",
@@ -330,11 +330,11 @@
       "confirm": "Já, eyða þessum viðburði"
     },
     "coteachers": {
-      "heading": "Samkennarar",
-      "none": "Engir samkennarar.",
-      "help": "Samkennarar geta gert allt nema eytt viðburðinum og breytt samkennurum.",
+      "heading": "Meðviðburðastjórar",
+      "none": "Engir meðviðburðastjórar.",
+      "help": "Meðviðburðastjórar geta gert allt nema eytt viðburðinum og breytt meðviðburðastjórum.",
       "remove": "Fjarlægja",
-      "choose": "Bæta við samkennara",
+      "choose": "Bæta við meðviðburðastjóra",
       "add": "Bæta við"
     },
     "participants": {
@@ -468,7 +468,7 @@
       "login": "Þú færð 6 stafa kóða í tölvupósti og skráir þig inn með kennitölunni þinni og kóðanum. Ef kóðinn týnist geturðu fengið nýjan á innskráningarsíðunni.",
       "signup": "Á meðan skráning er opin skráir þú þig á allt að {max} viðburði. Viðburðirnir mega ekki skarast í tíma, og sumir eru aðeins fyrir nemendur ákveðinna brauta.",
       "cancel": "Á meðan skráning er opin geturðu líka afskráð þig, og þá losnar plássið strax.",
-      "attend": "Þú mætir á viðburðinn og kennarinn skráir mætinguna.",
+      "attend": "Þú mætir á viðburðinn og viðburðastjóri skráir mætinguna.",
       "choose": "Þegar mætingin hefur verið skráð velur þú á „Mínum viðburðum“ hvaða áfangi fær fjarvistarstigin dregin frá. Þú getur breytt valinu fram að frestinum hér að ofan."
     },
     "pointsHeading": "Fjarvistarstig",

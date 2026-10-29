@@ -33,7 +33,7 @@
     "login": "Log in",
     "newCode": "Get a new code",
     "myEvents": "My events",
-    "teacherHome": "Teacher area",
+    "teacherHome": "Event Manager area",
     "eventNew": "New event",
     "eventEdit": "Edit event",
     "eventPreview": "Event preview",
@@ -45,7 +45,7 @@
     "settings": "Dates and deadlines",
     "import": "Student import",
     "codes": "Send codes",
-    "teachers": "Teachers",
+    "teachers": "Event Managers",
     "adminEvents": "All events",
     "export": "Export for the office",
     "purge": "Purge data",
@@ -82,8 +82,8 @@
       "changeDates": "Change dates and deadlines"
     },
     "teachers": {
-      "listHeading": "Teacher accounts",
-      "none": "No teacher accounts yet.",
+      "listHeading": "Event Manager accounts",
+      "none": "No Event Manager accounts yet.",
       "name": "Name",
       "email": "Email",
       "admin": "Admin",
@@ -97,8 +97,8 @@
       "activate": "Reactivate",
       "grantAdmin": "Make admin",
       "revokeAdmin": "Remove admin rights",
-      "createHeading": "Create a teacher account",
-      "createHelp": "The teacher receives a code by email to log in with.",
+      "createHeading": "Create an Event Manager account",
+      "createHelp": "The Event Manager receives a code by email to log in with.",
       "create": "Create account",
       "created": "Account created: {name}. A code will be sent to {email}.",
       "codeQueued": "A new code will be sent to {email}.",
@@ -168,7 +168,7 @@
     },
     "teacher_code": {
       "subject": "Your code for the Sæludagar website",
-      "intro": "Here is your code for logging in to the Sæludagar website as a teacher:",
+      "intro": "Here is your code for logging in to the Sæludagar website as an Event Manager:",
       "oldCode": "If you had an older code, it no longer works."
     },
     "student_code": {
@@ -192,7 +192,7 @@
     "teacher_message": {
       "subject": "{subject}",
       "header": "A message from {teacher} to everyone signed up for {title} ({when}):",
-      "footer": "If you reply to this email, the reply goes to the teacher. More about the event:"
+      "footer": "If you reply to this email, the reply goes to the Event Manager. More about the event:"
     }
   },
   "errors": {
@@ -245,13 +245,13 @@
       "name": "Line {line}: the name is missing or invalid",
       "email": "Line {line}: the email address is not valid",
       "mismatch": "Line {line}: name, email and braut must be the same as on line {first} for the same student",
-      "teacher": "Line {line}: this kennitala belongs to a teacher",
+      "teacher": "Line {line}: this kennitala belongs to an Event Manager",
       "noStudents": "The file contains no students",
       "tooLarge": "The file is too large. The limit is 5 MB.",
       "upload": "The file could not be received. Try again.",
       "noFile": "Choose a file to upload.",
       "expired": "The import has expired or was already confirmed. Upload the file again.",
-      "changed": "A teacher account now has one of the kennitölur in the file. Nothing was saved. Upload the file again."
+      "changed": "An Event Manager account now has one of the kennitölur in the file. Nothing was saved. Upload the file again."
     }
   },
   "home": {
@@ -314,8 +314,8 @@
     "saved": "The changes were saved.",
     "published": "The event has been published.",
     "deleted": "Event deleted: {title}",
-    "coteacherAdded": "Co-teacher added.",
-    "coteacherRemoved": "Co-teacher removed.",
+    "coteacherAdded": "Co-Event Manager added.",
+    "coteacherRemoved": "Co-Event Manager removed.",
     "preview": {
       "banner": "Preview.",
       "help": "This is how students will see the event.",
@@ -330,11 +330,11 @@
       "confirm": "Yes, delete this event"
     },
     "coteachers": {
-      "heading": "Co-teachers",
-      "none": "No co-teachers.",
-      "help": "Co-teachers can do everything except delete the event and change the co-teachers.",
+      "heading": "Co-Event Managers",
+      "none": "No Co-Event Managers.",
+      "help": "Co-Event Managers can do everything except delete the event and change the Co-Event Managers.",
       "remove": "Remove",
-      "choose": "Add a co-teacher",
+      "choose": "Add a Co-Event Manager",
       "add": "Add"
     },
     "participants": {
@@ -468,7 +468,7 @@
       "login": "You get a 6-digit code by email and log in with your kennitala and the code. If you lose the code, you can get a new one on the login page.",
       "signup": "While sign-up is open, you sign up for up to {max} events. The events must not overlap in time, and some are only for students of certain brautir.",
       "cancel": "While sign-up is open you can also cancel, and the place becomes free straight away.",
-      "attend": "You go to the event, and the teacher records your attendance.",
+      "attend": "You go to the event, and the Event Manager records your attendance.",
       "choose": "Once your attendance is recorded, you choose on \"My events\" which course gets absence points removed. You can change your choice until the deadline above."
     },
     "pointsHeading": "Absence points",
