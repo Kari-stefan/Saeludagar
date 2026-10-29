@@ -6,7 +6,7 @@
 <%
   const links = [['/', t('nav.home')], ['/info', t('nav.info')]];
   if (user?.role === 'student') links.push(['/my-events', t('pages.myEvents')]);
-  if (user && user.role !== 'student') links.push(['/teacher', t('pages.teacherHome')]);
+  if (user?.canManageEvents || user?.isAdmin) links.push(['/teacher', t('pages.teacherHome')]);
   if (user?.isAdmin) links.push(['/admin', t('pages.adminHome')]);
   const here = locals.navPath ?? '';
 -%>

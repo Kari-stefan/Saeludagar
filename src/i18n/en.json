@@ -82,10 +82,18 @@
       "changeDates": "Change dates and deadlines"
     },
     "teachers": {
+      "promoteHeading": "Promote a student to Event Manager",
+      "noPromotableStudents": "No active students are waiting to be promoted to Event Manager.",
+      "studentToPromote": "Active student",
+      "promote": "Grant Event Manager role",
       "listHeading": "Event Manager accounts",
+      "revokeHelp": "If a revoked Event Manager still owns events, admins keep managing them and can reassign them from /admin/events.",
       "none": "No Event Manager accounts yet.",
       "name": "Name",
       "email": "Email",
+      "type": "Account type",
+      "typeTeacher": "Teacher account",
+      "typeStudent": "Student account",
       "admin": "Admin",
       "status": "Status",
       "actions": "Actions",
@@ -97,10 +105,14 @@
       "activate": "Reactivate",
       "grantAdmin": "Make admin",
       "revokeAdmin": "Remove admin rights",
+      "revokeManager": "Remove Event Manager role",
       "createHeading": "Create an Event Manager account",
       "createHelp": "The Event Manager receives a code by email to log in with.",
       "create": "Create account",
       "created": "Account created: {name}. A code will be sent to {email}.",
+      "managerGranted": "Event Manager role granted: {name}",
+      "managerRevoked": "Event Manager role removed: {name}",
+      "revokeKeepsEvents": "{name} still appears on {owned} events as owner and {coteaching} as Co-Event Manager. Admins can keep managing these events and reassign them from /admin/events.",
       "codeQueued": "A new code will be sent to {email}.",
       "deactivated": "Account deactivated: {name}",
       "activated": "Account reactivated: {name}",
@@ -111,7 +123,9 @@
         "email": "Enter a valid email address",
         "kennitalaTaken": "This kennitala already has an account",
         "self": "You cannot deactivate your own account or remove your own admin rights.",
-        "inactive": "Reactivate the account first."
+        "inactive": "Reactivate the account first.",
+        "inactiveStudent": "Only active students can be promoted to Event Manager.",
+        "alreadyManager": "This account is already an Event Manager."
       }
     },
     "settings": {

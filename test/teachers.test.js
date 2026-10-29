@@ -1,7 +1,7 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toIso } from '../src/db/index.js';
-import { codeFrom, startSite } from './helpers.js';
+import { codeFrom, insertEvent, startSite } from './helpers.js';
 
 describe('teacher accounts (BR-10 to BR-12)', () => {
   let site;
@@ -32,7 +32,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     await createTeacher({ name: 'Jón Kennari', email: 'jon@example.is', kennitala: '000000-0101' });
     const page = await adminBrowser.get('/admin/teachers');
     assert.match(page.html, /Aðgangur stofnaður: Jón Kennari\. Kóði verður sendur á jon@example\.is\./);
-    assert.match(page.html, /<td>Jón Kennari<\/td>\s*<td>jon@example\.is<\/td>\s*<td>Nei<\/td>\s*<td>Virkur<\/td>/);
+    assert.match(page.html, /<td>Jón Kennari<\/td>\s*<td>jon@example\.is<\/td>\s*<td>Kennaraaðgangur<\/td>\s*<td>Nei<\/td>\s*<td>Virkur<\/td>/);
 
     const row = teacherRow('0000000101');
     assert.equal(row.role, 'teacher');
@@ -166,12 +166,105 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.equal(site.db.prepare('SELECT active FROM users WHERE id = ?').pluck().get(student.id), 1);
   });
 
+  test('admin can promote an active student to Event Manager, keeping student data and access', async () => {
+    const dual = await site.addUser({ role: 'student', name: 'Dóra Dual' });
+    const owner = await site.addUser({ name: 'Eigandi Viðburðar' });
+    const signupEvent = insertEvent(site.db, owner.id, { title_is: 'Skráning viðburður' });
+    site.db.prepare('INSERT INTO student_courses (user_id, course_code) VALUES (?, ?)').run(dual.id, 'ENSK2AB05');
+
+    const dualBrowser = site.browser();
+    await dualBrowser.login(dual.kennitala, dual.code);
+    site.db.prepare('INSERT INTO registrations (event_id, student_id, created_at) VALUES (?, ?, ?)').run(signupEvent, dual.id, toIso());
+    assert.equal((await dualBrowser.get('/teacher')).status, 403);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id), 1);
+
+    await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
+    const page = await adminBrowser.get('/admin/teachers');
+    assert.match(page.html, /Viðburðastjóraréttindi veitt: Dóra Dual/);
+    assert.match(page.html, /<td>Dóra Dual<\/td>\s*<td>profun@example\.is<\/td>\s*<td>Nemandi<\/td>\s*<td>Nei<\/td>\s*<td>Virkur<\/td>/);
+    assert.deepEqual(site.db.prepare('SELECT role, is_event_manager FROM users WHERE id = ?').get(dual.id), { role: 'student', is_event_manager: 1 });
+    assert.deepEqual(site.db.prepare(`SELECT action, actor_id, student_id FROM audit_log WHERE action = 'event-manager.grant' ORDER BY id DESC LIMIT 1`).get(), {
+      action: 'event-manager.grant', actor_id: admin.id, student_id: dual.id,
+    });
+
+    assert.equal((await dualBrowser.get('/my-events')).status, 200);
+    assert.equal((await dualBrowser.get('/teacher')).status, 200);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM student_courses WHERE user_id = ?').pluck().get(dual.id), 1);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM registrations WHERE student_id = ?').pluck().get(dual.id), 1);
+
+    site.db.prepare('INSERT OR IGNORE INTO saeludagar_days (day) VALUES (?)').run('2027-03-12');
+    const created = await dualBrowser.postForm('/teacher/events/new', {
+      title_is: 'Viðburður frá nemanda',
+      title_en: '',
+      description_is: 'Lýsing.',
+      description_en: '',
+      host: 'FB',
+      location: 'Stofa 4',
+      capacity: '20',
+      fee_isk: '',
+      event_date: '2027-03-12',
+      start_time: '09:00',
+      end_time: '10:00',
+      braut_restricted: '0',
+    });
+    assert.equal(created.status, 303);
+    assert.match(created.location, /^\/teacher\/events\/\d+$/);
+  });
+
+  test('admin can revoke Event Manager role without ending student sessions or deleting ownership', async () => {
+    const dual = await site.addUser({ role: 'student', name: 'Rósa Revoked' });
+    await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
+    const dualBrowser = site.browser();
+    await dualBrowser.login(dual.kennitala, dual.code);
+
+    site.db.prepare('INSERT OR IGNORE INTO saeludagar_days (day) VALUES (?)').run('2027-03-13');
+    const ownEvent = await dualBrowser.postForm('/teacher/events/new', {
+      title_is: 'Viðburður sem helst',
+      title_en: '',
+      description_is: 'Lýsing.',
+      description_en: '',
+      host: 'FB',
+      location: 'Stofa 5',
+      capacity: '20',
+      fee_isk: '',
+      event_date: '2027-03-13',
+      start_time: '11:00',
+      end_time: '12:00',
+      braut_restricted: '0',
+    });
+    const ownId = Number(/^\/teacher\/events\/(\d+)$/.exec(ownEvent.location)?.[1]);
+    assert.ok(Number.isSafeInteger(ownId));
+    const beforeSessions = site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id);
+
+    await adminBrowser.post('/admin/teachers', { action: 'revoke-event-manager', id: String(dual.id) });
+    const page = await adminBrowser.get('/admin/teachers');
+    assert.match(page.html, /Viðburðastjóraréttindi tekin af: Rósa Revoked/);
+    assert.deepEqual(site.db.prepare('SELECT role, is_event_manager FROM users WHERE id = ?').get(dual.id), { role: 'student', is_event_manager: 0 });
+    assert.deepEqual(site.db.prepare(`SELECT action, actor_id, student_id FROM audit_log WHERE action = 'event-manager.revoke' ORDER BY id DESC LIMIT 1`).get(), {
+      action: 'event-manager.revoke', actor_id: admin.id, student_id: dual.id,
+    });
+
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id), beforeSessions);
+    assert.equal((await dualBrowser.get('/my-events')).status, 200);
+    assert.equal((await dualBrowser.get('/teacher')).status, 403);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM events WHERE id = ? AND owner_id = ?').pluck().get(ownId, dual.id), 1);
+  });
+
+  test('a promoted student Event Manager cannot access admin pages', async () => {
+    const dual = await site.addUser({ role: 'student', name: 'Stína Stjórnlaus' });
+    await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
+    const dualBrowser = site.browser();
+    await dualBrowser.login(dual.kennitala, dual.code);
+    assert.equal((await dualBrowser.get('/admin')).status, 403);
+    assert.equal((await dualBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(student.id) })).status, 403);
+  });
+
   test('the teacher list shows name, email, admin and active, sorted by name', async () => {
     const page = await adminBrowser.get('/admin/teachers');
     const names = [...page.html.matchAll(/<tr>\s*<td>([^<]+?)(?: \(þú\))?<\/td>/g)].map((m) => m[1]);
     assert.deepEqual(names, [...names].sort(new Intl.Collator('is').compare));
     assert.ok(names.includes('Óli Óvirki') && names.includes('Jón Kennari'));
-    assert.doesNotMatch(page.html, /Nanna Nemandi/, 'students are not listed');
+    assert.match(page.html, /<th scope="col">Tegund aðgangs<\/th>/);
     assert.match(page.html, /<th scope="col">Netfang<\/th>/);
   });
 

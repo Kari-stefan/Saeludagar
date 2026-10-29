@@ -2,6 +2,7 @@ import { toIso } from '../db/index.js';
 import { normalizeKennitala } from './crypto.js';
 import { generateCode, hashCode, verifyCode } from './codes.js';
 import { queueEmail } from './email.js';
+import { audit } from './audit.js';
 
 export const MAX_FAILED_LOGINS = 5; // BR-05
 export const LOCKOUT_MS = 15 * 60 * 1000; // BR-05
@@ -35,22 +36,35 @@ export function validateTeacher(input) {
 }
 
 function toTeacher(row) {
-  return { id: row.id, name: row.name, email: row.email, isAdmin: row.is_admin === 1, active: row.active === 1 };
+  return {
+    id: row.id,
+    role: row.role,
+    name: row.name,
+    email: row.email,
+    isAdmin: row.is_admin === 1,
+    isEventManager: row.is_event_manager === 1,
+    active: row.active === 1,
+  };
 }
 
 export function createAccounts({ db, kt, newCodeLimit = true }) {
   const userByHmac = db.prepare('SELECT * FROM users WHERE kennitala_hmac = ?');
+  const userById = db.prepare('SELECT * FROM users WHERE id = ?');
   const isActive = db.prepare('SELECT active FROM users WHERE id = ?').pluck();
   const teacherById = db.prepare("SELECT * FROM users WHERE id = ? AND role = 'teacher'");
-  const allTeachers = db.prepare("SELECT * FROM users WHERE role = 'teacher'");
+  const allEventManagers = db.prepare('SELECT * FROM users WHERE is_event_manager = 1');
+  const promotableStudents = db.prepare("SELECT id, name, braut FROM users WHERE role = 'student' AND active = 1 AND is_event_manager = 0");
   const setFailures = db.prepare('UPDATE users SET failed_logins = ?, locked_until = ?, updated_at = ? WHERE id = ?');
   const setCodeRequested = db.prepare('UPDATE users SET code_requested_at = ?, updated_at = ? WHERE id = ?');
   const setActive = db.prepare('UPDATE users SET active = ?, updated_at = ? WHERE id = ?');
   const setAdmin = db.prepare('UPDATE users SET is_admin = ?, updated_at = ? WHERE id = ?');
+  const setEventManager = db.prepare('UPDATE users SET is_event_manager = ?, updated_at = ? WHERE id = ?');
   const deleteSessions = db.prepare('DELETE FROM sessions WHERE user_id = ?');
   const insertTeacher = db.prepare(`INSERT INTO users
-    (role, is_admin, kennitala_hmac, kennitala_enc, name, email, code_hash, created_at, updated_at)
-    VALUES ('teacher', ?, ?, ?, ?, ?, ?, ?, ?)`);
+    (role, is_admin, is_event_manager, kennitala_hmac, kennitala_enc, name, email, code_hash, created_at, updated_at)
+    VALUES ('teacher', ?, 1, ?, ?, ?, ?, ?, ?, ?)`);
+  const ownedEvents = db.prepare('SELECT COUNT(*) FROM events WHERE owner_id = ?').pluck();
+  const coteaching = db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE teacher_id = ?').pluck();
 
   // Login steps 1, 3 and 5 (AGENT_START §8). The attempt is counted before the slow scrypt check,
   // in one synchronous transaction, so parallel requests cannot get more than 5 guesses in before
@@ -76,7 +90,12 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     const matches = await verifyCode(code, user?.code_hash);
     if (!user || !matches || isActive.get(user.id) !== 1) return null;
     setFailures.run(0, null, toIso(), user.id);
-    return { id: user.id, role: user.role, isAdmin: user.is_admin === 1 };
+    return {
+      id: user.id,
+      role: user.role,
+      isAdmin: user.is_admin === 1,
+      canManageEvents: user.is_event_manager === 1,
+    };
   }
 
   // The outbox worker generates the code when it sends the email (AGENT_START §8).
@@ -120,8 +139,12 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     return { id: insertTeacherRow(fields, true, codeHash), code };
   }
 
-  function listTeachers() {
-    return allTeachers.all().map(toTeacher).sort((a, b) => collator.compare(a.name, b.name));
+  function listEventManagers() {
+   return allEventManagers.all().map(toTeacher).sort((a, b) => collator.compare(a.name, b.name));
+  }
+
+  function listPromotableStudents() {
+   return promotableStudents.all().sort((a, b) => collator.compare(a.name, b.name));
   }
 
   // The functions below return null when there is no such teacher, otherwise { teacher } or
@@ -157,6 +180,29 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     if (!isAdmin && teacher.id === actorId) return { teacher, error: 'admin.teachers.errors.self' };
     setAdmin.run(isAdmin ? 1 : 0, toIso(), teacher.id);
     return { teacher };
+  });
+
+  // Admin-only: grant the Event Manager role to an active student account.
+  const promoteStudentToEventManager = db.transaction((actorId, studentId) => {
+    const row = userById.get(studentId);
+    if (!row || row.role !== 'student') return null;
+    const manager = toTeacher(row);
+    if (!manager.active) return { manager, error: 'admin.teachers.errors.inactiveStudent' };
+    if (manager.isEventManager) return { manager, error: 'admin.teachers.errors.alreadyManager' };
+    setEventManager.run(1, toIso(), row.id);
+    audit(db, 'event-manager.grant', actorId, null, row.id);
+    return { manager: { ...manager, isEventManager: true } };
+  });
+
+  // Admin-only: remove Event Manager rights while keeping the account and data.
+  const revokeEventManager = db.transaction((actorId, userId) => {
+    const row = userById.get(userId);
+    if (!row || row.is_event_manager !== 1) return null;
+    const manager = toTeacher(row);
+    setEventManager.run(0, toIso(), row.id);
+    const ownership = { owned: ownedEvents.get(row.id), coteaching: coteaching.get(row.id) };
+    audit(db, 'event-manager.revoke', actorId, null, row.id, ownership);
+    return { manager: { ...manager, isEventManager: false }, ownership };
   });
 
   // BR-07: "Senda kóða" queues a student_code email for every active student; the worker generates
@@ -204,9 +250,12 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     studentCodeStatus,
     createTeacher,
     createAdmin,
-    listTeachers,
+    listEventManagers,
+    listPromotableStudents,
     sendTeacherCode,
     setTeacherActive,
     setTeacherAdmin,
+    promoteStudentToEventManager,
+    revokeEventManager,
   };
 }

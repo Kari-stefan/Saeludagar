@@ -90,7 +90,7 @@ export function getEvent(db, id) {
 
 // §8 authorization: 'owner' for the owner or an admin, 'editor' for a co-teacher, otherwise null.
 export function eventAccess(db, user, event) {
-  if (user?.role !== 'teacher') return null;
+  if (!user || (!user.canManageEvents && !user.isAdmin)) return null;
   if (user.isAdmin || event.owner_id === user.id) return 'owner';
   const coteacher = db.prepare('SELECT 1 FROM event_coteachers WHERE event_id = ? AND teacher_id = ?').get(event.id, user.id);
   return coteacher ? 'editor' : null;
@@ -261,7 +261,7 @@ export function deleteEvent(db, event, actorId) {
 
 // Co-teachers (owner or admin only, §6): chosen from the active teachers.
 export function coteacherCandidates(db, event) {
-  return db.prepare(`SELECT id, name FROM users WHERE role = 'teacher' AND active = 1 AND id <> ?
+  return db.prepare(`SELECT id, name FROM users WHERE is_event_manager = 1 AND active = 1 AND id <> ?
     AND id NOT IN (SELECT teacher_id FROM event_coteachers WHERE event_id = ?)`).all(event.owner_id, event.id)
     .sort((a, b) => collator.compare(a.name, b.name));
 }

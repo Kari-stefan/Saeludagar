@@ -114,7 +114,11 @@ export function adminRouter({ config, db, kt, accounts }) {
 
   // BR-10 to BR-12: teacher accounts.
   const renderTeachers = (res, status = 200, form = {}) =>
-    res.status(status).render('admin/teachers', { teachers: accounts.listTeachers(), ...form });
+    res.status(status).render('admin/teachers', {
+      managers: accounts.listEventManagers(),
+      promotableStudents: accounts.listPromotableStudents(),
+      ...form,
+    });
 
   router.get('/teachers', (req, res) => renderTeachers(res));
 
@@ -142,6 +146,8 @@ export function adminRouter({ config, db, kt, accounts }) {
       activate: (id) => accounts.setTeacherActive(req.user.id, id, true),
       'grant-admin': (id) => accounts.setTeacherAdmin(req.user.id, id, true),
       'revoke-admin': (id) => accounts.setTeacherAdmin(req.user.id, id, false),
+      'promote-event-manager': (id) => accounts.promoteStudentToEventManager(req.user.id, id),
+      'revoke-event-manager': (id) => accounts.revokeEventManager(req.user.id, id),
     };
     const done = {
       'new-code': 'admin.teachers.codeQueued',
@@ -149,13 +155,16 @@ export function adminRouter({ config, db, kt, accounts }) {
       activate: 'admin.teachers.activated',
       'grant-admin': 'admin.teachers.adminGranted',
       'revoke-admin': 'admin.teachers.adminRevoked',
+      'promote-event-manager': 'admin.teachers.managerGranted',
+      'revoke-event-manager': 'admin.teachers.managerRevoked',
     };
     if (!Object.hasOwn(actions, action)) return next(httpError(400));
     const id = Number(body.id);
     const result = Number.isSafeInteger(id) ? actions[action](id) : null;
     if (!result) return next(httpError(404));
 
-    const { name, email } = result.teacher;
+    const person = result.teacher ?? result.manager;
+    const { name, email } = person;
     if (result.error) setFlash(req, 'error', result.error);
     else setFlash(req, 'success', done[action], { name, email });
     res.redirect(303, '/admin/teachers');

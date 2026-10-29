@@ -21,6 +21,7 @@ CREATE TABLE users (
   id                 INTEGER PRIMARY KEY,
   role               TEXT    NOT NULL CHECK (role IN ('student','teacher')),
   is_admin           INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0,1)),
+  is_event_manager   INTEGER NOT NULL DEFAULT 0 CHECK (is_event_manager IN (0,1)),
   kennitala_hmac     TEXT    NOT NULL UNIQUE,     -- hex HMAC-SHA256 of the 10-digit string (lookups)
   kennitala_enc      TEXT    NOT NULL,            -- AES-256-GCM: base64(iv).base64(tag).base64(ciphertext)
   name               TEXT    NOT NULL,
@@ -36,6 +37,7 @@ CREATE TABLE users (
   CHECK (role = 'teacher' OR is_admin = 0)
 );
 CREATE INDEX users_role_active ON users(role, active);
+CREATE INDEX users_event_manager_active ON users(is_event_manager, active);
 
 CREATE TABLE student_courses (
   user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
