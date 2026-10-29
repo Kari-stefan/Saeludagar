@@ -53,12 +53,20 @@ describe('role guards (AGENT_START §8, §9 item 8)', () => {
   });
 
   test('§8: admin actions are checked on the server, not only hidden in the page', async () => {
+    const student = await site.addUser({ role: 'student', name: 'Nemo Nemandi' });
     const before = site.db.prepare('SELECT COUNT(*) FROM users').pluck().get();
+    const managerId = site.db.prepare('SELECT id FROM users WHERE role = ? LIMIT 1').pluck().get('teacher');
     for (const role of ['student', 'teacher']) {
-      const res = await browsers[role].post('/admin/teachers', {
+      const browser = browsers[role];
+      assert.equal((await browser.post('/admin/teachers', {
         action: 'create', name: 'Laumu Kennari', email: 'laumu@example.is', kennitala: '0000000901',
-      });
-      assert.equal(res.status, 403, role);
+      })).status, 403, `${role} create`);
+      assert.equal((await browser.post('/admin/teachers', {
+        action: 'promote-event-manager', id: String(student.id),
+      })).status, 403, `${role} promote`);
+      assert.equal((await browser.post('/admin/teachers', {
+        action: 'revoke-event-manager', id: String(managerId),
+      })).status, 403, `${role} revoke`);
     }
     const guest = await browsers.guest.post('/admin/teachers', { action: 'create' });
     assert.equal(guest.status, 303);

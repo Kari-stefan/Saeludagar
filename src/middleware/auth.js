@@ -8,12 +8,18 @@ export const TEACHER_SESSION_MS = 12 * 60 * 60 * 1000;
 // Reads the logged-in user from the database on every request, so deactivation and admin-flag
 // changes take effect at once (BR-11). Sets req.user, or null for a guest.
 export function loadUser(db) {
-  const userById = db.prepare('SELECT id, role, is_admin, name, active FROM users WHERE id = ?');
+  const userById = db.prepare('SELECT id, role, is_admin, is_event_manager, name, active FROM users WHERE id = ?');
   return (req, res, next) => {
     const { userId } = req.session;
     const row = userId ? userById.get(userId) : undefined;
     if (row?.active === 1) {
-      req.user = { id: row.id, role: row.role, isAdmin: row.is_admin === 1, name: row.name };
+      req.user = {
+        id: row.id,
+        role: row.role,
+        isAdmin: row.is_admin === 1,
+        canManageEvents: row.is_event_manager === 1,
+        name: row.name,
+      };
     } else {
       if (userId) {
         delete req.session.userId;
@@ -29,7 +35,8 @@ export function loadUser(db) {
 
 // BR-02: students land on the student pages; teachers and admins on the teacher pages.
 export function homePathFor(user) {
-  return user.role === 'student' ? '/my-events' : '/teacher';
+  if (user.role === 'student') return '/my-events';
+  return user.canManageEvents || user.isAdmin ? '/teacher' : '/';
 }
 
 // Guests are sent to log in; a logged-in user without the role gets the 403 page.
@@ -57,5 +64,5 @@ export function requireEventAccess(db, level) {
 }
 
 export const requireStudent = guard((user) => user.role === 'student');
-export const requireTeacher = guard((user) => user.role === 'teacher');
+export const requireTeacher = guard((user) => user.canManageEvents || user.isAdmin);
 export const requireAdmin = guard((user) => user.role === 'teacher' && user.isAdmin);

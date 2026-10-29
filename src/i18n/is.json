@@ -82,10 +82,18 @@
       "changeDates": "Breyta dagsetningum og frestum"
     },
     "teachers": {
+      "promoteHeading": "Gera nemanda að viðburðastjóra",
+      "noPromotableStudents": "Engir virkir nemendur bíða eftir að verða viðburðastjórar.",
+      "studentToPromote": "Virkur nemandi",
+      "promote": "Gera að viðburðastjóra",
       "listHeading": "Aðgangar viðburðastjóra",
+      "revokeHelp": "Ef viðburðastjóri sem missir réttindin á enn viðburði, sjá stjórnendur áfram um þá og geta fært umsjón í /admin/events.",
       "none": "Engir aðgangar viðburðastjóra enn.",
       "name": "Nafn",
       "email": "Netfang",
+      "type": "Tegund aðgangs",
+      "typeTeacher": "Kennaraaðgangur",
+      "typeStudent": "Nemandi",
       "admin": "Stjórnandi",
       "status": "Staða",
       "actions": "Aðgerðir",
@@ -97,10 +105,14 @@
       "activate": "Virkja",
       "grantAdmin": "Gera að stjórnanda",
       "revokeAdmin": "Taka stjórnandaréttindi",
+      "revokeManager": "Taka viðburðastjóraréttindi",
       "createHeading": "Stofna aðgang viðburðastjóra",
       "createHelp": "Viðburðastjóri fær kóða sendan í tölvupósti til að skrá sig inn með.",
       "create": "Stofna aðgang",
       "created": "Aðgangur stofnaður: {name}. Kóði verður sendur á {email}.",
+      "managerGranted": "Viðburðastjóraréttindi veitt: {name}",
+      "managerRevoked": "Viðburðastjóraréttindi tekin af: {name}",
+      "revokeKeepsEvents": "{name} er enn skráður á {owned} viðburði sem eigandi og {coteaching} sem meðviðburðastjóri. Stjórnendur geta áfram séð um þá og fært umsjón í /admin/events.",
       "codeQueued": "Nýr kóði verður sendur á {email}.",
       "deactivated": "Aðgangur gerður óvirkur: {name}",
       "activated": "Aðgangur virkjaður: {name}",
@@ -111,7 +123,9 @@
         "email": "Sláðu inn gilt netfang",
         "kennitalaTaken": "Þessi kennitala er þegar með aðgang",
         "self": "Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin.",
-        "inactive": "Virkjaðu aðganginn fyrst."
+        "inactive": "Virkjaðu aðganginn fyrst.",
+        "inactiveStudent": "Aðeins er hægt að gera virka nemendur að viðburðastjórum.",
+        "alreadyManager": "Þessi aðgangur er nú þegar viðburðastjóri."
       }
     },
     "settings": {

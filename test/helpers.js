@@ -48,10 +48,11 @@ export async function insertUser(db, kt, {
   kennitala, role = 'teacher', isAdmin = false, active = true, name = 'Prófun', email = 'profun@example.is', code = '123456',
 }) {
   const now = toIso();
+  const isEventManager = role === 'teacher' ? 1 : 0;
   const result = db.prepare(`INSERT INTO users
-    (role, is_admin, kennitala_hmac, kennitala_enc, name, email, active, code_hash, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(role, isAdmin ? 1 : 0, kt.hmac(kennitala), kt.encrypt(kennitala), name, email, active ? 1 : 0,
+    (role, is_admin, is_event_manager, kennitala_hmac, kennitala_enc, name, email, active, code_hash, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(role, isAdmin ? 1 : 0, isEventManager, kt.hmac(kennitala), kt.encrypt(kennitala), name, email, active ? 1 : 0,
       code === null ? null : await hashCode(code), now, now);
   return { id: Number(result.lastInsertRowid), kennitala, code };
 }

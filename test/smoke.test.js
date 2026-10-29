@@ -190,9 +190,9 @@ describe('database (§7)', () => {
 
   test('BR-42: the schema allows each course only once per student', () => {
     const now = '2027-01-01T00:00:00Z';
-    db.prepare(`INSERT INTO users (id, role, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
-      VALUES (1, 'teacher', 'h-teacher', 'e', 'Kennari', 'k@example.is', ?, ?),
-             (2, 'student', 'h-student', 'e', 'Nemandi', 'n@example.is', ?, ?)`).run(now, now, now, now);
+    db.prepare(`INSERT INTO users (id, role, is_event_manager, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
+      VALUES (1, 'teacher', 1, 'h-teacher', 'e', 'Kennari', 'k@example.is', ?, ?),
+             (2, 'student', 0, 'h-student', 'e', 'Nemandi', 'n@example.is', ?, ?)`).run(now, now, now, now);
     const insertEvent = db.prepare(`INSERT INTO events (owner_id, title_is, description_is, host, capacity, event_date,
       start_time, end_time, location, created_at, updated_at)
       VALUES (1, 'V', 'L', 'H', 10, '2027-03-11', '10:00', '12:00', 'Stofa', ?, ?)`);
