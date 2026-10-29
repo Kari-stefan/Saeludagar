@@ -222,7 +222,7 @@ describe('the import page (BR-14 to BR-18)', () => {
     await site.addUser({ kennitala: '0000000312' });
     const res = await admin.post('/admin/import', { action: 'confirm', token: tokenFrom(preview.html) });
     assert.equal(res.status, 400);
-    assert.match(res.html, /Kennari er kominn með eina af kennitölunum í skránni/);
+    assert.match(res.html, /Viðburðastjóri er kominn með eina af kennitölunum í skránni/);
     assert.equal(studentCount(), 0);
     site.db.prepare('DELETE FROM users WHERE kennitala_hmac = ?').run(site.kt.hmac('0000000312'));
   });

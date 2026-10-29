@@ -439,7 +439,7 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
 
     const res = await as.owner.post(`/teacher/events/${id}`, { action: 'add-coteacher', teacher: String(people.coteacher.id) });
     assert.equal(res.location, `/teacher/events/${id}/edit#coteachers`);
-    assert.match((await as.owner.get(`/teacher/events/${id}/edit`)).html, /Samkennara bætt við\./);
+    assert.match((await as.owner.get(`/teacher/events/${id}/edit`)).html, /Meðviðburðastjóra bætt við\./);
     assert.equal((await as.owner.post(`/teacher/events/${id}`, { action: 'add-coteacher', teacher: String(people.student.id) })).status, 303);
     assert.deepEqual(site.db.prepare('SELECT teacher_id FROM event_coteachers WHERE event_id = ?').pluck().all(id), [people.coteacher.id]);
   });
@@ -550,7 +550,7 @@ describe('participant management (BR-37, BR-56)', () => {
       action: 'signup.create',
       event_id: target,
       student_id: people.student.id,
-      details: '{"by":"teacher"}',
+      details: '{"by":"event_manager"}',
     }]);
   });
 

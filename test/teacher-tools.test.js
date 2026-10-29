@@ -258,7 +258,7 @@ describe('emails and messages (BR-50)', () => {
       assert.equal(email.subject, 'Mæting kl. 9', 'the teacher\'s subject, once');
       assert.match(email.text, /^Skilaboð frá Kennari Prófun til þeirra sem eru skráð á viðburðinn Gönguferð \(11\. mars 2027, kl\. 10:00–12:00\):\nA message from Kennari Prófun to everyone signed up for Hike \(11 March 2027, 10:00–12:00\):\n/);
       assert.match(email.text, /\n\nHittumst við aðalinnganginn\.\nTakið með nesti\.\n\n/);
-      assert.match(email.text, new RegExp(`Ef þú svarar þessum pósti fer svarið til kennarans\\.[\\s\\S]*/events/${id}\\n?$`));
+      assert.match(email.text, new RegExp(`Ef þú svarar þessum pósti fer svarið til viðburðastjóra\\.[\\s\\S]*/events/${id}\\n?$`));
     }
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0);
   });

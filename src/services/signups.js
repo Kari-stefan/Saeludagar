@@ -140,7 +140,7 @@ export function addStudentToEvent(db, teacherId, eventId, studentId, now = new D
     if (blocked) return blocked;
     db.prepare('INSERT INTO registrations (event_id, student_id, added_by, created_at) VALUES (?, ?, ?, ?)')
       .run(eventId, studentId, teacherId, toIso(now));
-    audit(db, 'signup.create', teacherId, eventId, studentId, { by: 'teacher' }); // BR-56
+    audit(db, 'signup.create', teacherId, eventId, studentId, { by: 'event_manager' }); // BR-56
     return { ok: true };
   }).immediate();
 }
@@ -151,7 +151,7 @@ export function removeStudentFromEvent(db, teacherId, eventId, studentId) {
     if (!signup) return { error: 'events.participants.errors.notSignedUp' };
     if (signup.attended) return { error: 'events.participants.errors.attended' };
     db.prepare('DELETE FROM registrations WHERE id = ?').run(signup.id);
-    audit(db, 'signup.delete', teacherId, eventId, studentId, { by: 'teacher' }); // BR-56
+    audit(db, 'signup.delete', teacherId, eventId, studentId, { by: 'event_manager' }); // BR-56
     return { ok: true };
   }).immediate();
 }
