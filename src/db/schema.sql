@@ -49,6 +49,7 @@ CREATE TABLE events (
   id                INTEGER PRIMARY KEY,
   owner_id          INTEGER NOT NULL REFERENCES users(id),
   status            TEXT    NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published')),
+  approval_state    TEXT    NOT NULL DEFAULT 'draft' CHECK (approval_state IN ('draft','pending','published','rejected')),
   title_is          TEXT    NOT NULL,
   title_en          TEXT,
   description_is    TEXT    NOT NULL,             -- plain text; line breaks allowed, no HTML
@@ -62,11 +63,13 @@ CREATE TABLE events (
   start_time        TEXT    NOT NULL,             -- 'HH:MM'
   end_time          TEXT    NOT NULL,
   location          TEXT    NOT NULL,
+  rejection_reason  TEXT,
   created_at        TEXT    NOT NULL,
   updated_at        TEXT    NOT NULL,
   CHECK (end_time > start_time)
 );
 CREATE INDEX events_status_date ON events(status, event_date, start_time);
+CREATE INDEX events_approval_state_date ON events(approval_state, event_date, start_time);
 
 CREATE TABLE event_brautir (
   event_id  INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
