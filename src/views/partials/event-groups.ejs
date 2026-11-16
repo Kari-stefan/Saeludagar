@@ -1,7 +1,7 @@
 <%#
   The front page's event list (§6): one card grid per day when sorted by date, else one grid.
-  Takes `groups` ([{ day, events }], day null for an ungrouped list), `filtered` (a search or
-  braut is chosen) and `level`, the heading level of the days. The cards are one level below.
+  Takes `groups` ([{ day, events }], day null for an ungrouped list), `filtered` (a search, braut
+  or filter is chosen) and `level`, the heading level of the days. The cards are one level below.
 -%>
 <% if (filtered && groups.every((group) => group.events.length === 0)) { -%>
 <p class="empty"><%= t('home.noMatches') %></p>

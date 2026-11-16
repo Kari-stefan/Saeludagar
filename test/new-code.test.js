@@ -90,7 +90,7 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
   test('BR-08: the new code is emailed to the address on file, and then the old code stops working', async () => {
     await requestCode(teacher.kennitala);
     const oldStillWorks = await site.browser().login(teacher.kennitala, teacher.code);
-    assert.equal(oldStillWorks.location, '/teacher', 'the old code works until the email is sent');
+    assert.equal(oldStillWorks.location, '/', 'the old code works until the email is sent');
 
     const [email] = await site.sendEmails();
     assert.deepEqual(email.to, { name: 'Kári Kennari', address: 'kari@example.is' });
@@ -100,7 +100,7 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
     const old = await site.browser().login(teacher.kennitala, teacher.code);
     assert.equal(old.status, 401);
     const fresh = await site.browser().login(teacher.kennitala, newCode);
-    assert.equal(fresh.location, '/teacher');
+    assert.equal(fresh.location, '/');
     teacher.code = newCode;
   });
 
@@ -108,9 +108,9 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
     const browser = site.browser();
     await browser.login(student.kennitala, student.code);
     const page = await browser.get('/login/new-code');
-    assert.deepEqual([page.status, page.location], [303, '/my-events']);
+    assert.deepEqual([page.status, page.location], [303, '/']);
     const post = await browser.post('/login/new-code', { kennitala: student.kennitala });
-    assert.deepEqual([post.status, post.location], [303, '/my-events']);
+    assert.deepEqual([post.status, post.location], [303, '/']);
     assert.deepEqual(queued(), []);
     const sess = site.db.prepare('SELECT sess FROM sessions WHERE sid = ?').pluck().get(browser.sessionId);
     assert.equal(JSON.parse(sess).flash, undefined, 'no message left waiting in the session');

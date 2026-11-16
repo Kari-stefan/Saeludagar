@@ -6,8 +6,7 @@ import { setFlash } from '../middleware/flash.js';
 import { attendanceWindow, setAttendance } from '../services/attendance.js';
 import { queueTeacherMessage, validateMessage } from '../services/email.js';
 import {
-  addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, teacherEvents, updateEvent,
-  validateEvent,
+  addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, updateEvent, validateEvent,
 } from '../services/events.js';
 import { deleteImage, imageType, MAX_IMAGE_BYTES, saveImage } from '../services/images.js';
 import { brautList } from '../services/import.js';
@@ -19,7 +18,7 @@ import {
 const collator = new Intl.Collator('is');
 
 // BR-27, §8: one image of at most 2 MB, read into memory and checked by its content.
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fields: 200 } })
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_IMAGE_BYTES, files: 1, fields: 200, fieldArrayIndexLimit: 200 } })
   .single('image');
 
 // A multer error (such as an image over 2 MB) becomes a message on the image field.
@@ -38,16 +37,18 @@ function uploadedImage(req) {
   return type ? { bytes: req.file.buffer, type } : { error: 'events.errors.imageType' };
 }
 
-// A request from the attendance page's script, which wants a JSON answer instead of a page.
+// A request from a page's script (the attendance list, the "Nýr viðburður" dialog), which wants a
+// JSON answer instead of a page.
 const wantsJson = (req) => Boolean(req.get('Accept')?.includes('application/json'));
 
-// Mounted at /teacher; teachers and admins only.
+// Mounted at /teacher; event managers and admins only (BR-67).
 export function teacherRouter({ config, db }) {
   const router = express.Router();
   router.use(requireTeacher);
   const access = (level) => requireEventAccess(db, level);
 
-  router.get('/', (req, res) => res.render('teacher/home', { events: teacherEvents(db, req.user.id), days: getSettings(db).days }));
+  // The teacher home moved to the front page (§6); old links keep working.
+  router.get('/', (req, res) => res.redirect(303, '/#managed-events'));
 
   // The form offers the Sæludagar days (BR-21) and the braut list (BR-18), plus the event's own
   // brautir, so an edit never drops one that is no longer on the list.
@@ -67,11 +68,18 @@ export function teacherRouter({ config, db }) {
   router.get('/events/new', (req, res) => renderForm(req, res, 200, { values: { brautir: [] } }));
 
   // The form is multipart (it has the image), so the CSRF token is checked after multer.
+  // The front page's dialog (§6) posts here too and wants JSON: the errors for it to show next to
+  // the fields, which keeps what was entered and the chosen image.
   router.post('/events/new', readImage, verifyCsrf, async (req, res) => {
     const { values, errors } = validateEvent(req.body ?? {}, formOptions());
+    const refuse = (found) => {
+      if (!wantsJson(req)) return renderForm(req, res, 400, { values, errors: found });
+      const messages = Object.fromEntries(Object.entries(found).map(([field, key]) => [field, res.locals.t(key)]));
+      return res.status(400).json({ ok: false, errors: messages });
+    };
     const image = uploadedImage(req);
     if (image.error) errors.image = image.error;
-    if (Object.keys(errors).length > 0) return renderForm(req, res, 400, { values, errors });
+    if (Object.keys(errors).length > 0) return refuse(errors);
 
     const imageFile = image.bytes ? await saveImage(config.uploadDir, image.bytes, image.type) : null;
     let result;
@@ -83,9 +91,10 @@ export function teacherRouter({ config, db }) {
     }
     if (result.error) {
       await deleteImage(config.uploadDir, imageFile);
-      return renderForm(req, res, 400, { values, errors: { [result.field]: result.error } });
+      return refuse({ [result.field]: result.error });
     }
     setFlash(req, 'success', 'events.created');
+    if (wantsJson(req)) return res.json({ ok: true, id: result.id });
     res.redirect(303, `/teacher/events/${result.id}`);
   });
 
@@ -262,7 +271,7 @@ export function teacherRouter({ config, db }) {
       }
       await deleteImage(config.uploadDir, result.image);
       setFlash(req, 'success', 'events.deleted', { title: res.locals.eventText(event, 'title') });
-      return res.redirect(303, '/teacher');
+      return res.redirect(303, '/#managed-events');
     }
 
     const teacherId = Number(body.teacher);

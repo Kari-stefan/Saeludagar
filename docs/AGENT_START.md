@@ -60,7 +60,7 @@ Use these Icelandic terms in the Icelandic UI.
 | Þátttökugjald | Participation fee (display only) |
 | Uppselt | Full: no places left |
 | Inna | The school's student information system, where absences are recorded |
-| Mínir viðburðir | "My events", the student's own page |
+| Þínir viðburðir | "Your events", the student's section of the front page |
 
 ### People named in the planning notes
 - **Berglind** supplies the student data as a CSV file.
@@ -74,15 +74,16 @@ Use these Icelandic terms in the Icelandic UI.
 
 ## 3. Users and roles
 
-The site has four roles. A co-teacher is a teacher acting on an event they were added to, not a separate account type.
+The site has four roles. A co-teacher is an event manager (BR-67) acting on an event they were added to, not a separate account type.
 
 | Role | Can do | Cannot do |
 |---|---|---|
 | **Guest** (not logged in) | View the front page (Sæludagar days, published events, search, sort and braut filter) and the Upplýsingar page. View published event pages with sign-up counts. Switch language and light/dark mode. Log in. Request a new code. | Sign up for events. See drafts. See anyone's name. |
-| **Student** | Everything a guest can. Sign up for and cancel events within the rules in section 4. Use "Mínir viðburðir". Choose a course for each attended event, and change it until the deadline. | Have more than 4 sign-ups. Sign up for overlapping events. Sign up or cancel outside the sign-up window. See who else signed up. Choose a course that is not theirs, or the same course twice. Change choices after the deadline. Open teacher or admin pages. |
-| **Teacher** (as event owner) | Create events as drafts. Preview an event exactly as students will see it, then publish it. Edit and delete events (rules apply). Add and remove co-teachers. See participants (name, braut, email). Add students by searching for their name, and remove students. Copy all participant emails. Send a message to all participants from the site. Print the participant list. Mark attendance. | See or edit other teachers' events unless added as a co-teacher. See any kennitala. Delete an event once attendance has been marked. Push a student past 4 sign-ups or into an overlap when adding them. Open admin pages. |
-| ↳ **Co-teacher** (a teacher added to an event by its owner or an admin) | Everything the owner can do on that event, except the two things in the next column. | Delete the event. Add or remove co-teachers. |
-| **Admin** (a teacher account with the admin flag; logs in like any teacher) | Everything an owner can do, on every event. Set the Sæludagar days, the sign-up window and the course-choice deadline. Import the student CSV. Send codes to all students. Create teacher accounts, send a teacher a new code, deactivate or reactivate teachers, and grant or revoke admin rights. Download the office export. Purge data. View the audit log. | Change the three fixed numbers 4 / 4 / 4 (they live in code). Write to Inna. |
+| **Student** | Everything a guest can. Sign up for and cancel events within the rules in section 4. Use "Þínir viðburðir" on the front page. Choose a course for each attended event, and change it until the deadline. | Have more than 4 sign-ups, or more than 2 on one day. Sign up for overlapping events. Sign up or cancel outside the sign-up window. See who else signed up. Choose a course that is not theirs, or the same course twice. Change choices after the deadline. Open teacher or admin pages. |
+| **Teacher** (as event owner) | Create events as drafts. Preview an event exactly as students will see it, then publish it. Edit and delete events (rules apply). Add and remove co-teachers. See participants (name, braut, email). Add students by searching for their name, and remove students. Copy all participant emails. Send a message to all participants from the site. Print the participant list. Mark attendance. | See or edit other teachers' events unless added as a co-teacher. See any kennitala. Delete an event once attendance has been marked. Push a student past 4 sign-ups, past 2 on one day, or into an overlap when adding them. Open admin pages. |
+| ↳ **Co-teacher** (an event manager, BR-67, added to an event by its owner or an admin) | Everything the owner can do on that event, except the two things in the next column. | Delete the event. Add or remove co-teachers. |
+| ↳ **Event manager** ("viðburðastjóri": teachers, and any student an admin gives the role, BR-67) | What a teacher can do with events. A student with the role also keeps everything a student can do. | Open admin pages. |
+| **Admin** (a teacher account with the admin flag; logs in like any teacher) | Everything an owner can do, on every event. Set the Sæludagar days, the sign-up window and the course-choice deadline. Import the student CSV. Send codes to all students. Create teacher accounts, send a teacher a new code, deactivate or reactivate teachers, grant or revoke admin rights, and make an active student an event manager or take that role away (BR-67). Download the office export. Purge data. View the audit log. | Change the four fixed numbers 4 / 4 / 4 / 2 (they live in code). Write to Inna. |
 
 Office staff do not use the site. An admin gives them the export file.
 
@@ -94,7 +95,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 
 ### Login and accounts
 - **BR-01** The user can type a kennitala as 10 digits, with or without a hyphen after the 6th digit (`0000000001` or `000000-0001`). The system removes the hyphen and always stores and compares a 10-digit string. Any other input is rejected with a validation message.
-- **BR-02** There is one login form for everyone: kennitala + 6-digit code. After logging in, a student lands on the student pages, and a teacher or admin lands on the teacher pages.
+- **BR-02** There is one login form for everyone: kennitala + 6-digit code. After logging in, everyone lands on the front page, which holds their own events and, for those who manage events, the events they manage (changed on 2 November 2026).
 - **BR-03** Only active accounts can log in. An active account is either a student in the latest CSV import or an active teacher account.
 - **BR-04** Every failed login shows the same message: "Kennitala eða kóði er rangur" / "Incorrect kennitala or code". This covers an unknown kennitala, a wrong code, an inactive account and a locked account.
 - **BR-05** After 5 failed attempts for the same kennitala, that kennitala cannot log in for 15 minutes, even with the correct code.
@@ -149,7 +150,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **BR-28** A published event can still be edited after students have signed up, with these limits:
   - The maximum cannot be set below the number already signed up.
   - If the date, start time, end time or location changes, every student signed up gets an automatic email.
-  - Existing sign-ups are not checked again for overlaps.
+  - Existing sign-ups are not checked again for overlaps or for the limit of 2 on one day (BR-65), so moving an event to another day can leave a student with more than 2 that day. They get the email above and can cancel while the sign-up window is open (BR-36); after it closes, only a teacher can remove them (BR-37; open question 23).
 - **BR-29** Only the owner or an admin can delete an event. Deletion is blocked once attendance has been marked for any participant. Otherwise, every student signed up gets an email, and their sign-ups are deleted, so they no longer count toward that student's 4.
 - **BR-30** Special and trip events (sér-atburður / ferðaatburður) follow exactly the same rules as other events.
 
@@ -161,24 +162,25 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
   - the event is not full
   - the braut rule (BR-24) allows it
   - the student has fewer than 4 sign-ups
+  - the student has fewer than 2 sign-ups on the event's date (BR-65)
   - the event does not overlap any event the student has already signed up for
 - **BR-33** Two events overlap if they are on the same date and `startA < endB` and `startB < endA`. Back-to-back events, where one ends at 12:00 and the next starts at 12:00, do not overlap.
 - **BR-34** When a sign-up is refused, the student is told why. For an overlap, the message names the event it clashes with.
 - **BR-35** Student sign-ups never push an event past its maximum, even when many students sign up at the same moment. The only exception is a teacher adding a student by hand (BR-37).
 - **BR-36** A student can cancel a sign-up while the window is open, and the place becomes free immediately.
-- **BR-37** Teachers can add students to their event and remove them. To add a student, the teacher searches by name; results show name and braut, never the kennitala. A teacher adding a student may override the event's own limits (maximum, braut rule, sign-up window), but not the student's limits (at most 4 sign-ups, no overlaps). A student whose attendance is marked cannot be removed: the teacher unmarks the attendance first (open question 13).
+- **BR-37** Teachers can add students to their event and remove them. To add a student, the teacher searches by name; results show name and braut, never the kennitala. A teacher adding a student may override the event's own limits (maximum, braut rule, sign-up window), but not the student's limits (at most 4 sign-ups, at most 2 on one day, no overlaps). A student whose attendance is marked cannot be removed: the teacher unmarks the attendance first (open question 13).
 
 ### Attendance and absence points
 - **BR-38** Attendance is one checkbox per participant ("mætti" / present). It starts unticked and is saved as soon as it changes.
 - **BR-39** Attendance can be marked or changed from 00:00 on the event's date until the course-choice deadline. After that it is read-only. While the admin has not set the deadline, attendance stays open from the event's date (decided 15 October 2026), so a forgotten deadline never stops a teacher on the day.
 - **BR-40** Each marked attendance entitles the student to have 4 absence points removed from exactly one course.
-- **BR-41** On "Mínir viðburðir", the student chooses a course for each event where their attendance is marked. They choose from their own course list, which comes from the CSV. A choice exists only while the attendance is marked; unmarking attendance deletes the choice.
+- **BR-41** In "Þínir viðburðir" on the front page, the student chooses a course for each event where their attendance is marked. They choose from their own course list, which comes from the CSV. A choice exists only while the attendance is marked; unmarking attendance deletes the choice.
 - **BR-42** A student can choose each course for at most one event, because a course can lose at most 4 points.
 - **BR-43** Because of BR-32, a student has at most 4 sign-ups. That means at most 4 attended events and at most 16 points in total.
 - **BR-44** The admin sets the course-choice deadline. The student can change choices until then; after it, choices are read-only.
 - **BR-45** There is no approval step. A marked attendance plus the student's course choice go straight to the export.
 - **BR-46** The site does not store or check students' absence-point balances.
-- **BR-47** Three numbers are constants in one code module, not admin settings: 4 points per attendance, 4 points maximum per course, and 4 sign-ups maximum per student.
+- **BR-47** Four numbers are constants in one code module, not admin settings: 4 points per attendance, 4 points maximum per course, 4 sign-ups maximum per student, and 2 sign-ups maximum per student on one day.
 
 ### Office export
 - **BR-48** The office export is a CSV file with one row per marked attendance. Columns: kennitala, name, braut, course, points (4), event and date. If the student has not chosen a course, the course column is empty.
@@ -200,7 +202,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
   - A purge deletes all student data: students, course lists, codes, sign-ups, attendance, course choices, student sessions, queued emails to students, and the audit log.
   - It sets every event back to draft.
   - Teacher accounts and events are kept.
-- **BR-56** The system keeps an audit log of who changed attendance, sign-ups and course choices, and when. Admins can view it. The purge deletes it.
+- **BR-56** The system keeps an audit log of who changed attendance, sign-ups and course choices, and of who gave or took away the event-manager role (BR-67), and when. Admins can view it. The purge deletes it.
 
 ### Privacy and language
 - **BR-57** The only cookie the site sets is the session cookie. There is no analytics or tracking.
@@ -211,8 +213,11 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 
 ### Appearance and the front page
 - **BR-62** Every page has a light and a dark mode. By default the site is in light mode, whatever the device's setting (changed from following the device on 20 October 2026). A switch in the header (and in the mobile menu) chooses light or dark, and the choice is remembered for the session, like the language (BR-59).
-- **BR-63** On the front page, guests and students can search the events by name and sort them: by date (earliest or latest first), by fee (lowest or highest first) or by name (A to Ö or Ö to A). Search, sort and the braut filter (BR-25) work together: applying one keeps the others. When nothing matches, the page says so.
-- **BR-64** A logged-in student's front page has two sections: "Þínir viðburðir" (the events they are signed up for, sorted by date and time by default) above "Aðrir viðburðir" (every other published event). Each section has its own search and sort, and changing one section's keeps the other's. Signing up or cancelling moves the event between the sections.
+- **BR-63** On the front page, guests and students can search the events by name, narrow them with "Sía" and order them with "Raða". "Sía" filters by fee (free only, or a lowest and a highest fee), braut (BR-25), date range (from the first to the last Sæludagar day; a date outside that span in the address, or one that does not exist, is ignored), start-time range, and before or after noon; an event counts as before noon when it starts before 12:00. "Raða" orders by date, start time, fee or name, each both ways, or with the before-noon or the after-noon events first; ties keep date and time order. Search, filters and order work together: applying one keeps the others. Each active choice is shown and can be cleared on its own, or all of them at once. When nothing matches, the page says so.
+- **BR-64** A logged-in student's front page has two sections: "Þínir viðburðir" (the events they are signed up for, with a counter such as "2/4", sorted by date and time by default) above "Aðrir viðburðir" (every other published event). "Þínir viðburðir" is the one place for a student's own events; it replaced the separate "Mínir viðburðir" page on 2 November 2026. Each section has its own search and order, and changing one section's keeps the other's. Signing up or cancelling moves the event between the sections.
+- **BR-65** A student can have at most 2 sign-ups on any one day. Like the 4 sign-ups, this is checked inside the sign-up's transaction, so simultaneous sign-ups cannot get past it, and a teacher adding by hand cannot override it (BR-37). The message says which limit was reached.
+- **BR-66** Event cards on the front page have sign-up controls, so a student need not open the event page: "Skrá" on an event they are not signed up for, while the window is open and the event is not full, and "Afskrá" on one they are, while the window is open and their attendance is not marked. They follow every sign-up rule (BR-32 to BR-36, BR-65), and a refusal says why (BR-34). A guest's "Skrá" goes to log in and comes back to the event. Teachers' cards have neither.
+- **BR-67** Teacher accounts start as event managers ("viðburðastjóri", the word the site uses for them). An admin can also make an active student an event manager, and can take the role away from anyone who has it. An event manager can create and manage events as a teacher does (from #52; see open question 21).
 
 ---
 
@@ -222,7 +227,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 1. Opens saeludagar.is. The front page shows:
    - a header: school logo, "Sæludagar" and the school name, the links "Heimasíða" and "Upplýsingar", ÍS/EN toggle, light/dark switch, "Innskráning" (§6)
    - the Sæludagar days
-   - a name search and a "Sía" menu with the sort order and the braut filter (BR-63)
+   - a name search, a "Sía" menu with the filters and a "Raða" menu with the orders (BR-63)
    - published events, grouped by day and sorted by start time
 2. Searches, sorts or filters by braut, and opens an event page with "Nánar".
 3. Clicks "Skrá mig" (sign me up), is sent to the login page, and returns to the event after logging in.
@@ -230,20 +235,20 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 ### Student
 1. Gets a 6-digit code by email, either from the admin's "Senda kóða" (BR-07) or by requesting one with "Fá nýjan kóða" (BR-08).
 2. Logs in with kennitala + code (BR-02).
-3. Browses, searches or filters events. The front page shows "Þínir viðburðir" above "Aðrir viðburðir" (BR-64). On an event page, clicks "Skrá mig":
-   - If it works, a confirmation shows on screen and the event appears in "Mínir viðburðir".
+3. Browses, searches, filters or orders events. The front page shows "Þínir viðburðir" above "Aðrir viðburðir" (BR-64). Clicks "Skrá" on an event card (BR-66), or "Skrá mig" on an event page:
+   - If it works, a confirmation shows on screen and the event appears in "Þínir viðburðir".
    - If it is refused, the reason shows (BR-34).
-4. In "Mínir viðburðir", sees their sign-ups as "n / 4", and can cancel while the window is open (BR-36).
+4. In "Þínir viðburðir", sees their sign-ups and the counter "n/4", and can cancel with "Afskrá" while the window is open (BR-36).
 5. Attends events during Sæludagar, and the teacher marks attendance.
-6. Returns to "Mínir viðburðir". For each attended event, picks a course from a dropdown of their own courses and saves. Courses already used for another event are not offered (BR-42). The deadline is shown, and choices can be changed until then.
+6. Returns to "Þínir viðburðir". For each attended event, picks a course from a dropdown of their own courses and saves. Courses already used for another event are not offered (BR-42). The deadline is shown, and choices can be changed until then.
 7. After the deadline, sees their choices read-only.
 
 ### Teacher
 1. Receives their code by email when the admin creates the account (BR-10), and logs in with kennitala + code.
-2. The teacher home lists events they own or co-teach, with status and sign-up counts.
-3. Clicks "Nýr viðburður" (new event), fills in the form (BR-20) with an optional image, and saves. The event is now a draft.
+2. The front page lists events they own or co-teach, with status and sign-up counts.
+3. Clicks the "Nýr viðburður" (new event) button, fills in the form (BR-20) in the dialog that opens, with an optional image, and saves. The event is now a draft.
 4. Clicks "Forskoða" (preview) to see the event exactly as students will, then "Birta" (publish).
-5. Optionally adds co-teachers (owner or admin only), chosen from the active teachers.
+5. Optionally adds co-teachers (owner or admin only), chosen from the active event managers (BR-67).
 6. During sign-up:
    - watches the participant list
    - adds a student by name search, or removes students (BR-37)
@@ -272,27 +277,27 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
   - **Wide screens (48rem and up):**
     - The school logo on the left, linking to the front page.
     - "Sæludagar" in the centre, with `SCHOOL_NAME` under it when set.
-    - Under the title, the navigation: "Heimasíða" (`/`), "Upplýsingar" (`/info`) and the user's own area ("Mínir viðburðir", "Kennarasvæði", "Stjórnendasvæði", as their role allows). The current page is marked with `aria-current`.
+    - Under the title, the navigation: "Heimasíða" (`/`), "Upplýsingar" (`/info`) and, for admins, "Stjórnendasvæði". The current page is marked with `aria-current`.
     - Top right: "Innskráning" for guests. For logged-in users, a status reading "Skráð inn: {name}" and "Útskráning".
     - The ÍS/EN toggle and the light/dark switch (BR-62).
   - **Narrow screens:**
     - The logo and the title, and a menu button on the right.
     - The button opens a drawer from the side with the same links and actions.
     - The drawer closes with its close button, with Escape, by tapping outside it, and when a link is chosen.
-    - The menu is a `<details>` element, so it opens and closes without JavaScript. `public/js/menu.js` adds Escape, tapping outside, and keeping focus inside the open drawer.
+    - The menu is a `<details>` element, so it opens and closes without JavaScript. The drawer and its icon animate on every open; `public/js/menu.js` adds Escape, tapping outside, the closing animation, and keeping focus inside the open drawer.
 - The page title (`<title>`) and the footer keep "Sæludagar – {SCHOOL_NAME}".
 - Every visible string comes from the i18n dictionaries.
 
 **Copy and paths:**
-- These Icelandic strings are fixed: "Kennitala eða kóði er rangur", "Uppselt", "Ókeypis", "Mínir viðburðir", "Fá nýjan kóða", "Senda kóða", "Aðeins fyrir nemendur brautar". Draft the rest of the copy in both languages, short and plain; the team will review it.
+- These Icelandic strings are fixed: "Kennitala eða kóði er rangur", "Uppselt", "Ókeypis", "Fá nýjan kóða", "Senda kóða", "Aðeins fyrir nemendur brautar". Draft the rest of the copy in both languages, short and plain; the team will review it.
 - Paths are in English for code clarity and are not translated.
 
 ### Public
 | Path | Purpose | Key elements |
 |---|---|---|
-| `GET /` | Front page | The Sæludagar days. Above the events (right-aligned on wide screens), a plain GET form: a name search field, a "Leita" button, and a "Sía" menu with the six sort orders and the braut filter ("Allar brautir" + each braut) (BR-63). Sorted by date, the events are grouped by day; otherwise they form one grid. When anything other than the defaults is chosen, a line under the controls names the choices, with a "Hreinsa" (clear) link. A message when nothing matches. For a logged-in student, the two sections of BR-64, each with its own search and "Sía": "Þínir viðburðir" (at most 4 events) is always one grid and its "Sía" has the sort order only, and when it is empty it says so and links down to "Aðrir viðburðir"; "Aðrir viðburðir" works like the guest list, braut filter included. The search matches the Icelandic and the English title, whatever the page's language. Each event card shows the image, title, date and time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, a short description, the fee, "n / max", an "Uppselt" badge when full, and a "Nánar" button to the event page. |
+| `GET /` | Front page | The Sæludagar days. Above the events (right-aligned on wide screens), a plain GET form: a name search field, a "Leita" button, and a "Sía" menu with the filters (the braut filter has "Allar brautir" + each braut) and, beside it, a "Raða" menu with the orders (BR-63). Sorted by date, the events are grouped by day; otherwise they form one grid. Each choice other than the defaults shows under the controls with its own clear link, and "Hreinsa allt" clears them all. A message when nothing matches. For a logged-in student, the two sections of BR-64, each with its own search and order: "Þínir viðburðir" (at most 4 events) has the "n/4" counter and the sign-up window, is always one grid, has search and "Raða" only, and shows a marked attendance on the card; when it is empty it says so and links down to "Aðrir viðburðir"; "Aðrir viðburðir" works like the guest list, braut filter included. The search matches the Icelandic and the English title, whatever the page's language. Each event card shows the image, title, date and time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, a short description, the fee, "n / max", an "Uppselt" badge when full, a "Nánar" button to the event page, and "Skrá" or "Afskrá" as BR-66 says. For anyone who can manage events: a "Viðburðir sem þú sérð um" section (the events they own or co-teach, drafts included, with status, "n / max", and links to preview and publish), and, once there are Sæludagar days for an event to be on (BR-21), a floating "Nýr viðburður" button at the bottom right of the content. The button opens the event form in a dialog over the page, with a dark backdrop, the fields in about 2/3 of its width and "Mynd fyrir viðburð" (attach, preview, replace, remove) in the other 1/3, stacked on narrow screens. Without JavaScript the button goes to `/teacher/events/new`. |
 | `GET /events/:id` | Event page (published only, or preview rights) | All event fields, "n / max" and "Uppselt". A "Skrá mig" or "Afskrá mig" button depending on state (guests are sent to log in). The refusal reason when a sign-up fails. |
-| `GET /info` | "Upplýsingar" | What Sæludagar is and how the site works: logging in, signing up for at most 4 events, attendance, and the course choice (§2 and the business rules). The current dates and deadlines from the settings. Contact details are a marked placeholder until the school supplies them; no rules or contacts are made up. |
+| `GET /info` | "Upplýsingar" | What Sæludagar is and how the site works: logging in, signing up for at most 4 events and at most 2 on one day, attendance, and the course choice (§2 and the business rules). The current dates and deadlines from the settings. Contact details are a marked placeholder until the school supplies them; no rules or contacts are made up. |
 | `GET/POST /login` | Login | In a centred box, with a back link to the front page in the top-left corner. Kennitala and 6-digit code fields; the browser checks their format before sending. The generic error from BR-04. A link to "Fá nýjan kóða". There is no self-registration: accounts come from the CSV import and the admin. |
 | `GET/POST /login/new-code` | Request a new code | The same centred box, with a back link to the login page. A kennitala field. The same confirmation message whatever happens (BR-08). |
 | `POST /logout` | Log out | |
@@ -302,14 +307,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 ### Student
 | Path | Purpose | Key elements |
 |---|---|---|
-| `GET /my-events` + POST actions | "Mínir viðburðir" | Sign-ups with "n / 4", time and location. Cancel buttons while the window is open. For attended events, a course dropdown (own courses not used elsewhere) and a Save button. The deadline is shown, and everything is read-only after it. |
+| `/#mine-events` | "Þínir viðburðir" on the front page | Sign-ups with "n/4", time and location. "Afskrá" while the window is open. For attended events, a course dropdown (own courses not used elsewhere) and a Save button (M7). The deadline is shown, and everything is read-only after it. `GET /my-events` redirects here. |
 
 ### Teacher (owner, co-teacher or admin, as the rules allow)
 | Path | Purpose | Key elements |
 |---|---|---|
-| `GET /teacher` | Teacher home | Events I own or co-teach: title, date, status (draft/published), "n / max". A "Nýr viðburður" button. |
-| `GET/POST /teacher/events/new`, `/teacher/events/:id/edit` | Event form | All BR-20 fields, with the English fields clearly marked optional. Image upload with preview and a remove option. Braut checkboxes (from BR-18) and the restriction flag. A co-teacher section (owner or admin only). Validation messages next to each field. |
-| `GET /teacher/events/:id/preview` | Preview | The public event page as a student sees it, with a "Forskoðun" (preview) banner. Works for drafts. |
+| `GET /teacher` | The old teacher home | Redirects to the "Viðburðir sem þú sérð um" section of the front page, which replaced it on 2 November 2026. |
+| `GET/POST /teacher/events/new`, `/teacher/events/:id/edit` | Event form (the dialog posts to the same address; this page is what "Nýr viðburður" opens without JavaScript) | All BR-20 fields, with the English fields clearly marked optional. Image upload with preview and a remove option. Braut checkboxes (from BR-18) and the restriction flag. A co-teacher section (owner or admin only). Validation messages next to each field. |
+| `GET /teacher/events/:id/preview` | Preview | The public event page and, below it, the event's card as it shows on the front page, as a student sees them, with a "Forskoðun" (preview) banner. Works for drafts. |
 | `GET /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. |
 | `GET /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. |
 | `GET /teacher/events/:id/print` | Printable list | Event title, date, time and location, then a table of name, braut and an empty box. Uses a print stylesheet. |
@@ -322,7 +327,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET/POST /admin/settings` | Dates | Sæludagar days (add or remove dates), sign-up opens and closes (date + time), course-choice deadline (date + time). |
 | `GET/POST /admin/import` | Student CSV import | Upload, then either the list of errors with line numbers, or a summary of changes (added, updated, deactivated, sign-ups to be removed) with a Confirm button. |
 | `GET/POST /admin/codes` | Send codes | The number of active students, a warning that previous codes stop working, a Confirm button, and progress (queued / sent / failed). |
-| `GET/POST /admin/teachers` | Teacher accounts | A list (name, email, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. |
+| `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away (BR-67). |
 | `GET /admin/events` | All events | Every event with its owner, status and "n / max", linking to the management page. |
 | `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline, the number of rows, and the number of rows without a course. |
 | `GET/POST /admin/purge` | Purge | A description of what will be deleted, a typed confirmation, and the date of the automatic purge. |
@@ -340,7 +345,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **Pragmas** on every connection: `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000`, `synchronous = NORMAL`.
 - **Timestamps** are ISO-8601 UTC text, e.g. `2027-03-11T10:00:00Z`. Iceland is UTC+0 all year with no daylight saving, so local time equals UTC.
 - **Event dates and times:** dates are `YYYY-MM-DD` and times are `HH:MM`.
-- **Schema version** is kept in `PRAGMA user_version`; milestone 1 sets it to 1.
+- **Schema version** is kept in `PRAGMA user_version`. Milestone 1 set it to 1; #52 moved it to 2 by adding `is_event_manager`, and `npm run migrate` upgrades a version 1 database.
 
 ```sql
 -- Exactly one row (id = 1).
@@ -362,6 +367,7 @@ CREATE TABLE users (
   id                 INTEGER PRIMARY KEY,
   role               TEXT    NOT NULL CHECK (role IN ('student','teacher')),
   is_admin           INTEGER NOT NULL DEFAULT 0 CHECK (is_admin IN (0,1)),
+  is_event_manager   INTEGER NOT NULL DEFAULT 0 CHECK (is_event_manager IN (0,1)),  -- BR-67
   kennitala_hmac     TEXT    NOT NULL UNIQUE,     -- hex HMAC-SHA256 of the 10-digit string (lookups)
   kennitala_enc      TEXT    NOT NULL,            -- AES-256-GCM: base64(iv).base64(tag).base64(ciphertext)
   name               TEXT    NOT NULL,
@@ -377,6 +383,7 @@ CREATE TABLE users (
   CHECK (role = 'teacher' OR is_admin = 0)
 );
 CREATE INDEX users_role_active ON users(role, active);
+CREATE INDEX users_event_manager_active ON users(is_event_manager, active);
 
 CREATE TABLE student_courses (
   user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -466,7 +473,7 @@ CREATE TABLE audit_log (
   id          INTEGER PRIMARY KEY,
   at          TEXT    NOT NULL,
   actor_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  action      TEXT    NOT NULL,   -- 'signup.create','signup.delete','attendance.set','attendance.unset','choice.set','choice.clear'
+  action      TEXT    NOT NULL,   -- 'signup.create','signup.delete','attendance.set','attendance.unset','choice.set','choice.clear','event-manager.grant','event-manager.revoke'
   event_id    INTEGER,            -- no FK, so entries survive event deletion until the purge
   student_id  INTEGER,
   details     TEXT                -- JSON
@@ -475,15 +482,16 @@ CREATE INDEX audit_at ON audit_log(at);
 ```
 
 ### Relationships
-- One user (teacher) owns many events, and many teachers co-teach many events (`event_coteachers`).
+- One user (an event manager, BR-67) owns many events, and many event managers co-teach many events (`event_coteachers`).
 - One event has many brautir (`event_brautir`) and many registrations.
-- One student has many courses (`student_courses`) and at most 4 registrations (checked in code, BR-32).
+- One student has many courses (`student_courses`) and at most 4 registrations, at most 2 of them on one day when a sign-up is made (checked in code, BR-32, BR-65; an event moved later is the exception, BR-28).
 - A registration holds that event's attendance and course choice.
 
 ### Invariants enforced in code (each with a test)
 - Self sign-ups never exceed `capacity` (BR-35).
 - No student has more than 4 registrations (BR-32, BR-37).
 - No student has overlapping registrations created by self sign-up or manual add (BR-32, BR-37).
+- No student has more than 2 registrations on one day created by self sign-up or manual add (BR-65, BR-37).
 - `course_code` is one of the student's `student_courses` at the time of choosing (BR-41).
 - An event's `event_date` is in `saeludagar_days` when saved (BR-21).
 
@@ -516,7 +524,7 @@ CREATE INDEX audit_at ON audit_log(at);
 
 **Authorization:** use middleware such as `requireStudent`, `requireTeacher`, `requireAdmin` and `requireEventAccess(level)`. The level is `owner` (owner or admin) or `editor` (owner, co-teacher or admin). Check on every request and every action. Never trust hidden form fields for identity or permissions.
 
-**CSRF:** create a random token per session. Every form includes it as `_csrf`, and every non-GET request must match it, otherwise respond 403. `fetch` calls send it in an `X-CSRF-Token` header. Do not add a package for this.
+**CSRF:** create a random token per session. Every form includes it as `_csrf`, and every non-GET request must match it, otherwise respond 403. Requests sent by a script (`fetch`, `XMLHttpRequest`) send it in an `X-CSRF-Token` header. Do not add a package for this.
 
 **First admin (BR-13):** `npm run create-admin -- --name "…" --email "…" --kennitala "…"` creates an active admin teacher account. It prints the code once in the terminal. This is the only time a code is ever shown on screen.
 
@@ -742,10 +750,11 @@ docs/
   requirements.md      original requirements (reference only)
   saeludagar-notes.txt original meeting notes (reference only)
   design-requirements.md  design requirements from the project owner (reference only; built in M5b)
+  improvements-requirements.md  improvements brief from the project owner (reference only; built in M6b)
 src/
   server.js            entry point: env, start app, start jobs
   app.js               express app (helmet, session, csrf, i18n, routes, errors)
-  config.js            env parsing and the constants 4 / 4 / 4 (BR-47)
+  config.js            env parsing and the constants 4 / 4 / 4 / 2 (BR-47)
   db/                  index.js (connection + pragmas), schema.sql, migrate.js, sessionStore.js
   middleware/          auth guards, csrf, language, error handlers
   routes/              public.js, auth.js, student.js, teacher.js, admin.js
@@ -754,13 +763,13 @@ src/
   jobs/                outbox.js, sessionCleanup.js, autoPurge.js
   views/
     partials/          header (with nav-links, header-actions, icon), footer, flash messages, event card,
-                       browse-controls and event-groups (front page)
+                       browse-controls, event-groups, managed-events and event-dialog (front page), event-fields (event form and dialog)
     public/ student/ teacher/ admin/ errors/
     emails/            plain-text bilingual email templates
 scss/                  main.scss, _tokens.scss (brand colours), partials
 public/
   css/                 compiled output (git-ignored)
-  js/                  small vanilla scripts (attendance autosave, copy emails, image preview, mobile menu)
+  js/                  small vanilla scripts (attendance autosave, copy emails, image preview, mobile menu, card sign-up, event dialog)
   img/                 default-event.svg, logo.svg (the school logo)
 scripts/               create-admin.js, backup.js, loadtest.js, seed-dev.js
 test/                  node:test files, named by feature, referencing BR IDs
@@ -852,7 +861,9 @@ These were decided in the interview; the items marked "assumed" still need confi
   - attendance autosave, with a "Vista" (save) button as fallback
   - copy-emails-to-clipboard
   - image preview on upload
-  - for the mobile menu and the front page's "Sía" menus: closing with Escape or by tapping outside; for the mobile menu also closing when a link is chosen and keeping focus inside it while open (both menus work without JavaScript)
+  - for the mobile menu and the front page's "Sía" and "Raða" menus: closing with Escape or by tapping outside; for the mobile menu also its closing animation, closing when a link is chosen and keeping focus inside it while open (these menus work without JavaScript)
+  - "Skrá" and "Afskrá" on event cards without reloading the page (they are plain forms without JavaScript): one request at a time, the list stays where it is on screen, the search and filter forms keep what is typed or ticked in them, a second press right after the page's content moves is ignored, so a double-click or a held Enter acts once, and keyboard focus moves on to the next card only after a press with the keyboard
+  - the "Nýr viðburður" dialog (without JavaScript the button goes to the form page)
 - **Fonts:** system font stack only, with no external requests.
 - **Formats:**
 
@@ -876,14 +887,14 @@ Everything in sections 3–11:
   - events: drafts, preview, publish, edit, delete, image, brautir and restriction flag, co-teachers
   - participants: manual add and remove, copy emails, send a message, printable list
   - attendance checklist
-- **Student:** browse and filter by braut, sign up and cancel with every rule, "Mínir viðburðir", course choices.
+- **Student:** browse and filter by braut, sign up and cancel with every rule, "Þínir viðburðir", course choices.
 - **Site-wide:** public front page and event pages, ÍS/EN throughout, responsive, WCAG AA basics.
 - **Design (M5b):** the school's logo and colours, light and dark mode, the shared header with the mobile menu, search and sort on the front page, the two sections for students, and the Upplýsingar page (BR-62 to BR-64).
+- **Front page (M6b):** sign-up on event cards, "Sía" with every filter and "Raða", the "n/4" counter and the 2-per-day limit, the student and teacher pages folded into the front page, the "Nýr viðburður" dialog (BR-63 to BR-66).
 - **Operations:** daily backups, the 1,000-user load test, deployment notes in the README.
 
 ### Later: Should (first after the MVP)
 - An email reminder, a few days before the deadline, to students who attended but have not chosen a course. The exact timing is open question 18.
-- A filter by day on the front page. (The search box moved into the MVP with M5b.)
 - A confirmation email when a student signs up or cancels.
 - Statistics for the admin: sign-ups and attendance per event and per braut.
 
@@ -1022,9 +1033,31 @@ Acceptance:
 - Adding a student by hand who already has 4 sign-ups, or who would get an overlap, is refused.
 - Attendance cannot be changed before the event's date or after the deadline.
 
+### M6b: Front page improvements
+Added on 2 November 2026 from `docs/improvements-requirements.md` (source IMP), and built before M7. It adds no packages and does not change the data model.
+
+Do:
+- **Card sign-up (BR-66):** "Skrá" and "Afskrá" on event cards, without reloading the page where JavaScript runs.
+- **"Sía" and "Raða" (BR-63):** every filter and order, working together, with each active choice shown and clearable.
+- **Limits and counter (BR-64, BR-65):** the "n/4" counter in "Þínir viðburðir", and at most 2 sign-ups on one day.
+- **One front page:** "Þínir viðburðir" replaces the "Mínir viðburðir" page, and "Viðburðir sem þú sérð um" replaces the teacher home. `/my-events` and `/teacher` redirect there, the header links go, and everyone lands on the front page after logging in (BR-02). Each event's management page stays. "Stjórnendasvæði" does not change.
+- **"Nýr viðburður":** the floating button and the dialog from §6. It saves a draft (BR-22), shows validation errors next to the fields and keeps what was entered, shows upload progress, and keeps its content if closed and reopened.
+- **Drafts:** the preview also shows the event's card as students will see it.
+- **Mobile menu:** the drawer and its icon animate on every open and close, by mouse, touch or keyboard.
+
+Acceptance:
+- **Tests:** they cover BR-02, BR-63 to BR-66, the two redirects, the dialog's saving and its permissions.
+- **Sign-up:** a student signs up and cancels from a card, and the event, its count and the counter all update. A third sign-up on one day and a fifth overall are refused with a clear reason, also for a teacher adding by hand, and simultaneous sign-ups cannot get past them.
+- **Filters and orders:** each works alone and combined, can be cleared on its own, and unknown values in the address are ignored.
+- **Drafts:** an event saved from the dialog is a draft, kept with its creator, listed for them, and neither listed for nor open to students until it is published.
+- **Permissions:** only those who can manage events get the button and the dialog, and the server refuses everyone else. "Stjórnendasvæði" works as before.
+- **Without JavaScript:** sign-up, filters and orders work, and "Nýr viðburður" goes to the form page.
+- **Rules kept:** no new packages, no inline scripts or styles (§9 item 2), and no "atburður" (BR-61).
+- **Checked by hand:** in the browser, at phone and desktop widths: the card sign-up (also by keyboard, with a double-click and with a key held down), the dialog's layout (only its middle scrolls), and the mobile menu's animation on repeated open and close.
+
 ### M7: Course choices and office export
 Do:
-- Course choice on "Mínir viðburðir" (BR-40–BR-46), locked after the deadline.
+- Course choice in "Þínir viðburðir" (BR-40–BR-46), locked after the deadline.
 - The office export (BR-48, BR-49).
 - The audit log page.
 
@@ -1045,7 +1078,7 @@ Do:
 Acceptance:
 - **Purge:** tests show the purge deletes all student data (BR-55) and sets events to draft, and the automatic purge triggers exactly as described in section 8.
 - **Backup:** a backup restores into a temporary database, and that is tested.
-- **Load test:** against a local test server, 1,000 fake students who are already logged in send their sign-up requests within the same minute. The result must show zero 5xx errors, no event over its maximum and no student over 4 sign-ups. Report p50 and p95 response times, including login timings.
+- **Load test:** against a local test server, 1,000 fake students who are already logged in send their sign-up requests within the same minute. The result must show zero 5xx errors, no event over its maximum and no student over 4 sign-ups or over 2 on one day. Report p50 and p95 response times, including login timings.
 - **Manual checks:** a keyboard-only walkthrough of the student, teacher and admin flows, and checks in Chrome, Firefox and Safari (desktop plus mobile emulation), documented in the README.
 
 ---
@@ -1090,6 +1123,9 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 18 | **Reminder timing:** how many days before the deadline the Should-list course reminder goes out. | Later item only | — |
 | 19 | **Where to run the load test:** a staging copy on the school's server, or locally only? | M8 | Run it locally. |
 | 20 | **Wording of all emails** (codes, notices): school management to approve. | Launch | Draft the texts. |
+| 21 | **Student event managers and privacy:** #52 lets an admin make a student an event manager (BR-67). That student then sees the names, brauts and emails of the participants of their events and can email them, and can search every active student by name and braut, although §9 and BR-23 say students never see other participants' names and only an event's teachers see emails. They can also sign up for their own event and mark their own or a friend's attendance, which removes absence points. Is that acceptable? Separately: an admin can take the role from a teacher too, and that teacher then cannot be given it back without editing the database. Should the role be removable only from students? An account that loses the role also leaves the "Viðburðastjórar" page, admins and the admin's own account included, so it can no longer be sent a code, deactivated or have its admin rights changed there (BR-11). | §9, BR-11, BR-23, BR-38, BR-67 | Stays as merged in #52. |
+| 22 | **The purge and student event managers:** BR-55 deletes every student and keeps the events. A student with the event-manager role (BR-67) can own or co-teach events, and the database refuses to delete a user who does. What should the purge do with those events and that student? | BR-55, M8 | Ask before building the purge. |
+| 23 | **Moving an event onto a full day:** when a published event is moved to another day, a student signed up for it can end up with more than 2 events that day (BR-65). Is that acceptable, as it is for overlaps (BR-28), or should the move be refused? | BR-28, BR-65 | Not checked again, as for overlaps; the students get the change email. |
 
 ---
 
@@ -1101,6 +1137,8 @@ Each item names the section or milestone it blocks and what to do until it is an
 - **INT**: the interview with the project owner on 2 October 2026, including its confirmation round.
 - **EMAIL**: the school's email to students of 8 March 2026, pasted by the project owner during the interview (INT).
 - **DES**: `docs/design-requirements.md`, the design requirements and logo from the project owner on 15 October 2026, with the owner's decisions of that day. The site stays bilingual. The login stays kennitala + code, with no self-registration. The rest is built in M5b.
+- **IMP**: `docs/improvements-requirements.md`, the improvements brief from the project owner on 2 November 2026.
+- **#52**: the pull request of that number by a team member, merged on 2026-10-29 before the spec described it.
 
 Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur" and "Áfangastjóri" and some teacher notes. They were used only to prompt interview questions; every decision they touched is listed as INT.
 
@@ -1108,7 +1146,7 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | Rule | Source |
 |---|---|
 | BR-01 | NOTES (10 digits; kennitölur stored as strings); INT (hyphen allowed) |
-| BR-02 | REQ FR-01 (kennitala login), FR-02 (Kennarakóði); INT (one form; teachers use kennitala + code) |
+| BR-02 | REQ FR-01 (kennitala login), FR-02 (Kennarakóði); INT (one form; teachers use kennitala + code); IMP (everyone lands on the front page) |
 | BR-03 | NOTES ("Kerfi kíkir hvort hann sé nemandi"); REQ FR-04/FR-07 (open, resolved in INT) |
 | BR-04 | REQ FR-04 (open, resolved in INT: generic message) |
 | BR-05 | INT |
@@ -1134,26 +1172,26 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | BR-25 | REQ FR-03; NOTES (button to filter by braut) |
 | BR-26 | REQ FR-05 (Þátttökugjald); INT (display only; 0 = free; whole ISK) |
 | BR-27 | REQ FR-05 (Mynd); INT (optional, 1 file, ≤ 2 MB, file types) |
-| BR-28 | INT |
+| BR-28 | INT; IMP (the limit on one day; that a move is not checked against it is open question 23) |
 | BR-29 | INT |
 | BR-30 | NOTES ("Fyrir sér-atburður / ferða atburður"); INT (no special rules) |
 | BR-31 | INT; EMAIL (one sign-up period for all events) |
-| BR-32 | REQ FR-08 (only while places remain); INT (window, braut rule, 4 sign-ups, no overlaps) |
+| BR-32 | REQ FR-08 (only while places remain); INT (window, braut rule, 4 sign-ups, no overlaps); IMP (the limit on one day) |
 | BR-33 | INT (overlaps banned; standard definition of overlapping time ranges) |
 | BR-34 | INT |
 | BR-35 | REQ FR-08, NFR-04 |
 | BR-36 | REQ FR-08 (cancel on change of mind); INT (only while the window is open) |
-| BR-37 | REQ FR-09, user stories (add or remove students); INT (name search, which limits apply) |
+| BR-37 | REQ FR-09, user stories (add or remove students); INT (name search, which limits apply); IMP (the limit on one day) |
 | BR-38 | REQ FR-10, user story (record attendance on the day); INT (checklist, saved immediately) |
 | BR-39 | INT |
 | BR-40 | EMAIL ("Hver mæting á viðburð gildir sem 4 stig í einum áfanga") |
-| BR-41 | INT (own courses from the CSV; chosen after attendance is marked) |
+| BR-41 | INT (own courses from the CSV; chosen after attendance is marked); IMP (chosen in "Þínir viðburðir" on the front page) |
 | BR-42 | EMAIL (at most 4 points per course) |
 | BR-43 | EMAIL (up to 4 courses, 16 points); INT (at most 4 sign-ups) |
 | BR-44 | INT |
 | BR-45 | INT |
 | BR-46 | INT |
-| BR-47 | INT |
+| BR-47 | INT; IMP (the limit on one day) |
 | BR-48 | INT |
 | BR-49 | INT (confirmation round) |
 | BR-50 | REQ user story (email everyone signed up for my event); INT (copy list and send from site; Reply-To in confirmation round) |
@@ -1162,15 +1200,18 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | BR-53 | INT |
 | BR-54 | INT |
 | BR-55 | INT |
-| BR-56 | INT |
+| BR-56 | INT; #52 (the event-manager role) |
 | BR-57 | INT |
 | BR-58 | INT |
 | BR-59 | INT (bilingual from the start, changed during the interview) |
 | BR-60 | INT |
 | BR-61 | INT; EMAIL (the school uses "viðburður") |
 | BR-62 | DES (light and dark mode, theme switch) |
-| BR-63 | DES (search, "Leita", "Sía" and the six sort orders); BR-25 (the braut filter, kept inside "Sía") |
-| BR-64 | DES ("Þínir atburðir" / "Aðrir atburðir", written "viðburðir" per BR-61) |
+| BR-63 | DES (search, "Leita" and "Sía"); IMP ("Raða", every filter and order); BR-25 (the braut filter, kept inside "Sía") |
+| BR-64 | DES ("Þínir atburðir" / "Aðrir atburðir", written "viðburðir" per BR-61); IMP (the counter, and one place for a student's events) |
+| BR-65 | IMP |
+| BR-66 | IMP |
+| BR-67 | #52 |
 
 ### Non-functional requirements and stack
 | Item | Source | Where |

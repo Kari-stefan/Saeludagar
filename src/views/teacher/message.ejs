@@ -11,7 +11,7 @@
 <div class="alert alert--error"><p><%= t(errors.recipients) %></p></div>
 <% } -%>
 <p class="lead"><%= t('message.recipients', { count: recipients }) %></p>
-<p class="field__hint"><%= t('message.help') %></p>
+<p class="field__hint"><%= t('message.help') %> <%= t('events.form.required') %></p>
 <form class="form form--wide" method="post" action="/teacher/events/<%= event.id %>/message">
   <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
   <%- include('../partials/field', { name: 'subject', label: t('message.subject'), value: values.subject ?? '', required: true, maxlength: limits.subject, error: errors.subject }) %>

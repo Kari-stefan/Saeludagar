@@ -11,6 +11,16 @@
     <% } -%>
   </div>
 </div>
-<%- include('../partials/event-details', { event }) %>
-<%- include('../partials/signup-box', { event, window, signup: null, viewer: null, preview: true }) %>
+<%# The event's page comes first, so its title is the main heading here as it is for students; then its card. The two labels are not headings, which keeps the headings in order. -%>
+<section class="preview-part" id="event-details" aria-labelledby="preview-page-label">
+  <p class="eyebrow" id="preview-page-label"><%= t('events.preview.pageHeading') %></p>
+  <%- include('../partials/event-details', { event }) %>
+  <%- include('../partials/signup-box', { event, window, signup: null, viewer: null, preview: true }) %>
+</section>
+<section class="preview-part" aria-labelledby="preview-card-label">
+  <p class="eyebrow" id="preview-card-label"><%= t('events.preview.cardHeading') %></p>
+  <div class="preview-card">
+    <%- include('../partials/event-card', { event, level: 2, preview: true }) %>
+  </div>
+</section>
 <%- include('../partials/footer') %>

@@ -33,10 +33,9 @@ export function loadUser(db) {
   };
 }
 
-// BR-02: students land on the student pages; teachers and admins on the teacher pages.
-export function homePathFor(user) {
-  if (user.role === 'student') return '/my-events';
-  return user.canManageEvents || user.isAdmin ? '/teacher' : '/';
+// BR-02: everyone lands on the front page, which holds their own events.
+export function homePathFor() {
+  return '/';
 }
 
 // Guests are sent to log in; a logged-in user without the role gets the 403 page.

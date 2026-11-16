@@ -46,7 +46,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     const [email] = await site.sendEmails();
     assert.deepEqual(email.to, { name: 'Jón Kennari', address: 'jon@example.is' });
     const login = await site.browser().login('0000000101', codeFrom(email));
-    assert.equal(login.location, '/teacher');
+    assert.equal(login.location, '/');
   });
 
   test('BR-10: the form checks every field and keeps the kennitala out of the page', async () => {
@@ -78,7 +78,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     const [email] = await site.sendEmails();
     assert.equal(email.subject, 'Kóði fyrir Sæludagavefinn / Your code for the Sæludagar website');
     assert.equal((await site.browser().login(teacher.kennitala, '123123')).status, 401);
-    assert.equal((await site.browser().login(teacher.kennitala, codeFrom(email))).location, '/teacher');
+    assert.equal((await site.browser().login(teacher.kennitala, codeFrom(email))).location, '/');
   });
 
   test('BR-11: a deactivated teacher loses their sessions and cannot log in; their events stay', async () => {
@@ -89,7 +89,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
       '10:00', '12:00', 'Stofa 1', ?, ?)`).run(teacher.id, now, now);
     const teacherBrowser = site.browser();
     await teacherBrowser.login(teacher.kennitala, teacher.code);
-    assert.equal((await teacherBrowser.get('/teacher')).status, 200);
+    assert.equal((await teacherBrowser.get('/teacher/events/new')).status, 200);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(teacher.id), 1);
 
     await act('deactivate', teacher.id);
@@ -106,7 +106,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
 
     await act('activate', teacher.id);
     assert.match((await adminBrowser.get('/admin/teachers')).html, /Aðgangur virkjaður: Óli Óvirki/);
-    assert.equal((await site.browser().login(teacher.kennitala, teacher.code)).location, '/teacher');
+    assert.equal((await site.browser().login(teacher.kennitala, teacher.code)).location, '/');
   });
 
   test('BR-11: a code queued for a teacher who is then deactivated is never sent', async () => {
@@ -166,7 +166,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.equal(site.db.prepare('SELECT active FROM users WHERE id = ?').pluck().get(student.id), 1);
   });
 
-  test('admin can promote an active student to Event Manager, keeping student data and access', async () => {
+  test('BR-67: admin can promote an active student to Event Manager, keeping student data and access', async () => {
     const dual = await site.addUser({ role: 'student', name: 'Dóra Dual' });
     const owner = await site.addUser({ name: 'Eigandi Viðburðar' });
     const signupEvent = insertEvent(site.db, owner.id, { title_is: 'Skráning viðburður' });
@@ -187,8 +187,8 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
       action: 'event-manager.grant', actor_id: admin.id, student_id: dual.id,
     });
 
-    assert.equal((await dualBrowser.get('/my-events')).status, 200);
-    assert.equal((await dualBrowser.get('/teacher')).status, 200);
+    assert.equal((await dualBrowser.get('/my-events')).location, '/#mine-events');
+    assert.equal((await dualBrowser.get('/teacher/events/new')).status, 200);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM student_courses WHERE user_id = ?').pluck().get(dual.id), 1);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM registrations WHERE student_id = ?').pluck().get(dual.id), 1);
 
@@ -211,7 +211,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.match(created.location, /^\/teacher\/events\/\d+$/);
   });
 
-  test('admin can revoke Event Manager role without ending student sessions or deleting ownership', async () => {
+  test('BR-67: admin can revoke Event Manager role without ending student sessions or deleting ownership', async () => {
     const dual = await site.addUser({ role: 'student', name: 'Rósa Revoked' });
     await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
     const dualBrowser = site.browser();
@@ -245,12 +245,12 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     });
 
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id), beforeSessions);
-    assert.equal((await dualBrowser.get('/my-events')).status, 200);
+    assert.equal((await dualBrowser.get('/my-events')).location, '/#mine-events');
     assert.equal((await dualBrowser.get('/teacher')).status, 403);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM events WHERE id = ? AND owner_id = ?').pluck().get(ownId, dual.id), 1);
   });
 
-  test('a promoted student Event Manager cannot access admin pages', async () => {
+  test('BR-67: a promoted student Event Manager cannot access admin pages', async () => {
     const dual = await site.addUser({ role: 'student', name: 'Stína Stjórnlaus' });
     await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
     const dualBrowser = site.browser();

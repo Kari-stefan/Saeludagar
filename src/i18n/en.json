@@ -32,8 +32,6 @@
     "event": "Event",
     "login": "Log in",
     "newCode": "Get a new code",
-    "myEvents": "My events",
-    "teacherHome": "Event Manager area",
     "eventNew": "New event",
     "eventEdit": "Edit event",
     "eventPreview": "Event preview",
@@ -271,7 +269,6 @@
   "home": {
     "noDays": "The Sæludagar dates have not been set yet.",
     "days": "Sæludagar: {days}",
-    "filterLabel": "Filter by braut",
     "allBrautir": "All brautir",
     "noEvents": "No events yet.",
     "searchLabel": "Search events",
@@ -282,23 +279,63 @@
     "filter": "Filter",
     "sortLabel": "Sort by",
     "apply": "Apply",
-    "clear": "Clear",
     "sort": {
-      "date": "Date, earliest first",
+      "date": "Date, earliest first (default)",
       "date-desc": "Date, latest first",
+      "time": "Time, earliest first",
+      "time-desc": "Time, latest first",
       "fee": "Price, lowest first",
       "fee-desc": "Price, highest first",
-      "name": "Name, A to Z",
-      "name-desc": "Name, Z to A"
+      "name": "Alphabetical, A to Z",
+      "name-desc": "Alphabetical, Z to A",
+      "before-noon": "Before noon first",
+      "after-noon": "After noon first"
     },
-    "activeSearch": "Search: “{search}”",
-    "activeSort": "Sorted by: {sort}",
-    "activeBraut": "Braut: {braut}",
     "noMatches": "No events match. Try another word or clear the filter.",
     "mine": "Your events",
     "others": "Other events",
     "mineNone": "You haven't signed up for any events yet.",
-    "seeOthers": "See other events"
+    "seeOthers": "See other events",
+    "sortButton": "Sort",
+    "clearAll": "Clear all",
+    "counterLabel": "sign-ups out of the maximum",
+    "filters": {
+      "fee": "Price",
+      "free": "Free only",
+      "feeMin": "From (ISK)",
+      "feeMax": "To (ISK)",
+      "braut": "Braut",
+      "date": "Date",
+      "from": "From",
+      "to": "To",
+      "time": "When the event starts",
+      "noon": "Before or after noon"
+    },
+    "noon": {
+      "any": "All day",
+      "before": "Before noon",
+      "after": "After noon"
+    },
+    "active": {
+      "label": "Chosen",
+      "clear": "Clear: {choice}",
+      "search": "Search: “{search}”",
+      "sort": "Sorted by: {sort}",
+      "braut": "Braut: {braut}",
+      "free": "Free only",
+      "feeMin": "Price from {fee}",
+      "feeMax": "Price up to {fee}",
+      "from": "From {date}",
+      "to": "To {date}",
+      "timeFrom": "Starts at {time} or later",
+      "timeTo": "Starts at {time} or earlier"
+    },
+    "card": {
+      "signup": "Sign up",
+      "cancel": "Cancel",
+      "attended": "Attendance marked",
+      "failed": "That didn't work. Check your connection and try again."
+    }
   },
   "events": {
     "restricted": "Only for students of these brautir",
@@ -324,7 +361,7 @@
       "published": "Published"
     },
     "draftHelp": "Students cannot see the event until it is published. Preview it first.",
-    "created": "The event was saved as a draft.",
+    "created": "The event was saved as a draft. Students won't see it until you publish it.",
     "saved": "The changes were saved.",
     "published": "The event has been published.",
     "deleted": "Event deleted: {title}",
@@ -334,7 +371,9 @@
       "banner": "Preview.",
       "help": "This is how students will see the event.",
       "back": "Back to managing the event",
-      "link": "Preview"
+      "link": "Preview",
+      "cardHeading": "The card on the front page",
+      "pageHeading": "The event page"
     },
     "delete": {
       "heading": "Delete the event",
@@ -375,7 +414,8 @@
         "overlap": "This event overlaps {title} ({when}), which the student is already signed up for.",
         "notSignedUp": "The student is not signed up for this event.",
         "attended": "You cannot remove a student after attendance has been marked.",
-        "notPublished": "Students can only be added to published events."
+        "notPublished": "Students can only be added to published events.",
+        "dayLimit": "The student is already signed up for {max} events on this day, which is the maximum for one day."
       },
       "links": {
         "attendance": "Attendance list",
@@ -413,7 +453,8 @@
       "chooseImage": "Choose an image",
       "newImage": "Chosen image",
       "saveDraft": "Save draft",
-      "save": "Save"
+      "save": "Save",
+      "required": "Fields marked * are required."
     },
     "errors": {
       "tooLong": "The text is too long",
@@ -433,21 +474,26 @@
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
       "confirmDelete": "Tick the box to confirm that you want to delete the event."
     },
-    "more": "Details"
+    "more": "Details",
+    "dialog": {
+      "imageHeading": "Event image",
+      "attach": "Attach file",
+      "close": "Close",
+      "cancel": "Cancel",
+      "failed": "The event couldn't be saved. Check your connection and try again.",
+      "progress": "Saving progress",
+      "sessionEnded": "Your login has ended, so the event could not be saved. Reload the page and log in again. What you wrote here will be lost, so copy it first."
+    }
   },
   "signups": {
     "heading": "Sign-up",
     "signUp": "Sign me up",
     "cancel": "Cancel my sign-up",
-    "actions": "Actions",
     "loginFirst": "You log in with your kennitala and code, and then come back here.",
     "youAreSignedUp": "You are signed up for this event.",
     "attended": "Your attendance has been marked.",
-    "signedUp": "You are signed up. The event is now in My events.",
+    "signedUp": "You are signed up. The event is now under Your events.",
     "cancelled": "Your sign-up is cancelled, and the place is free for others.",
-    "count": "Sign-ups: {count} / {max}",
-    "none": "You have not signed up for any events yet.",
-    "browse": "Browse events",
     "attendance": "Attendance",
     "attendedYes": "Marked",
     "attendedNo": "Not marked",
@@ -466,7 +512,8 @@
       "limit": "You are already signed up for {max} events, which is the maximum. Cancel another sign-up first.",
       "overlap": "This event overlaps {title} ({when}), which you are signed up for.",
       "notSignedUp": "You are not signed up for this event.",
-      "attended": "You cannot cancel after your attendance has been marked."
+      "attended": "You cannot cancel after your attendance has been marked.",
+      "dayLimit": "You have already signed up for {max} events on this day, which is the maximum for one day. Cancel one of them first."
     }
   },
   "theme": {
@@ -480,10 +527,10 @@
     "howHeading": "How it works",
     "steps": {
       "login": "You get a 6-digit code by email and log in with your kennitala and the code. If you lose the code, you can get a new one on the login page.",
-      "signup": "While sign-up is open, you sign up for up to {max} events. The events must not overlap in time, and some are only for students of certain brautir.",
+      "signup": "While sign-up is open, you sign up for up to {max} events, with at most {perDay} on one day. The events must not overlap in time, and some are only for students of certain brautir.",
       "cancel": "While sign-up is open you can also cancel, and the place becomes free straight away.",
       "attend": "You go to the event, and the Event Manager records your attendance.",
-      "choose": "Once your attendance is recorded, you choose on \"My events\" which course gets absence points removed. You can change your choice until the deadline above."
+      "choose": "Once your attendance is recorded, you choose under \"Your events\" on the front page which course gets absence points removed. You can change your choice until the deadline above."
     },
     "pointsHeading": "Absence points",
     "points": "Each attendance at an event counts as {points} points in one course. At most {perCourse} points can be removed per course, in up to {max} courses ({total} points in total).",

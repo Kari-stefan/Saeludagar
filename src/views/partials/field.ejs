@@ -9,7 +9,7 @@
   const describedBy = [locals.hint ? `${id}-hint` : '', error ? `${id}-error` : ''].filter(Boolean).join(' ');
 -%>
 <div class="field">
-  <label class="field__label" for="<%= id %>"><%= label %></label>
+  <label class="field__label" for="<%= id %>"><%= label %><% if (locals.required) { %> <span class="field__required" aria-hidden="true">*</span><% } %></label>
   <% if (locals.hint) { -%>
   <p class="field__hint" id="<%= id %>-hint"><%= hint %></p>
   <% } -%>

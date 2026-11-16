@@ -10,7 +10,7 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestones 1 to 6 are built: the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); student sign-up and cancelling within the sign-up window; and the teacher tools (participants, copying emails, messages, the attendance checklist and the printable list). Milestone M5b, added from the project owner's design brief, gave the site the school's logo and red-and-white colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up. The next step is milestone 7 (course choices and the office export). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+Milestones 1 to 6 are built: the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); student sign-up and cancelling within the sign-up window; and the teacher tools (participants, copying emails, messages, the attendance checklist and the printable list). Milestone M5b, added from the project owner's design brief, gave the site the school's logo and red-and-white colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. Milestone M6b, from the owner's improvements brief, made the front page the one place to work: sign-up on the event cards, every filter and order, a "2/4" counter and a limit of 2 sign-ups a day, and the "Nýr viðburður" dialog. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up. The next step is milestone 7 (course choices and the office export). Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
@@ -21,6 +21,7 @@ Milestones 1 to 6 are built: the project scaffold and data model; login, account
 | [docs/requirements.md](docs/requirements.md) | Original requirements (reference only) |
 | [docs/saeludagar-notes.txt](docs/saeludagar-notes.txt) | Original meeting notes (reference only) |
 | [docs/design-requirements.md](docs/design-requirements.md) | The project owner's design brief, built in milestone M5b (reference only) |
+| [docs/improvements-requirements.md](docs/improvements-requirements.md) | The project owner's improvements brief, built in milestone M6b (reference only) |
 | [CLAUDE.md](CLAUDE.md) | Instructions Claude Code loads automatically in this repo |
 
 Where the original notes and AGENT_START.md disagree, AGENT_START.md wins. Unresolved items, such as SMTP access and the server details, are listed in section 15 of AGENT_START.md.

@@ -53,17 +53,18 @@ beforeEach(() => {
 });
 
 describe('signing up and cancelling (BR-31 to BR-36, BR-43)', () => {
-  test('BR-32: a student signs up for a published event, and it shows on the event page and in Mínir viðburðir', async () => {
+  test('BR-32: a student signs up for a published event, and it shows on the event page and in Þínir viðburðir', async () => {
     const id = event({ title_is: 'Gönguferð', capacity: 10 });
     const page = await signUpVia(as.jona, id);
-    assert.match(page, /role="status">\s*<p>Skráning tókst\. Viðburðurinn er nú á Mínum viðburðum\./);
+    assert.match(page, /role="status">\s*<p>Skráning tókst\. Viðburðurinn er nú undir Þínum viðburðum\./);
     assert.match(page, /Þú hefur skráð þig á þennan viðburð\./);
     assert.match(page, /value="cancel">Afskrá mig</);
     assert.match(page, /1 \/ 10 skráðir/);
     assert.deepEqual(signupsOf(id), [students.jona.id]);
-    const myEvents = (await as.jona.get('/my-events')).html;
-    assert.match(myEvents, /Skráningar: 1 \/ 4/);
-    assert.match(myEvents, /<a href="\/events\/\d+">Gönguferð<\/a><\/td>\s*<td>11\. mars 2027, kl\. 10:00–12:00<\/td>\s*<td>Stofa 101<\/td>\s*<td>Ekki skráð<\/td>/);
+    const home = (await as.jona.get('/')).html;
+    assert.match(home, /<span class="home-counter">1\/4/);
+    const own = /id="mine-events"[\s\S]*?id="other-events"/.exec(home)[0];
+    assert.match(own, /Gönguferð<\/h3>\s*<p class="event-card__meta">11\. mars 2027, kl\. 10:00–12:00<br>Stofa 101<\/p>/);
   });
 
   test('BR-31: students can sign up and cancel only while the window is open', async () => {
@@ -131,8 +132,10 @@ describe('signing up and cancelling (BR-31 to BR-36, BR-43)', () => {
     const clashing = event({ title_is: 'Skarast', start_time: '11:00', end_time: '13:00' });
     const backToBack = event({ title_is: 'Strax á eftir', start_time: '12:00', end_time: '13:00' });
     const otherDay = event({ title_is: 'Annar dagur', event_date: '2027-03-12' });
-    for (const id of [first, backToBack, otherDay]) assert.match(await signUpVia(as.jona, id), /Skráning tókst/);
-    await signUpVia(as.jona, clashing);
+    assert.match(await signUpVia(as.jona, first), /Skráning tókst/);
+    // Tried second, so that it is the overlap that refuses it and not the limit of 2 on one day (BR-65).
+    assert.match(await signUpVia(as.jona, clashing), FAILED('Viðburðurinn skarast á við Fyrsti'));
+    for (const id of [backToBack, otherDay]) assert.match(await signUpVia(as.jona, id), /Skráning tókst/);
     assert.deepEqual(mine(students.jona.id), [first, backToBack, otherDay]);
   });
 
@@ -181,34 +184,35 @@ describe('signing up and cancelling (BR-31 to BR-36, BR-43)', () => {
     assert.deepEqual(signupsOf(id), [students.pall.id]);
   });
 
-  test('BR-36: students cancel from Mínir viðburðir too; a sign-up with marked attendance stays', async () => {
+  test('BR-36, BR-66: students cancel from the card too; a sign-up with marked attendance stays', async () => {
     const id = event({ title_is: 'Afskráning' });
     await signUpVia(as.jona, id);
-    const res = await as.jona.post('/my-events', { action: 'cancel', event: String(id) });
-    assert.equal(res.location, '/my-events');
-    assert.match((await as.jona.get('/my-events')).html, /Þú hefur afskráð þig/);
+    const res = await as.jona.post(`/events/${id}`, { action: 'cancel', returnTo: '/' });
+    assert.equal(res.location, '/');
+    assert.match((await as.jona.get('/')).html, /Þú hefur afskráð þig/);
     assert.deepEqual(signupsOf(id), []);
 
     await signUpVia(as.jona, id);
     site.db.prepare('UPDATE registrations SET attended = 1 WHERE event_id = ?').run(id);
-    const myEvents = (await as.jona.get('/my-events')).html;
-    assert.match(myEvents, /<td>Skráð<\/td>/, 'the attendance is shown');
-    assert.doesNotMatch(myEvents, /name="event" value="\d+">/, 'no cancel button for an attended event');
-    await as.jona.post('/my-events', { action: 'cancel', event: String(id) });
-    assert.match((await as.jona.get('/my-events')).html, FAILED('Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð\\.'));
+    const home = (await as.jona.get('/')).html;
+    assert.match(home, /<li class="badge badge--done">Mæting skráð<\/li>/, 'the attendance is shown');
+    assert.doesNotMatch(home, /value="cancel"/, 'no cancel button for an attended event');
+    await as.jona.post(`/events/${id}`, { action: 'cancel', returnTo: '/' });
+    assert.match((await as.jona.get('/')).html, FAILED('Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð\\.'));
     assert.deepEqual(signupsOf(id), [students.jona.id]);
   });
 
   test('BR-43: a 5th sign-up is refused, so a student can earn at most 16 points', async () => {
     assert.equal(MAX_SIGNUPS_PER_STUDENT, 4);
     assert.equal(MAX_SIGNUPS_PER_STUDENT * POINTS_PER_ATTENDANCE, 16);
-    const ids = ['08:00', '09:00', '10:00', '11:00', '12:00'].map((start, i) =>
-      event({ title_is: `Viðburður ${i + 1}`, start_time: start, end_time: `${String(9 + i).padStart(2, '0')}:00` }));
+    // Over three days, so the limit of 2 on one day (BR-65) is not what stops the fifth.
+    const ids = ['2027-03-11', '2027-03-11', '2027-03-12', '2027-03-12', '2027-03-13'].map((day, i) =>
+      event({ title_is: `Viðburður ${i + 1}`, event_date: day, start_time: `${String(8 + i).padStart(2, '0')}:00`, end_time: `${String(9 + i).padStart(2, '0')}:00` }));
     for (const id of ids.slice(0, 4)) assert.match(await signUpVia(as.sara, id), /Skráning tókst/);
     const fifth = await signUpVia(as.sara, ids[4]);
     assert.match(fifth, FAILED('Þú hefur þegar skráð þig á 4 viðburði, sem er hámarkið\\. Afskráðu þig af öðrum fyrst\\.'));
     assert.deepEqual(mine(students.sara.id), ids.slice(0, 4));
-    assert.match((await as.sara.get('/my-events')).html, /Skráningar: 4 \/ 4/);
+    assert.match((await as.sara.get('/')).html, /<span class="home-counter">4\/4/);
   });
 
   test('BR-56: sign-ups and cancellations are recorded in the audit log', async () => {
@@ -244,7 +248,7 @@ describe('"Skrá mig" for guests and other roles (§5, §6)', () => {
     for (const next of ['/admin', '//evil.example', 'https://evil.example/events/1', '/events/1/../../admin']) {
       const browser = site.browser();
       const res = await browser.post('/login', { kennitala: students.jona.kennitala, code: students.jona.code, next });
-      assert.equal(res.location, '/my-events', next);
+      assert.equal(res.location, '/', next);
     }
     const guestPost = await site.browser().post(`/events/${event({})}`, { action: 'signup' });
     assert.match(guestPost.location, /^\/login\?next=%2Fevents%2F\d+$/);
@@ -265,8 +269,7 @@ describe('"Skrá mig" for guests and other roles (§5, §6)', () => {
     for (const action of ['cancel', 'signup']) {
       assert.equal((await as.pall.post(`/events/${id}`, { action })).status, 404, action);
     }
-    const myEvents = (await as.pall.get('/my-events')).html;
-    assert.doesNotMatch(myEvents, /role="alert"/);
+    assert.doesNotMatch((await as.pall.get('/')).html, /role="alert"/);
   });
 
   test('BR-22, §6: the teacher\'s preview shows the sign-up box as students see it, with the button disabled', async () => {
@@ -276,11 +279,12 @@ describe('"Skrá mig" for guests and other roles (§5, §6)', () => {
     assert.doesNotMatch(preview, /name="action" value="signup"/);
   });
 
-  test('§6: Mínir viðburðir with no sign-ups points to the events', async () => {
+  test('§6: Þínir viðburðir with no sign-ups points to the events', async () => {
     site.db.exec('DELETE FROM registrations');
-    const page = (await as.sara.get('/my-events')).html;
-    assert.match(page, /Skráningar: 0 \/ 4/);
-    assert.match(page, /Þú hefur ekki skráð þig á neinn viðburð enn\./);
+    event({ title_is: 'Einn viðburður' }); // a Sæludagar day, so the sections show
+    const page = (await as.sara.get('/')).html;
+    assert.match(page, /<span class="home-counter">0\/4/);
+    assert.match(page, /Þú hefur ekki skráð þig á neina viðburði ennþá\./);
     assert.match(page, /Skráning er opin til /);
   });
 });

@@ -49,7 +49,7 @@ const auditLog = () => site.db.prepare('SELECT actor_id, action, student_id, det
 
 // One tick, the way public/js/attendance.js sends it: the token in a header, JSON back.
 async function tick(browser, eventId, key, attended) {
-  const token = await browser.csrfToken('/teacher');
+  const token = await browser.csrfToken('/');
   const res = await browser.request('POST', `/teacher/events/${eventId}/attendance`,
     { student: String(students[key].id), attended: attended ? '1' : '0' },
     { Accept: 'application/json', 'X-CSRF-Token': token });
@@ -59,7 +59,7 @@ async function tick(browser, eventId, key, attended) {
 // The whole list, the way the "Vista" button sends it without JavaScript: `marked` is who was
 // ticked when the page loaded, `present` who is ticked now.
 async function saveAll(browser, eventId, listed, present, marked = []) {
-  const form = new URLSearchParams([['_csrf', await browser.csrfToken('/teacher')]]);
+  const form = new URLSearchParams([['_csrf', await browser.csrfToken('/')]]);
   for (const key of listed) form.append('listed', String(students[key].id));
   for (const key of marked) form.append('marked', String(students[key].id));
   for (const key of present) form.append('present', String(students[key].id));
@@ -224,7 +224,7 @@ describe('attendance (BR-38, BR-39, BR-41, BR-56)', () => {
     assert.equal(signup(id, 'asta').attendance_marked_by, coteacher.id);
     assert.equal((await as.other.get(`/teacher/events/${id}/attendance`)).status, 403);
     assert.equal((await as.student.get(`/teacher/events/${id}/attendance`)).status, 403);
-    const token = await as.other.csrfToken('/teacher');
+    const token = await as.other.csrfToken('/');
     const res = await as.other.request('POST', `/teacher/events/${id}/attendance`, { _csrf: token, student: String(students.asta.id), attended: '0' });
     assert.equal(res.status, 403);
     assert.equal(signup(id, 'asta').attended, 1);

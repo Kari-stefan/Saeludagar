@@ -14,6 +14,11 @@
   font-weight: 600;
 }
 
+.field__required {
+  font-weight: 700;
+  color: var(--color-error);
+}
+
 .field__hint {
   margin: 0;
   font-size: 0.875rem;

@@ -1,0 +1,48 @@
+<%#
+  §6: on the front page, the events this person owns or co-teaches, drafts included. Each links to
+  its management page (participants, attendance, messages); a draft can be previewed and published
+  from here. Takes `managed`.
+-%>
+<section class="home-section" id="managed-events" aria-labelledby="managed-heading">
+  <div class="home-section__head">
+    <h2 id="managed-heading"><%= t('events.mine') %></h2>
+  </div>
+  <% if (managed.length === 0) { -%>
+  <p class="empty"><%= t('events.none') %></p>
+  <% } else { -%>
+  <div class="table-wrap">
+    <table class="table">
+      <thead>
+        <tr>
+          <th scope="col"><%= t('events.title') %></th>
+          <th scope="col"><%= t('events.when') %></th>
+          <th scope="col"><%= t('events.status') %></th>
+          <th scope="col"><%= t('events.places') %></th>
+          <th scope="col"><span class="visually-hidden"><%= t('events.participants.actions') %></span></th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const event of managed) { const title = eventText(event, 'title'); -%>
+        <tr>
+          <td><a href="/teacher/events/<%= event.id %>"><%= title %></a></td>
+          <td><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %></td>
+          <td><%= t(`events.statusName.${event.status}`) %></td>
+          <td><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %></td>
+          <td>
+            <div class="table__actions">
+              <a class="button button--small button--secondary" href="/teacher/events/<%= event.id %>/preview"><%= t('events.preview.link') %><span class="visually-hidden">: <%= title %></span></a>
+              <% if (event.status === 'draft') { -%>
+              <form method="post" action="/teacher/events/<%= event.id %>">
+                <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+                <button type="submit" class="button button--small" name="action" value="publish"><%= t('events.publish') %><span class="visually-hidden">: <%= title %></span></button>
+              </form>
+              <% } -%>
+            </div>
+          </td>
+        </tr>
+        <% } -%>
+      </tbody>
+    </table>
+  </div>
+  <% } -%>
+</section>

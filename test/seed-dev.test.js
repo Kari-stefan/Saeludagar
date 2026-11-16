@@ -51,7 +51,7 @@ describe('npm run seed:dev (fake development data, AGENT_START §10)', () => {
     }
   }
 
-  test('creates fake students with courses and prints their codes; BR-02: they land on the student pages', async () => {
+  test('creates fake students with courses and prints their codes; BR-02: they land on the front page', async () => {
     const { code, stdout, stderr } = await seedDev(env);
     assert.equal(code, 0, stderr);
     const codes = codesFrom(stdout);
@@ -64,7 +64,7 @@ describe('npm run seed:dev (fake development data, AGENT_START §10)', () => {
     assert.deepEqual(new Set(courses), new Set(['STÆR2BH05', 'ÍSLE2MB05']));
 
     const login = await loginAs('000000-0101', codes['0000000101']);
-    assert.equal(login.location, '/my-events');
+    assert.equal(login.location, '/');
   });
 
   test('running it again gives the same students new codes, without duplicates', async () => {
@@ -74,7 +74,7 @@ describe('npm run seed:dev (fake development data, AGENT_START §10)', () => {
     const after = codesFrom(stdout);
     assert.equal(database.db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student'").pluck().get(), 3);
     assert.equal(database.db.prepare('SELECT COUNT(*) FROM student_courses').pluck().get(), 3);
-    assert.equal((await loginAs('0000000102', after['0000000102'])).location, '/my-events');
+    assert.equal((await loginAs('0000000102', after['0000000102'])).location, '/');
     if (before['0000000102'] !== after['0000000102']) {
       assert.equal((await loginAs('0000000102', before['0000000102'])).status, 401, 'the previous code stops working');
     }

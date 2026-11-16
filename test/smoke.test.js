@@ -1,7 +1,10 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { createApp } from '../src/app.js';
-import { MAX_POINTS_PER_COURSE, MAX_SIGNUPS_PER_STUDENT, POINTS_PER_ATTENDANCE } from '../src/config.js';
+import {
+  MAX_POINTS_PER_COURSE, MAX_SIGNUPS_PER_DAY, MAX_SIGNUPS_PER_STUDENT, POINTS_PER_ATTENDANCE,
+} from '../src/config.js';
 import { migrate, SCHEMA_VERSION } from '../src/db/migrate.js';
 import { dictionaries } from '../src/i18n/index.js';
 import { Browser, insertEvent, startSite, tempDatabase } from './helpers.js';
@@ -39,8 +42,6 @@ describe('app shell', () => {
       ['guest', `/events/${eventId}`, 'Prófunarviðburður'],
       ['guest', '/login', 'Innskráning'],
       ['guest', '/login/new-code', 'Fá nýjan kóða'],
-      ['student', '/my-events', 'Mínir viðburðir'],
-      ['teacher', '/teacher', 'Svæði viðburðastjóra'],
       ['teacher', '/teacher/events/new', 'Nýr viðburður'],
       ['teacher', `/teacher/events/${eventId}/edit`, 'Breyta viðburði'],
       ['teacher', `/teacher/events/${eventId}/preview`, 'Prófunarviðburður'],
@@ -95,6 +96,21 @@ describe('app shell', () => {
     assert.match(csp, /style-src 'self'(;|$)/);
     assert.doesNotMatch(csp, /unsafe-inline/);
     assert.equal(res.headers.get('x-powered-by'), null);
+  });
+
+  // The scripts in public/js are plain scripts (§9 item 2), so those on one page share one scope:
+  // a name declared at the top of two of them stops the second from running at all.
+  test('§9 item 2, §11: no two page scripts declare the same top-level name', () => {
+    const dir = new URL('../public/js/', import.meta.url);
+    const seen = new Map();
+    for (const file of fs.readdirSync(dir).filter((name) => name.endsWith('.js'))) {
+      const source = fs.readFileSync(new URL(file, dir), 'utf8');
+      for (const [, name] of source.matchAll(/^(?:const|let|var|class|(?:async )?function\*?) +([A-Za-z_$][\w$]*)/gm)) {
+        assert.equal(seen.get(name), undefined, `"${name}" is declared at the top of both ${seen.get(name)} and ${file}`);
+        seen.set(name, file);
+      }
+    }
+    assert.ok(seen.size > 0, 'the scripts were read');
   });
 });
 
@@ -160,9 +176,9 @@ describe('database (§7)', () => {
 
   after(() => database.remove());
 
-  test('migrate creates every table and index and sets user_version = 1', () => {
+  test('migrate creates every table and index and sets the schema version', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
-    assert.equal(SCHEMA_VERSION, 1);
+    assert.equal(SCHEMA_VERSION, 2);
     const names = (type) => db.prepare("SELECT name FROM sqlite_master WHERE type = ? AND name NOT LIKE 'sqlite_%'")
       .pluck().all(type).sort();
     assert.deepEqual(names('table'), [
@@ -171,8 +187,37 @@ describe('database (§7)', () => {
     ]);
     assert.deepEqual(names('index'), [
       'audit_at', 'email_outbox_due', 'events_status_date', 'registrations_one_event_per_course',
-      'registrations_student', 'sessions_expires', 'sessions_user', 'users_role_active',
+      'registrations_student', 'sessions_expires', 'sessions_user', 'users_event_manager_active', 'users_role_active',
     ]);
+  });
+
+  test('BR-67: migrate upgrades a version 1 database, keeping its data and making teachers event managers', () => {
+    const old = tempDatabase();
+    try {
+      // A fresh database's tables without what version 2 added, as version 1 had them.
+      const schema = fs.readFileSync(new URL('../src/db/schema.sql', import.meta.url), 'utf8');
+      const version1 = schema.split(/\r?\n/).filter((line) => !line.includes('is_event_manager')).join('\n');
+      old.db.pragma('foreign_keys = OFF');
+      for (const table of old.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").pluck().all()) {
+        old.db.exec(`DROP TABLE ${table}`);
+      }
+      old.db.exec(version1);
+      old.db.pragma('foreign_keys = ON');
+      old.db.pragma('user_version = 1');
+      const add = old.db.prepare(`INSERT INTO users (role, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
+        VALUES (?, ?, 'x', ?, 'profun@example.is', 'nu', 'nu')`);
+      add.run('teacher', 'kennari', 'Kennari');
+      add.run('student', 'nemandi', 'Nemandi');
+
+      assert.equal(migrate(old.db), 2);
+      assert.equal(old.db.pragma('user_version', { simple: true }), 2);
+      assert.deepEqual(old.db.prepare('SELECT name, is_event_manager FROM users ORDER BY name').all(), [
+        { name: 'Kennari', is_event_manager: 1 }, { name: 'Nemandi', is_event_manager: 0 },
+      ]);
+      assert.equal(migrate(old.db), 2, 'running it again changes nothing');
+    } finally {
+      old.remove();
+    }
   });
 
   test('migrate is safe to run twice and creates the single settings row', () => {
@@ -205,8 +250,9 @@ describe('database (§7)', () => {
   });
 });
 
-test('BR-47: the absence-point constants are 4 / 4 / 4', () => {
+test('BR-47: the constants are 4 points, 4 points per course, 4 sign-ups and 2 sign-ups a day', () => {
   assert.equal(POINTS_PER_ATTENDANCE, 4);
   assert.equal(MAX_POINTS_PER_COURSE, 4);
   assert.equal(MAX_SIGNUPS_PER_STUDENT, 4);
+  assert.equal(MAX_SIGNUPS_PER_DAY, 2);
 });
