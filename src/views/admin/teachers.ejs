@@ -70,7 +70,9 @@
             <button type="submit" class="button button--small button--secondary" name="action" value="grant-admin"><%= t('admin.teachers.grantAdmin') %><span class="visually-hidden">: <%= manager.name %></span></button>
             <% } -%>
             <% } -%>
+            <% if (!teacher) { -%>
             <button type="submit" class="button button--small button--secondary" name="action" value="revoke-event-manager"><%= t('admin.teachers.revokeManager') %><span class="visually-hidden">: <%= manager.name %></span></button>
+            <% } -%>
           </form>
         </td>
       </tr>

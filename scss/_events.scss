@@ -303,8 +303,7 @@
   }
 }
 
-.event-card__image,
-.event__image {
+.event-card__image {
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -415,20 +414,181 @@
   background: var(--color-primary);
 }
 
+// §6: the event page. The title and the facts, then one column of boxes on a phone. From 48rem
+// the images and the description take 60% of the width, and the sign-up box, "Viðburðastjóri" and
+// "Hópur" the other 40% (BR-68).
 .event {
-  max-width: 48rem;
+  max-width: 72rem;
 }
 
-.event__image {
-  max-width: 40rem;
-  margin-bottom: var(--space-3);
+.event__columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+
+  @media (min-width: 48rem) {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+}
+
+.event__main,
+.event__side {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.event__side .signup {
+  max-width: none;
+  margin: 0;
+}
+
+.event-box {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
   border-radius: var(--radius-large);
+  background: var(--color-bg);
+
+  h2 {
+    margin-top: 0;
+    font-size: 1.25rem;
+  }
+
+  > :last-child {
+    margin-bottom: 0;
+  }
 }
 
 // Plain-text descriptions keep their line breaks without any HTML (§9, item 5).
 .event__description {
-  margin: var(--space-3) 0;
   white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+// "Hópur" and "Viðburðastjóri": a name with an email under it. A long list scrolls inside its box.
+.people {
+  max-height: 22rem;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.people__person {
+  display: grid;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.people__name {
+  margin: 0;
+  font-weight: 600;
+}
+
+// BR-27: the event's images, one at a time. The strip scrolls sideways and snaps to each image,
+// which is what makes a swipe, the scroll bar and the arrow keys work without any script.
+.gallery {
+  padding: var(--space-2);
+}
+
+.gallery__frame {
+  position: relative;
+}
+
+// More than one image: two edges show above the frame, like images lying behind this one.
+.gallery--many .gallery__frame {
+  margin-top: var(--space-3);
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    height: calc(var(--space-1) * 1.5);
+    border: 1px solid var(--color-border);
+    border-bottom: 0;
+    border-radius: var(--radius) var(--radius) 0 0;
+    background: var(--color-surface);
+  }
+
+  &::before {
+    inset-inline: var(--space-3);
+  }
+
+  &::after {
+    inset-inline: var(--space-5);
+    bottom: calc(100% + var(--space-1) * 1.5);
+  }
+}
+
+.gallery__strip {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  list-style: none;
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  scroll-snap-type: x mandatory;
+}
+
+// With the arrows in place (public/js/gallery.js shows them), the scroll bar is not needed.
+.gallery:has(.gallery__arrow:not([hidden])) .gallery__strip {
+  scrollbar-width: none;
+}
+
+.gallery__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+}
+
+// The whole image shows, whatever its shape, so nothing is cut off or stretched.
+.gallery__image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
+.gallery__arrow {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  box-shadow: 0 2px 8px var(--color-shadow);
+  transform: translateY(-50%);
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--color-brand);
+  }
+}
+
+.gallery__arrow--previous {
+  left: var(--space-2);
+}
+
+.gallery__arrow--next {
+  right: var(--space-2);
+}
+
+.gallery__count {
+  margin: var(--space-2) 0 0;
+  font-size: 0.9375rem;
+  text-align: center;
+  color: var(--color-muted);
 }
 
 .preview-part {
@@ -466,11 +626,49 @@
   }
 }
 
-.image-preview {
-  display: block;
-  max-width: 20rem;
+// BR-27: the saved and the chosen images in the event form and the dialog.
+.image-list {
+  display: grid;
+  gap: var(--space-2);
   margin: var(--space-2) 0;
+  padding: 0;
+  list-style: none;
+}
+
+.image-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.image-list__thumb {
+  flex: none;
+  width: 6rem;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
   border-radius: var(--radius);
+  background: var(--color-surface);
+}
+
+.image-list__name {
+  flex: 1 1 8rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+// The dialog's "Hengja við skrá". The hidden file field is placed inside its label: left to the
+// dialog, it would sit far below the dialog's edge on a narrow screen and make the whole dialog
+// scroll away.
+.image-picker__attach {
+  position: relative;
+  margin: var(--space-2) 0;
+  cursor: pointer;
+
+  &:has(input:focus-visible) {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
 }
 
 .button--danger {

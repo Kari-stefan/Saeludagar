@@ -81,6 +81,19 @@ const byName = (a, b) => collator.compare(a.name, b.name);
 // Everyone signed up. A student deactivated by a re-import keeps a sign-up with marked attendance
 // (BR-17), so `active` is included: emails leave those students out, since the outbox never
 // sends to them (BR-03).
+// BR-68: who runs the event and who is in it, for the event page. A student who runs it is named
+// only to those who manage it (`access`, from eventAccess): for everyone else `manager` is
+// null and the page shows the host, so that students never see each other's names (BR-23). The
+// owner's email is for logged-in users. The participants are for those who manage the event; for
+// everyone else `group` is null and the page shows only the count.
+export function eventPeople(db, event, { loggedIn, access }) {
+  const named = event.owner_role === 'teacher' || Boolean(access);
+  return {
+    manager: named ? { name: event.owner_name, email: loggedIn ? event.owner_email : null } : null,
+    group: access ? eventParticipants(db, event.id) : null,
+  };
+}
+
 export function eventParticipants(db, eventId) {
   return db.prepare(`SELECT u.id, u.name, u.braut, u.email, u.active, r.attended
     FROM registrations r JOIN users u ON u.id = r.student_id

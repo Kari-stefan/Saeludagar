@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 export const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // BR-27
+export const MAX_IMAGES_PER_EVENT = 5; // BR-27
 export const CONTENT_TYPES = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
 // Stored names are <uuid>.<ext>, so nothing else can be asked for under /uploads.
 export const IMAGE_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(jpg|png|webp)$/;
@@ -19,7 +20,15 @@ export function imageType(bytes) {
 export async function saveImage(uploadDir, bytes, type) {
   await fs.mkdir(uploadDir, { recursive: true });
   const name = `${crypto.randomUUID()}.${type}`;
-  await fs.writeFile(path.join(uploadDir, name), bytes, { flag: 'wx' });
+  const file = path.join(uploadDir, name);
+  try {
+    await fs.writeFile(file, bytes, { flag: 'wx' });
+  } catch (err) {
+    // A write that stops halfway, on a full disk say, must not leave part of a file behind. (If
+    // the name was taken, the file there is someone else's and stays.)
+    if (err.code !== 'EEXIST') await fs.rm(file, { force: true });
+    throw err;
+  }
   return name;
 }
 

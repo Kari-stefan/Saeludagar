@@ -178,43 +178,88 @@ describe('database (§7)', () => {
 
   test('migrate creates every table and index and sets the schema version', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
-    assert.equal(SCHEMA_VERSION, 2);
+    assert.equal(SCHEMA_VERSION, 3);
     const names = (type) => db.prepare("SELECT name FROM sqlite_master WHERE type = ? AND name NOT LIKE 'sqlite_%'")
       .pluck().all(type).sort();
     assert.deepEqual(names('table'), [
-      'audit_log', 'email_outbox', 'event_brautir', 'event_coteachers', 'events', 'registrations',
+      'audit_log', 'email_outbox', 'event_brautir', 'event_coteachers', 'event_images', 'events', 'registrations',
       'saeludagar_days', 'sessions', 'settings', 'student_courses', 'users',
     ]);
     assert.deepEqual(names('index'), [
-      'audit_at', 'email_outbox_due', 'events_status_date', 'registrations_one_event_per_course',
+      'audit_at', 'email_outbox_due', 'event_images_event', 'events_status_date', 'registrations_one_event_per_course',
       'registrations_student', 'sessions_expires', 'sessions_user', 'users_event_manager_active', 'users_role_active',
     ]);
   });
 
-  test('BR-67: migrate upgrades a version 1 database, keeping its data and making teachers event managers', () => {
+  // The tables as an older version had them, made from today's schema.sql by undoing what the
+  // later versions changed. Returns a database at that version, without any rows.
+  function databaseAt(version) {
+    let sql = fs.readFileSync(new URL('../src/db/schema.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    // Version 3 moved each event's one image from events.image_file to the event_images table.
+    const withoutImages = sql.replace(/-- Up to 5 images[\s\S]*?CREATE INDEX event_images_event[^\n]*\n/, '');
+    const withImageFile = withoutImages.replace('  event_date        TEXT    NOT NULL,', '  image_file        TEXT,\n  event_date        TEXT    NOT NULL,');
+    assert.ok(withoutImages !== sql && withImageFile !== withoutImages, 'schema.sql still has what version 3 changed');
+    sql = withImageFile;
+    // Version 2 added the event-manager role.
+    if (version < 2) sql = sql.split('\n').filter((line) => !line.includes('is_event_manager')).join('\n');
     const old = tempDatabase();
+    old.db.pragma('foreign_keys = OFF');
+    for (const table of old.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").pluck().all()) {
+      old.db.exec(`DROP TABLE ${table}`);
+    }
+    old.db.exec(sql);
+    old.db.pragma('foreign_keys = ON');
+    old.db.pragma(`user_version = ${version}`);
+    return old;
+  }
+  // Every table's columns and every index, to compare an upgraded database with a new one.
+  const shape = (database) => Object.fromEntries(database.prepare("SELECT name, type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name").all()
+    .map(({ name, type }) => [name, type === 'table' ? database.prepare(`SELECT name, type, "notnull", pk FROM pragma_table_info('${name}') ORDER BY name`).all() : type]));
+
+  test('BR-67: migrate upgrades a version 1 database, keeping its data and making teachers event managers', () => {
+    const old = databaseAt(1);
     try {
-      // A fresh database's tables without what version 2 added, as version 1 had them.
-      const schema = fs.readFileSync(new URL('../src/db/schema.sql', import.meta.url), 'utf8');
-      const version1 = schema.split(/\r?\n/).filter((line) => !line.includes('is_event_manager')).join('\n');
-      old.db.pragma('foreign_keys = OFF');
-      for (const table of old.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'").pluck().all()) {
-        old.db.exec(`DROP TABLE ${table}`);
-      }
-      old.db.exec(version1);
-      old.db.pragma('foreign_keys = ON');
-      old.db.pragma('user_version = 1');
       const add = old.db.prepare(`INSERT INTO users (role, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
         VALUES (?, ?, 'x', ?, 'profun@example.is', 'nu', 'nu')`);
       add.run('teacher', 'kennari', 'Kennari');
       add.run('student', 'nemandi', 'Nemandi');
 
-      assert.equal(migrate(old.db), 2);
-      assert.equal(old.db.pragma('user_version', { simple: true }), 2);
+      assert.equal(migrate(old.db), SCHEMA_VERSION);
+      assert.equal(old.db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
       assert.deepEqual(old.db.prepare('SELECT name, is_event_manager FROM users ORDER BY name').all(), [
         { name: 'Kennari', is_event_manager: 1 }, { name: 'Nemandi', is_event_manager: 0 },
       ]);
-      assert.equal(migrate(old.db), 2, 'running it again changes nothing');
+      assert.deepEqual(shape(old.db), shape(db), 'the same tables, columns and indexes as a new database');
+      assert.equal(migrate(old.db), SCHEMA_VERSION, 'running it again changes nothing');
+    } finally {
+      old.remove();
+    }
+  });
+
+  test('BR-27, BR-67: migrate upgrades a version 2 database: each image moves to event_images, and teachers get the role back', () => {
+    const old = databaseAt(2);
+    try {
+      const add = old.db.prepare(`INSERT INTO users (role, is_event_manager, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
+        VALUES (?, ?, ?, 'x', ?, 'profun@example.is', 'nu', 'nu')`);
+      const teacher = add.run('teacher', 0, 'kennari', 'Kennari sem missti réttindin').lastInsertRowid;
+      add.run('student', 1, 'stjori', 'Nemandi með réttindi');
+      add.run('student', 0, 'nemandi', 'Nemandi');
+      const event = old.db.prepare(`INSERT INTO events (owner_id, title_is, description_is, host, capacity, image_file, event_date,
+        start_time, end_time, location, created_at, updated_at) VALUES (?, ?, 'L', 'H', 10, ?, '2027-03-11', '10:00', '12:00', 'Stofa', 'nu', 'nu')`);
+      const withImage = event.run(teacher, 'Með mynd', '11111111-2222-3333-4444-555555555555.png').lastInsertRowid;
+      const without = event.run(teacher, 'Án myndar', null).lastInsertRowid;
+
+      assert.equal(migrate(old.db), 3);
+      assert.deepEqual(old.db.prepare('SELECT event_id, file, position FROM event_images').all(), [
+        { event_id: Number(withImage), file: '11111111-2222-3333-4444-555555555555.png', position: 0 },
+      ]);
+      assert.deepEqual(old.db.prepare('SELECT title_is FROM events ORDER BY id').pluck().all(), ['Með mynd', 'Án myndar'], 'the events are kept');
+      assert.equal(old.db.prepare('SELECT COUNT(*) FROM event_images WHERE event_id = ?').pluck().get(without), 0);
+      assert.deepEqual(old.db.prepare('SELECT name, is_event_manager FROM users ORDER BY id').all(), [
+        { name: 'Kennari sem missti réttindin', is_event_manager: 1 }, { name: 'Nemandi með réttindi', is_event_manager: 1 }, { name: 'Nemandi', is_event_manager: 0 },
+      ]);
+      assert.deepEqual(shape(old.db), shape(db), 'the same tables, columns and indexes as a new database');
+      assert.equal(migrate(old.db), 3, 'running it again changes nothing');
     } finally {
       old.remove();
     }

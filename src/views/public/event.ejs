@@ -4,9 +4,9 @@
 <div class="alert"><p><%= t('events.draftNotice') %></p></div>
 <% } -%>
 <%- include('../partials/flash') %>
-<%- include('../partials/event-details', { event }) %>
-<% if (event.status === 'published' && (!viewer || viewer.role === 'student')) { -%>
-<%- include('../partials/signup-box', { event, window, signup, viewer }) %>
-<% } -%>
+<%# Students and guests get the sign-up box; those who manage events have their own pages for that. -%>
+<% const signupBox = event.status === 'published' && (!viewer || viewer.role === 'student') ? { window, signup, viewer } : null; -%>
+<%- include('../partials/event-details', { event, manager, group, signupBox }) %>
 <p><a href="/"><%= t('events.backToAll') %></a></p>
+<script src="/js/gallery.js" defer></script>
 <%- include('../partials/footer') %>

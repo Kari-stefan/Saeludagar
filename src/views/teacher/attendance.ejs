@@ -1,7 +1,8 @@
 <%#
   BR-38, BR-39: the attendance checklist, built for a phone. Large checkboxes; with JavaScript each
   tick saves at once (public/js/attendance.js), without it the "Vista" button saves the list.
-  Read-only before the event's date and after the course-choice deadline.
+  Read-only before the event's date and after the course-choice deadline. A manager who is signed
+  up for the event cannot tick their own row; another manager or an admin does that (BR-38).
 -%>
 <% const title = eventText(event, 'title'); const count = participants.filter((student) => student.attended).length; -%>
 <%- include('../partials/header', { pageTitle: `${t('pages.attendance')}: ${title}` }) %>
@@ -27,14 +28,16 @@
 <form class="attendance" method="post" action="/teacher/events/<%= event.id %>/attendance"<% if (window.open) { %> data-autosave data-error="<%= t('attendance.errors.network') %>"<% } %>>
   <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
   <ul class="attendance__list">
-    <% for (const student of participants) { -%>
+    <% for (const student of participants) { const own = student.id === currentUser.id; -%>
     <li>
+      <% if (!own) { -%>
       <input type="hidden" name="listed" value="<%= student.id %>">
       <%# The state when the page loaded, so "Vista" saves only what was changed here, never an older state over someone else's tick. -%>
       <input type="hidden" name="marked" value="<%= student.id %>"<% if (!student.attended) { %> disabled<% } %>>
+      <% } -%>
       <label class="attendance__item">
-        <input type="checkbox" name="present" value="<%= student.id %>"<% if (student.attended) { %> checked<% } %><% if (!window.open) { %> disabled<% } %>>
-        <span class="attendance__name"><%= student.name %><% if (student.braut) { %> <span class="attendance__braut"><%= student.braut %></span><% } %></span>
+        <input type="checkbox" name="present" value="<%= student.id %>"<% if (student.attended) { %> checked<% } %><% if (!window.open || own) { %> disabled<% } %>>
+        <span class="attendance__name"><%= student.name %><% if (student.braut) { %> <span class="attendance__braut"><%= student.braut %></span><% } %><% if (own) { %> <span class="attendance__braut"><%= t('attendance.own') %></span><% } %></span>
       </label>
     </li>
     <% } -%>

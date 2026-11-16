@@ -53,6 +53,119 @@
   text-align: center;
 }
 
+// "Fjarvistastig" (BR-69) uses the same layout: the counter sits where the login page has its back
+// link, at the top left, and the courses are in the centred box. On a phone the counter is simply
+// above the box.
+.auth__box--wide {
+  max-width: 34rem;
+}
+
+.points__counter {
+  justify-self: start;
+  display: inline-flex;
+  flex-direction: column;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-brand);
+  border-radius: var(--radius-large);
+  background: var(--color-surface);
+}
+
+.points__number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.points__label {
+  font-size: 0.9375rem;
+  color: var(--color-muted);
+}
+
+.points__heading {
+  margin: var(--space-4) 0 var(--space-2);
+  font-size: 1.125rem;
+}
+
+.points__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.points__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 3.5rem;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.points__name {
+  display: grid;
+  min-width: 0;
+}
+
+.points__course {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.points__note {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+// The number stepper: "−", the points on the course, "+". Each button is a full tap target (§11).
+.stepper {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.stepper__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-target);
+  height: var(--tap-target);
+  padding: 0;
+  font: inherit;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--color-on-primary);
+  background: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.stepper__value {
+  min-width: 2ch;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 .prose {
   max-width: 44rem;
 

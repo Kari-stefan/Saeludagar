@@ -1,0 +1,26 @@
+<%#
+  An event's images on its page (BR-27, §6), one at a time. They sit side by side in a strip that
+  scrolls and snaps, so a swipe, the arrow keys and plain scrolling all reach every image without
+  JavaScript; public/js/gallery.js adds the two arrow buttons and the "Mynd n af m" count. With one
+  image, or none (the default image), there is nothing to step through. Takes `event` and `title`.
+-%>
+<%
+  const images = event.images?.length > 0 ? event.images.map((image) => `/uploads/${image.file}`) : ['/img/default-event.svg'];
+  const many = images.length > 1;
+-%>
+<section class="event-box gallery<%= many ? ' gallery--many' : '' %>"<% if (many) { %> data-gallery<% } %>>
+  <div class="gallery__frame">
+    <ul class="gallery__strip"<% if (many) { %> tabindex="0" aria-label="<%= t('events.gallery.label') %>" data-gallery-strip<% } %>>
+      <% for (const [index, src] of images.entries()) { -%>
+      <li class="gallery__slide"><img class="gallery__image" src="<%= src %>" alt="<%= many ? t('events.gallery.alt', { title, n: index + 1, total: images.length }) : title %>"<% if (index > 0) { %> loading="lazy"<% } %>></li>
+      <% } -%>
+    </ul>
+    <% if (many) { -%>
+    <button type="button" class="gallery__arrow gallery__arrow--previous" data-gallery-previous hidden><%- include('icon', { name: 'back' }) %><span class="visually-hidden"><%= t('events.gallery.previous') %></span></button>
+    <button type="button" class="gallery__arrow gallery__arrow--next" data-gallery-next hidden><%- include('icon', { name: 'forward' }) %><span class="visually-hidden"><%= t('events.gallery.next') %></span></button>
+    <% } -%>
+  </div>
+  <% if (many) { -%>
+  <p class="gallery__count" role="status" data-gallery-count data-label="<%= t('events.gallery.count', { total: images.length }) %>"><%= t('events.gallery.total', { total: images.length }) %></p>
+  <% } -%>
+</section>

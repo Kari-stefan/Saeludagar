@@ -18,18 +18,7 @@
 
   <fieldset class="fieldset">
     <legend class="field__label"><%= t('events.form.image') %></legend>
-    <p class="field__hint" id="image-hint"><%= t('events.form.imageHint') %></p>
-    <% if (errors.image) { -%>
-    <p class="field__error" id="image-error"><%= t(errors.image) %></p>
-    <% } -%>
-    <% if (values.image_file) { -%>
-    <img class="image-preview" src="/uploads/<%= values.image_file %>" alt="<%= t('events.form.currentImage') %>">
-    <label class="checkbox"><input type="checkbox" name="remove_image" value="1"> <%= t('events.form.removeImage') %></label>
-    <% } -%>
-    <label for="image"><%= t('events.form.chooseImage') %></label>
-    <input class="field__input" id="image" name="image" type="file" accept="image/jpeg,image/png,image/webp" data-preview="image-new-preview"
-      aria-describedby="image-hint<%= errors.image ? ' image-error' : '' %>"<% if (errors.image) { %> aria-invalid="true"<% } %>>
-    <img class="image-preview" id="image-new-preview" alt="<%= t('events.form.newImage') %>" hidden>
+    <%- include('../partials/image-picker', { saved: event?.images ?? [], error: errors.images, prefix: 'event', button: false }) %>
   </fieldset>
 
   <button type="submit" class="button"><%= t(isNew ? 'events.form.saveDraft' : 'events.form.save') %></button>

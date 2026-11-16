@@ -148,24 +148,6 @@
   h3 {
     margin-top: 0;
   }
-
-  .image-preview {
-    width: 100%;
-    max-width: none;
-  }
-}
-
-// The hidden file input is placed inside its label. Left to the dialog, it would sit far below the
-// dialog's edge on a narrow screen and make the whole dialog scroll away.
-.modal__attach {
-  position: relative;
-  margin: var(--space-2) 0;
-  cursor: pointer;
-
-  &:has(input:focus-visible) {
-    outline: 3px solid var(--color-focus);
-    outline-offset: 2px;
-  }
 }
 
 // BR-51: the printable list. On screen it is an ordinary table; on paper only the list prints,

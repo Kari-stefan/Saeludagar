@@ -10,6 +10,7 @@
     "logout": "Log out",
     "home": "Home",
     "info": "Information",
+    "points": "Absence points",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "signedIn": "Signed in: {name}",
@@ -32,6 +33,7 @@
     "event": "Event",
     "login": "Log in",
     "newCode": "Get a new code",
+    "points": "Absence points",
     "eventNew": "New event",
     "eventEdit": "Edit event",
     "eventPreview": "Event preview",
@@ -85,7 +87,7 @@
       "studentToPromote": "Active student",
       "promote": "Grant Event Manager role",
       "listHeading": "Event Manager accounts",
-      "revokeHelp": "If a revoked Event Manager still owns events, admins keep managing them and can reassign them from /admin/events.",
+      "revokeHelp": "The role can only be taken from a student; a teacher is always an Event Manager. If the student still has events, admins keep managing them and can move them to someone else in /admin/events.",
       "none": "No Event Manager accounts yet.",
       "name": "Name",
       "email": "Email",
@@ -123,7 +125,8 @@
         "self": "You cannot deactivate your own account or remove your own admin rights.",
         "inactive": "Reactivate the account first.",
         "inactiveStudent": "Only active students can be promoted to Event Manager.",
-        "alreadyManager": "This account is already an Event Manager."
+        "alreadyManager": "This account is already an Event Manager.",
+        "teacherKeepsRole": "A teacher is always an Event Manager. The role can only be taken from a student."
       }
     },
     "settings": {
@@ -264,7 +267,8 @@
       "noFile": "Choose a file to upload.",
       "expired": "The import has expired or was already confirmed. Upload the file again.",
       "changed": "An Event Manager account now has one of the kennitölur in the file. Nothing was saved. Upload the file again."
-    }
+    },
+    "choicesCleared": "Course choices to be cleared because the course is no longer on the student's list: {count}"
   },
   "home": {
     "noDays": "The Sæludagar dates have not been set yet.",
@@ -446,12 +450,14 @@
       "feeHint": "0 means free",
       "brautirHint": "No braut: for everyone. Tick brautir so students can filter by them, and also tick “Only for students of these brautir” if only their students may sign up.",
       "noBrautir": "No brautir yet. They come from the student list.",
-      "image": "Image (optional)",
-      "imageHint": "JPG, PNG or WebP, at most 2 MB. Without one, a default image is shown.",
-      "currentImage": "Current image",
+      "image": "Images (optional)",
+      "imagesHint": "Up to {max} images: JPG, PNG or WebP, at most 2 MB each. The first is shown on the event's card. Without an image, a default image is shown.",
+      "savedImages": "Saved images",
+      "chosenImages": "Chosen images",
+      "imageNumber": "Image {n}",
+      "imageCount": "Images: {count} of {max}",
+      "chooseImages": "Choose images",
       "removeImage": "Remove the image",
-      "chooseImage": "Choose an image",
-      "newImage": "Chosen image",
       "saveDraft": "Save draft",
       "save": "Save",
       "required": "Fields marked * are required."
@@ -472,17 +478,34 @@
       "imageUpload": "The image could not be received. Try again.",
       "imageType": "The image must be JPG, PNG or WebP.",
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
-      "confirmDelete": "Tick the box to confirm that you want to delete the event."
+      "confirmDelete": "Tick the box to confirm that you want to delete the event.",
+      "tooManyImages": "An event can have at most {max} images. Remove one to add another."
     },
     "more": "Details",
     "dialog": {
-      "imageHeading": "Event image",
+      "imageHeading": "Event images",
       "attach": "Attach file",
       "close": "Close",
       "cancel": "Cancel",
       "failed": "The event couldn't be saved. Check your connection and try again.",
       "progress": "Saving progress",
       "sessionEnded": "Your login has ended, so the event could not be saved. Reload the page and log in again. What you wrote here will be lost, so copy it first."
+    },
+    "details": {
+      "description": "Description",
+      "manager": "Event Manager",
+      "managerLogin": "Log in to see the email address.",
+      "group": "Group",
+      "groupNone": "Nobody has signed up yet.",
+      "groupPrivate": "Only the people who run the event can see who has signed up."
+    },
+    "gallery": {
+      "label": "Images of the event",
+      "previous": "Previous image",
+      "next": "Next image",
+      "count": "Image {n} of {total}",
+      "total": "{total} images",
+      "alt": "{title}, image {n} of {total}"
     }
   },
   "signups": {
@@ -530,7 +553,7 @@
       "signup": "While sign-up is open, you sign up for up to {max} events, with at most {perDay} on one day. The events must not overlap in time, and some are only for students of certain brautir.",
       "cancel": "While sign-up is open you can also cancel, and the place becomes free straight away.",
       "attend": "You go to the event, and the Event Manager records your attendance.",
-      "choose": "Once your attendance is recorded, you choose under \"Your events\" on the front page which course gets absence points removed. You can change your choice until the deadline above."
+      "choose": "Once your attendance is recorded, you give the absence points to a course on the \"Absence points\" page. You can change this until the deadline above."
     },
     "pointsHeading": "Absence points",
     "points": "Each attendance at an event counts as {points} points in one course. At most {perCourse} points can be removed per course, in up to {max} courses ({total} points in total).",
@@ -554,8 +577,10 @@
     "errors": {
       "closed": "Attendance can't be changed now.",
       "notSignedUp": "The student is no longer signed up for the event. Reload the page.",
-      "network": "Couldn't save. Check your connection and try again, or use the Save button."
-    }
+      "network": "Couldn't save. Check your connection and try again, or use the Save button.",
+      "own": "You cannot mark your own attendance. Another Event Manager of this event or an admin does that."
+    },
+    "own": "You. Another Event Manager of this event or an admin marks your attendance."
   },
   "print": {
     "hint": "Print the list with your browser's print command (Ctrl+P, or Cmd+P on a Mac).",
@@ -576,6 +601,29 @@
       "bodyLong": "The message can be at most 5,000 characters.",
       "characters": "The text contains characters that aren't allowed.",
       "noRecipients": "Nobody is signed up for the event, so nobody would get the email."
+    }
+  },
+  "points": {
+    "counter": "Points to give",
+    "counterText": "{left} points left of the {earned} you have earned",
+    "intro": "For each recorded attendance at an event you get {step} absence points. Give them to a course with + and take them back with −. A course can get at most {max} points.",
+    "deadline": "You can change this until {deadline}.",
+    "closed": "The deadline passed on {deadline}. Nothing can be changed any more.",
+    "coursesHeading": "Your courses",
+    "noCourses": "No courses are registered for you. Contact the school office if that is not right.",
+    "noneEarned": "You have not earned any absence points yet. They are added once your attendance at an event has been recorded.",
+    "dropped": "No longer on your list",
+    "give": "Give {step} points to {course}",
+    "take": "Take {step} points from {course}",
+    "onCourse": "{points} points on {course}",
+    "given": "{points} points given to {course}.",
+    "taken": "{points} points taken from {course}.",
+    "errors": {
+      "closed": "The deadline for giving away absence points has passed.",
+      "notYourCourse": "That course is not on your list.",
+      "courseFull": "{course} already has {max} points, which is the most one course can get.",
+      "noneLeft": "You have no points left to give.",
+      "nothingToTake": "There are no points on that course."
     }
   }
 }

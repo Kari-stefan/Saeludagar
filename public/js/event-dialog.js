@@ -2,7 +2,8 @@
 // is a link to the form page. A <dialog> gives the dark backdrop, keeps focus inside and closes on
 // Escape. Closing keeps what was entered. Saving sends the form as the form page does and asks
 // for JSON, so errors show next to the fields and nothing entered is lost; the server checks
-// everything again. A saved event is always a draft (BR-22).
+// everything again. A saved event is always a draft (BR-22). The images are chosen, shown and
+// removed by public/js/image-preview.js, which the page loads first.
 const dialog = document.querySelector('#new-event-dialog');
 // Long enough for a 2 MB image on a slow phone connection.
 const SAVE_TIMEOUT_MS = 120000;
@@ -16,10 +17,6 @@ if (dialog) {
   const formError = form.querySelector('[data-form-error]');
   const progress = form.querySelector('[data-progress]');
   const save = form.querySelector('[data-save]');
-  const fileInput = form.querySelector('input[type="file"]');
-  const fileName = form.querySelector('[data-file-name]');
-  const preview = form.querySelector('[data-image-preview]');
-  const remove = form.querySelector('[data-image-remove]');
 
   document.querySelector('[data-open-event-dialog]').addEventListener('click', (event) => {
     event.preventDefault();
@@ -88,52 +85,6 @@ if (dialog) {
   function focusIfDropped(target) {
     if ([document.body, dialog, null].includes(document.activeElement)) target?.focus({ preventScroll: true });
   }
-
-  function clearImage() {
-    fileInput.value = '';
-    fileName.textContent = '';
-    preview.hidden = true;
-    preview.removeAttribute('src');
-    remove.hidden = true;
-  }
-
-  // Attach, replace or remove. The server checks the file's content again (BR-27).
-  fileInput.addEventListener('change', () => {
-    clearImageError();
-    const [file] = fileInput.files;
-    if (!file) {
-      clearImage();
-      return;
-    }
-    const problem = !fileInput.accept.split(',').includes(file.type) ? form.dataset.wrongType
-      : file.size > Number(fileInput.dataset.maxBytes) ? form.dataset.tooLarge : null;
-    if (problem) {
-      clearImage();
-      showFieldError('image', problem);
-      return;
-    }
-    fileName.textContent = file.name;
-    remove.hidden = false;
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      // Replaced or removed while it was being read.
-      if (fileInput.files[0] !== file) return;
-      preview.src = reader.result;
-      preview.hidden = false;
-    });
-    reader.readAsDataURL(file);
-  });
-
-  function clearImageError() {
-    for (const message of form.querySelectorAll('[data-error-slot="image"] .field__error')) message.remove();
-    unlinkError(fileInput);
-  }
-
-  remove.addEventListener('click', () => {
-    clearImageError();
-    clearImage();
-    fileInput.focus();
-  });
 
   // Closing the dialog while the form is still on its way to the server stops the save. Once all
   // of it has been sent, the save goes through and the page shows the new draft.

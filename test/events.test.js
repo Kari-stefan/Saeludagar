@@ -46,6 +46,8 @@ const fields = (overrides = {}) => ({
   location: 'Íþróttahús', capacity: '20', fee_isk: '0', ...overrides,
 });
 const eventRow = (id) => site.db.prepare('SELECT * FROM events WHERE id = ?').get(id);
+const imagesOf = (id) => site.db.prepare('SELECT file FROM event_images WHERE event_id = ? ORDER BY position, id').pluck().all(id);
+const imageIds = (id) => site.db.prepare('SELECT id FROM event_images WHERE event_id = ? ORDER BY position, id').pluck().all(id);
 const brautirOf = (id) => site.db.prepare('SELECT braut FROM event_brautir WHERE event_id = ? ORDER BY braut').pluck().all(id);
 const register = (eventId, studentId, attended = 0) => site.db.prepare(`INSERT INTO registrations
   (event_id, student_id, created_at, attended) VALUES (?, ?, ?, ?)`).run(eventId, studentId, toIso(), attended);
@@ -73,9 +75,9 @@ describe('event form and drafts (BR-20 to BR-22)', () => {
     assert.equal(event.owner_id, people.owner.id);
     assert.deepEqual(
       [event.title_is, event.title_en, event.description_is, event.description_en, event.host, event.capacity, event.fee_isk,
-        event.event_date, event.start_time, event.end_time, event.location, event.braut_restricted, event.image_file],
+        event.event_date, event.start_time, event.end_time, event.location, event.braut_restricted, imagesOf(id).length],
       ['Gönguferð', 'Hike', 'Fyrsta lína.\nÖnnur lína.', 'In English.', 'Ferðafélag skólans', 15, 2500,
-        '2027-03-11', '10:00', '12:00', 'Íþróttahús', 1, null],
+        '2027-03-11', '10:00', '12:00', 'Íþróttahús', 1, 0],
     );
     assert.deepEqual(brautirOf(id), ['Rafmagnsbraut', 'Starfsbraut']);
     assert.match((await as.owner.get(`/teacher/events/${id}`)).html, /Viðburðurinn var vistaður sem drög\./);
@@ -145,9 +147,12 @@ describe('event form and drafts (BR-20 to BR-22)', () => {
     const id = await create(as.owner, { title_en: 'Hike', fee_isk: '1500', brautir: ['Starfsbraut'] });
     await publish(id);
     const preview = articleOf((await as.owner.get(`/teacher/events/${id}/preview`)).html);
-    const page = articleOf((await as.guest.get(`/events/${id}`)).html);
+    const page = articleOf((await as.student.get(`/events/${id}`)).html);
     assert.ok(preview);
-    assert.equal(preview, page);
+    // The sign-up box differs on purpose: the preview's button cannot be pressed.
+    const withoutSignup = (html) => html.replace(/<section class="signup"[\s\S]*?<\/section>/, '');
+    assert.equal(withoutSignup(preview), withoutSignup(page));
+    assert.match(preview, /<section class="signup"[\s\S]*?<button type="button" class="button" disabled>Skrá mig<\/button>/);
   });
 
   test('§9 item 3: the multipart event form needs the CSRF token', async () => {
@@ -266,7 +271,7 @@ describe('event images (BR-27)', () => {
   test('BR-27: JPG, PNG and WebP are saved under random names outside public/ and served from /uploads', async () => {
     for (const [bytes, type] of [[PNG, 'image/png'], [JPG, 'image/jpeg'], [WEBP, 'image/webp']]) {
       const id = await create(as.owner, {}, { bytes, name: 'mynd.bin' });
-      const file = eventRow(id).image_file;
+      const [file] = imagesOf(id);
       assert.match(file, /^[0-9a-f-]{36}\.(png|jpg|webp)$/);
       assert.ok(fs.existsSync(path.join(site.config.uploadDir, file)));
       assert.ok(!path.resolve(site.config.uploadDir).startsWith(path.join(ROOT_DIR, 'public')));
@@ -283,37 +288,101 @@ describe('event images (BR-27)', () => {
     const before = uploads().length;
     const text = await as.owner.postForm('/teacher/events/new', fields(), { bytes: Buffer.from('<svg onload="x"></svg>'), name: 'mynd.png', type: 'image/png' });
     assert.equal(text.status, 400);
-    assert.match(text.html, /Myndin verður að vera JPG, PNG eða WebP\./);
+    assert.match(text.html, /<p class="field__error" id="event-images-error">Myndin verður að vera JPG, PNG eða WebP\.<\/p>/);
     const big = await as.owner.postForm('/teacher/events/new', fields(), { bytes: Buffer.concat([PNG, Buffer.alloc(2 * 1024 * 1024)]) });
     assert.equal(big.status, 400);
-    assert.match(big.html, /Myndin er of stór\. Hámarkið er 2 MB\./);
+    assert.match(big.html, /<p class="field__error" id="event-images-error">Myndin er of stór\. Hámarkið er 2 MB\.<\/p>/);
     assert.equal(uploads().length, before);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM events').pluck().get(), 0);
   });
 
-  test('BR-27: without an image the default image is shown; replacing or removing deletes the old file', async () => {
+  test('BR-27: without an image the default image is shown; images are added after the saved ones, and a removed one is deleted', async () => {
     const id = await create();
     await publish(id);
-    assert.match((await as.guest.get(`/events/${id}`)).html, /<img class="event__image" src="\/img\/default-event\.svg" alt="Gönguferð">/);
+    const page = async () => (await as.guest.get(`/events/${id}`)).html;
+    assert.match(await page(), /<img class="gallery__image" src="\/img\/default-event\.svg" alt="Gönguferð">/);
+    assert.doesNotMatch(await page(), /data-gallery/, 'nothing to step through');
     assert.equal((await fetch(`${site.baseUrl}/img/default-event.svg`)).status, 200);
 
     await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: PNG });
-    const first = eventRow(id).image_file;
-    assert.match((await as.guest.get(`/events/${id}`)).html, new RegExp(`src="/uploads/${first}" alt="Gönguferð"`));
+    const [first] = imagesOf(id);
+    assert.match(await page(), new RegExp(`<img class="gallery__image" src="/uploads/${first}" alt="Gönguferð">`));
+    assert.doesNotMatch(await page(), /data-gallery/, 'one image has no arrows');
 
     await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: JPG });
-    const second = eventRow(id).image_file;
-    assert.notEqual(second, first);
+    const [, second] = imagesOf(id);
+    assert.deepEqual(imagesOf(id), [first, second], 'a new image goes after the saved one');
+    assert.ok(uploads().includes(first) && uploads().includes(second));
+
+    await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ remove_images: String(imageIds(id)[0]) }));
+    assert.deepEqual(imagesOf(id), [second]);
+    assert.ok(!uploads().includes(first), 'the removed image is deleted');
     assert.ok(uploads().includes(second));
-    assert.ok(!uploads().includes(first), 'the replaced image is deleted');
 
-    await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ remove_image: '1' }));
-    assert.equal(eventRow(id).image_file, null);
-    assert.ok(!uploads().includes(second), 'the removed image is deleted');
-
-    await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: WEBP });
     await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ title_is: 'Nýtt heiti' }));
-    assert.match(eventRow(id).image_file, /\.webp$/, 'saving without a new image keeps the current one');
+    assert.deepEqual(imagesOf(id), [second], 'saving without touching the images keeps them');
+  });
+
+  test('BR-27: an event has up to 5 images; a sixth is refused, by upload and by adding to saved ones', async () => {
+    const five = Array.from({ length: 5 }, (_, n) => ({ bytes: PNG, name: `mynd-${n + 1}.png` }));
+    const id = await create(as.owner, {}, five);
+    assert.equal(imagesOf(id).length, 5);
+    assert.equal(new Set(imagesOf(id)).size, 5, 'each under its own name');
+    const before = uploads().length;
+
+    const sixth = await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: JPG });
+    assert.equal(sixth.status, 400);
+    assert.match(sixth.html, /<p class="field__error" id="event-images-error">Viðburður má mest hafa 5 myndir\. Fjarlægðu mynd til að bæta annarri við\.<\/p>/);
+    assert.equal(imagesOf(id).length, 5);
+    assert.equal(uploads().length, before, 'the refused file is not kept');
+
+    const six = await as.owner.postForm('/teacher/events/new', fields({ title_is: 'Sex myndir' }), [...five, { bytes: JPG }]);
+    assert.equal(six.status, 400);
+    assert.match(six.html, /Viðburður má mest hafa 5 myndir\./);
+    assert.equal(site.db.prepare("SELECT COUNT(*) FROM events WHERE title_is = 'Sex myndir'").pluck().get(), 0);
+    assert.equal(uploads().length, before);
+
+    // Removing one and adding one in the same save stays at five.
+    const swapped = await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ remove_images: String(imageIds(id)[4]) }), { bytes: WEBP });
+    assert.equal(swapped.status, 303);
+    assert.equal(imagesOf(id).length, 5);
+    assert.match(imagesOf(id)[4], /\.webp$/);
+    assert.equal(uploads().length, before);
+  });
+
+  test('BR-27: a remove box naming another event\'s image does nothing to it', async () => {
+    const mine = await create(as.owner, { title_is: 'Minn' }, { bytes: PNG });
+    const theirs = await create(as.owner, { title_is: 'Hinn' }, { bytes: JPG });
+    const res = await as.owner.postForm(`/teacher/events/${mine}/edit`, fields({ title_is: 'Minn' }), undefined)
+      .then(() => as.owner.postForm(`/teacher/events/${mine}/edit`, fields({ title_is: 'Minn', remove_images: String(imageIds(theirs)[0]) })));
+    assert.equal(res.status, 303);
+    assert.equal(imagesOf(theirs).length, 1, 'the other event keeps its image');
+    assert.equal(imagesOf(mine).length, 1);
+    assert.ok(uploads().includes(imagesOf(theirs)[0]), 'and its file');
+  });
+
+  test('BR-27: the first image is the one on the card, and the event page steps through them all', async () => {
+    const id = await create(as.owner, {}, [{ bytes: PNG }, { bytes: JPG }, { bytes: WEBP }]);
+    await publish(id);
+    const [first, second, third] = imagesOf(id);
+    assert.match((await as.guest.get('/')).html, new RegExp(`<img class="event-card__image" src="/uploads/${first}" alt="Gönguferð"`));
+
+    const html = (await as.guest.get(`/events/${id}`)).html;
+    const gallery = /<section class="event-box gallery[\s\S]*?<\/section>/.exec(html)[0];
+    assert.match(gallery, /class="event-box gallery gallery--many" data-gallery>/);
+    assert.deepEqual([...gallery.matchAll(/<img class="gallery__image" src="\/uploads\/([^"]+)" alt="([^"]+)"/g)].map((m) => [m[1], m[2]]), [
+      [first, 'Gönguferð, mynd 1 af 3'], [second, 'Gönguferð, mynd 2 af 3'], [third, 'Gönguferð, mynd 3 af 3'],
+    ]);
+    // The arrows are there for the script to show; without it the strip scrolls and takes focus.
+    assert.match(gallery, /<ul class="gallery__strip" tabindex="0" aria-label="Myndir af viðburðinum" data-gallery-strip>/);
+    assert.match(gallery, /data-gallery-previous hidden>[\s\S]*?Fyrri mynd[\s\S]*?data-gallery-next hidden>[\s\S]*?Næsta mynd/);
+    assert.match(gallery, /data-gallery-count data-label="Mynd \{n\} af 3">3 myndir<\/p>/);
+    assert.match(html, /<script src="\/js\/gallery\.js" defer><\/script>/);
+
+    // The edit form lists the saved images, each with its own remove box.
+    const form = (await as.owner.get(`/teacher/events/${id}/edit`)).html;
+    assert.equal([...form.matchAll(/name="remove_images" value="\d+" data-saved-image/g)].length, 3);
+    assert.match(form, /name="images" type="file" multiple accept="image\/jpeg,image\/png,image\/webp"/);
   });
 });
 
@@ -374,10 +443,10 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
   });
 
   test('BR-29: the owner deletes an event after confirming; students get an email and their sign-ups go', async () => {
-    const id = await create(as.owner, {}, { bytes: PNG });
+    const id = await create(as.owner, {}, [{ bytes: PNG }, { bytes: JPG }]);
     await publish(id);
     register(id, people.student.id);
-    const image = eventRow(id).image_file;
+    const images = imagesOf(id);
 
     const unconfirmed = await as.owner.post(`/teacher/events/${id}`, { action: 'delete' });
     assert.equal(unconfirmed.location, `/teacher/events/${id}`);
@@ -388,7 +457,9 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     assert.match((await as.owner.get('/')).html, /Viðburðinum var eytt: Gönguferð/);
     assert.equal(eventRow(id), undefined);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM registrations WHERE event_id = ?').pluck().get(id), 0);
-    assert.ok(!uploads().includes(image), 'the image file is deleted');
+    assert.equal(images.length, 2);
+    assert.ok(images.every((image) => !uploads().includes(image)), 'the image files are deleted');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM event_images').pluck().get(), 0);
     assert.deepEqual(site.db.prepare('SELECT actor_id, action, event_id, student_id FROM audit_log').all(), [
       { actor_id: people.owner.id, action: 'signup.delete', event_id: id, student_id: people.student.id },
     ]);
