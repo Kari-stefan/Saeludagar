@@ -16,8 +16,10 @@
 
 // The front page's sections: a heading on the left and the search on the right, wrapping on
 // narrow screens. A student's own events sit in a shaded panel (BR-64).
+// A link to a section stops below the message that sticks to the top of the page.
 .home-section {
   margin-bottom: var(--space-5);
+  scroll-margin-top: 6.5rem;
 }
 
 .home-section--mine {
@@ -70,8 +72,9 @@
   }
 }
 
+// On a phone the search has its own row, so "Leita", "Sía" and "Raða" stay together on the next.
 .field__input.browse__search {
-  flex: 1 1 10rem;
+  flex: 1 1 100%;
   width: auto;
   min-width: 0;
   margin-top: 0;
@@ -81,9 +84,12 @@
   }
 }
 
-.browse__menu {
+// The panels open under the whole row, so they stay on screen wherever their button wraps to.
+.browse__controls {
   position: relative;
+}
 
+.browse__menu {
   &[open] > summary {
     color: var(--color-on-primary);
     background: var(--color-primary);
@@ -104,6 +110,44 @@
   box-shadow: 0 8px 24px var(--color-shadow);
 }
 
+.browse__panel--wide {
+  width: min(30rem, calc(100vw - 2 * var(--space-3)));
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+.browse__radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-3);
+}
+
+// "Nota" stays in view while a tall panel scrolls. The bar reaches down over the panel's padding,
+// so nothing shows under it.
+.browse__apply {
+  position: sticky;
+  bottom: calc(-1 * var(--space-3));
+  margin-bottom: calc(-1 * var(--space-3));
+  padding: var(--space-2) 0 var(--space-3);
+  background: var(--color-bg);
+}
+
+// A "from" and a "to" field side by side.
+.browse__range {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+
+  @media (min-width: 40rem) {
+    grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .field__input {
+    margin-top: 0;
+  }
+}
+
 .browse__fieldset {
   margin: 0 0 var(--space-2);
   padding: 0;
@@ -115,11 +159,78 @@
   }
 }
 
-.browse__active {
-  margin: 0;
+// Each active filter or order, with its own clear link (BR-63).
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin: var(--space-1) 0 0;
+  padding: 0;
   font-size: 0.875rem;
-  color: var(--color-muted);
-  text-align: right;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding-left: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.chip__clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  color: var(--color-link);
+}
+
+// BR-64: the "n/4" counter beside "Þínir viðburðir".
+.home-counter {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 var(--space-2);
+  font-size: 1rem;
+  color: var(--color-on-primary);
+  border-radius: 999px;
+  background: var(--color-primary);
+}
+
+// The result of a sign-up stays in sight wherever on the page it was made. Only the message itself
+// takes clicks, not the empty row beside it.
+.home-flash {
+  position: sticky;
+  top: var(--space-2);
+  z-index: 30;
+  pointer-events: none;
+
+  .alert {
+    box-shadow: 0 4px 12px var(--color-shadow);
+    pointer-events: auto;
+  }
+}
+
+// §6: "Nýr viðburður", at the bottom right of the content, over it only while scrolling.
+.fab-wrap {
+  position: sticky;
+  bottom: var(--space-3);
+  z-index: 30;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+  pointer-events: none;
+}
+
+.fab {
+  border-radius: 999px;
+  box-shadow: 0 6px 18px var(--color-shadow);
+  pointer-events: auto;
 }
 
 .day {
@@ -233,10 +344,22 @@
   line-clamp: 3;
 }
 
-.event-card__more {
-  align-self: flex-start;
+// BR-66: the sign-up control sits above the link that covers the card.
+.event-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   margin-top: auto;
+}
 
+.event-card__action {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+
+.event-card__more {
   &::after {
     content: "";
     position: absolute;
@@ -278,6 +401,13 @@
   background: var(--color-surface);
 }
 
+.badge--done {
+  font-weight: 700;
+  color: var(--color-success);
+  border-color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
 .badge--full {
   font-weight: 700;
   color: var(--color-on-primary);
@@ -299,6 +429,14 @@
 .event__description {
   margin: var(--space-3) 0;
   white-space: pre-line;
+}
+
+.preview-part {
+  margin-bottom: var(--space-5);
+}
+
+.preview-card {
+  max-width: 20rem;
 }
 
 .preview-banner {

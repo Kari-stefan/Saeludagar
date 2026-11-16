@@ -1,4 +1,4 @@
--- Schema version 1 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
+-- Schema version 2 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
 -- Timestamps are ISO-8601 UTC text; event dates are 'YYYY-MM-DD' and times 'HH:MM'.
 
 -- Exactly one row (id = 1).
@@ -127,7 +127,7 @@ CREATE TABLE audit_log (
   id          INTEGER PRIMARY KEY,
   at          TEXT    NOT NULL,
   actor_id    INTEGER REFERENCES users(id) ON DELETE SET NULL,
-  action      TEXT    NOT NULL,   -- 'signup.create','signup.delete','attendance.set','attendance.unset','choice.set','choice.clear'
+  action      TEXT    NOT NULL,   -- 'signup.create','signup.delete','attendance.set','attendance.unset','choice.set','choice.clear','event-manager.grant','event-manager.revoke'
   event_id    INTEGER,            -- no FK, so entries survive event deletion until the purge
   student_id  INTEGER,
   details     TEXT                -- JSON

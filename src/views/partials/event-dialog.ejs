@@ -1,0 +1,42 @@
+<%#
+  §6: the "Nýr viðburður" dialog on the front page: the fields in about 2/3 of its width and the
+  image in the other 1/3, stacked on narrow screens. public/js/event-dialog.js opens it and saves
+  the draft. Without JavaScript it never opens, and the button goes to the form page instead.
+  Uses the page's `days`, `brautir` and `maxImageBytes`.
+-%>
+<dialog class="modal" id="new-event-dialog" aria-labelledby="new-event-heading">
+  <form class="modal__form" method="post" action="/teacher/events/new" enctype="multipart/form-data"
+    data-event-form data-error="<%= t('events.dialog.failed') %>" data-session-ended="<%= t('events.dialog.sessionEnded') %>" data-too-large="<%= t('events.errors.imageTooLarge') %>" data-wrong-type="<%= t('events.errors.imageType') %>">
+    <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+    <div class="modal__head">
+      <h2 id="new-event-heading"><%= t('pages.eventNew') %></h2>
+      <button type="button" class="button button--small button--secondary" data-dialog-close><%- include('icon', { name: 'close' }) %><%= t('events.dialog.close') %></button>
+    </div>
+    <div class="modal__body">
+      <div class="alert alert--error" role="alert" data-form-error hidden></div>
+      <div class="modal__columns">
+        <div class="modal__fields">
+          <p class="field__hint"><%= t('events.form.required') %></p>
+          <%- include('event-fields', { values: { brautir: [] }, errors: {} }) %>
+        </div>
+        <section class="modal__image" aria-labelledby="new-event-image-heading">
+          <h3 id="new-event-image-heading"><%= t('events.dialog.imageHeading') %></h3>
+          <p class="field__hint" id="new-event-image-hint"><%= t('events.form.imageHint') %></p>
+          <div data-error-slot="image"></div>
+          <label class="button button--secondary modal__attach">
+            <input class="visually-hidden" name="image" type="file" accept="image/jpeg,image/png,image/webp" data-max-bytes="<%= maxImageBytes %>" aria-describedby="new-event-image-hint">
+            <span><%= t('events.dialog.attach') %></span>
+          </label>
+          <p class="field__hint" data-file-name></p>
+          <img class="image-preview" alt="<%= t('events.form.newImage') %>" data-image-preview hidden>
+          <p><button type="button" class="button button--small button--secondary" data-image-remove hidden><%= t('events.form.removeImage') %></button></p>
+        </section>
+      </div>
+    </div>
+    <div class="modal__foot">
+      <progress class="modal__progress" max="100" value="0" aria-label="<%= t('events.dialog.progress') %>" data-progress hidden></progress>
+      <button type="button" class="button button--secondary" data-dialog-close><%= t('events.dialog.cancel') %></button>
+      <button type="submit" autocomplete="off" class="button" data-save><%= t('events.form.saveDraft') %></button>
+    </div>
+  </form>
+</dialog>

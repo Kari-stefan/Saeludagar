@@ -29,11 +29,11 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
 
   test('BR-01: the kennitala works with or without the hyphen', async () => {
     const plain = await site.browser().login(teacher.kennitala, teacher.code);
-    assert.equal(plain.location, '/teacher');
+    assert.equal(plain.location, '/');
     const hyphen = `${teacher.kennitala.slice(0, 6)}-${teacher.kennitala.slice(6)}`;
     const hyphenated = await site.browser().login(hyphen, teacher.code);
     assert.equal(hyphenated.status, 303);
-    assert.equal(hyphenated.location, '/teacher');
+    assert.equal(hyphenated.location, '/');
   });
 
   test('BR-01: other input gets a validation message, not a login attempt', async () => {
@@ -57,13 +57,13 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     unlock(teacher.id);
   });
 
-  test('BR-02: one form for everyone; students land on student pages, teachers and admins on teacher pages', async () => {
+  test('BR-02: one form for everyone, and everyone lands on the front page', async () => {
     const asStudent = await site.browser().login(student.kennitala, student.code);
-    assert.equal(asStudent.location, '/my-events');
+    assert.equal(asStudent.location, '/');
     const asTeacher = await site.browser().login(teacher.kennitala, teacher.code);
-    assert.equal(asTeacher.location, '/teacher');
+    assert.equal(asTeacher.location, '/');
     const asAdmin = await site.browser().login(admin.kennitala, admin.code);
-    assert.equal(asAdmin.location, '/teacher');
+    assert.equal(asAdmin.location, '/');
   });
 
   test('BR-03, BR-04: every kind of failed login shows the same message', async () => {
@@ -123,13 +123,13 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
 
     // Locked per kennitala, never by IP: another account on the same address still logs in.
     const other = await site.browser().login(admin.kennitala, admin.code);
-    assert.equal(other.location, '/teacher');
+    assert.equal(other.location, '/');
 
     // 15 minutes later.
     site.db.prepare('UPDATE users SET locked_until = ? WHERE id = ?')
       .run(new Date(Date.now() - 1000).toISOString().replace(/\.\d{3}Z$/, 'Z'), teacher.id);
     const later = await site.browser().login(teacher.kennitala, teacher.code);
-    assert.equal(later.location, '/teacher');
+    assert.equal(later.location, '/');
     assert.equal(user(teacher.id).failed_logins, 0);
     assert.equal(user(teacher.id).locked_until, null);
   });
@@ -173,7 +173,7 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
       { userId: sess.userId, role: sess.role, isAdmin: sess.isAdmin, lang: sess.lang },
       { userId: admin.id, role: 'teacher', isAdmin: true, lang: 'en' },
     );
-    const home = await browser.get('/teacher');
+    const home = await browser.get('/');
     assert.match(home.html, /<html lang="en">/, 'the language survives the login');
   });
 
@@ -194,7 +194,7 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     const setExpiresAt = (ms) => site.db.prepare('UPDATE sessions SET expires_at = ? WHERE sid = ?').run(ms, browser.sessionId);
 
     setExpiresAt(Date.now() + 60_000);
-    const res = await browser.get('/my-events');
+    const res = await browser.get('/');
     assert.equal(res.status, 200);
     assert.ok(expiresAt() > Date.now() + 2 * 60 * 60 * 1000 - 5000, 'renewed to 2 hours');
     assert.equal(res.setCookies.length, 1, 'the cookie is renewed too');
@@ -209,7 +209,7 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     const browser = site.browser();
     await browser.login(admin.kennitala, admin.code);
     site.db.prepare('UPDATE sessions SET expires_at = ? WHERE sid = ?').run(Date.now() + 60_000, browser.sessionId);
-    assert.equal((await browser.get('/teacher')).status, 200);
+    assert.equal((await browser.get('/teacher/events/new')).status, 200);
     const expiresAt = site.db.prepare('SELECT expires_at FROM sessions WHERE sid = ?').pluck().get(browser.sessionId);
     const twelveHours = 12 * 60 * 60 * 1000;
     assert.ok(expiresAt > Date.now() + twelveHours - 5000 && expiresAt <= Date.now() + twelveHours, 'renewed to 12 hours');
@@ -246,13 +246,13 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
     await browser.login(student.kennitala, student.code);
     const res = await browser.get('/login');
     assert.equal(res.status, 303);
-    assert.equal(res.location, '/my-events');
+    assert.equal(res.location, '/');
   });
 
   test('§6: the header shows the user\'s name and a logout button', async () => {
     const browser = site.browser();
     await browser.login(admin.kennitala, admin.code);
-    const res = await browser.get('/teacher');
+    const res = await browser.get('/');
     assert.match(res.html, /<span>Skráð inn: Anna Stjórnandi<\/span>/);
     assert.match(res.html, /<form class="header-actions__form" method="post" action="\/logout">/);
     assert.match(res.html, /href="\/admin">Stjórnendasvæði</);

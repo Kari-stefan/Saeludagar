@@ -73,7 +73,7 @@ describe('npm run create-admin (BR-13)', () => {
       try {
         const browser = new Browser(`http://127.0.0.1:${server.address().port}`);
         const login = await browser.login('0000000001', loginCode);
-        assert.equal(login.location, '/teacher');
+        assert.equal(login.location, '/');
         assert.equal((await browser.get('/admin/teachers')).status, 200);
       } finally {
         await new Promise((resolve) => server.close(resolve));

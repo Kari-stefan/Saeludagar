@@ -1,4 +1,4 @@
-import { MAX_SIGNUPS_PER_STUDENT } from '../config.js';
+import { MAX_SIGNUPS_PER_DAY, MAX_SIGNUPS_PER_STUDENT } from '../config.js';
 import { toIso } from '../db/index.js';
 import { audit } from './audit.js';
 
@@ -39,11 +39,8 @@ export function signUp(db, studentId, eventId, now = new Date()) {
       if (!brautir.includes(braut)) return { error: 'signups.errors.braut', params: { brautir: brautir.join(', ') } };
     }
 
-    const mine = db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time
-      FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?`).all(studentId);
-    if (mine.length >= MAX_SIGNUPS_PER_STUDENT) return { error: 'signups.errors.limit', params: { max: MAX_SIGNUPS_PER_STUDENT } };
-    const clash = mine.find((other) => overlaps(other, event));
-    if (clash) return { error: 'signups.errors.overlap', event: clash };
+    const blocked = registrationLimits(db, studentId, event, 'signups.errors');
+    if (blocked) return blocked;
 
     db.prepare('INSERT INTO registrations (event_id, student_id, created_at) VALUES (?, ?, ?)').run(eventId, studentId, toIso(now));
     audit(db, 'signup.create', studentId, eventId, studentId, { by: 'student' }); // BR-56
@@ -65,7 +62,7 @@ export function cancelSignup(db, studentId, eventId, now = new Date()) {
   }).immediate();
 }
 
-// "Mínir viðburðir": the student's sign-ups, by date and time.
+// "Þínir viðburðir": the student's sign-ups, by date and time.
 export function studentSignups(db, studentId) {
   return db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time, e.location, r.attended
     FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?
@@ -110,33 +107,36 @@ export function searchStudentsForEvent(db, eventId, query) {
   return { search, students };
 }
 
-function registrationLimits(db, studentId, eventId) {
+// BR-32, BR-37, BR-65: the student's own limits, which every sign-up keeps, a teacher's too: at
+// most 4 sign-ups, at most 2 on one day, and no overlaps. `messages` is where the i18n keys are.
+// Returns null, or { error } with what its message needs.
+function registrationLimits(db, studentId, event, messages) {
   const mine = db.prepare(`SELECT e.id, e.title_is, e.title_en, e.event_date, e.start_time, e.end_time
     FROM registrations r JOIN events e ON e.id = r.event_id WHERE r.student_id = ?`).all(studentId);
   if (mine.length >= MAX_SIGNUPS_PER_STUDENT) {
-    return { error: 'events.participants.errors.limit', params: { max: MAX_SIGNUPS_PER_STUDENT } };
+    return { error: `${messages}.limit`, params: { max: MAX_SIGNUPS_PER_STUDENT } };
   }
-  const event = db.prepare('SELECT id, title_is, title_en, event_date, start_time, end_time FROM events WHERE id = ?').get(eventId);
-  const clash = event && mine.find((other) => overlaps(other, event));
-  if (clash) return { error: 'events.participants.errors.overlap', event: clash };
-  return null;
+  if (mine.filter((other) => other.event_date === event.event_date).length >= MAX_SIGNUPS_PER_DAY) {
+    return { error: `${messages}.dayLimit`, params: { max: MAX_SIGNUPS_PER_DAY } };
+  }
+  const clash = mine.find((other) => overlaps(other, event));
+  return clash ? { error: `${messages}.overlap`, event: clash } : null;
 }
 
-// BR-37: teachers may bypass the event's own limits, but not the student's 4-event and overlap
-// limits. As for every sign-up, the event must be published (BR-32): a draft is hidden from
+// BR-37: teachers may bypass the event's own limits, but not the student's own: 4 events, 2 on
+// one day (BR-65), and no overlaps. As for every sign-up, the event must be published (BR-32): a draft is hidden from
 // students. Returns { ok } or { error } (+ params/event for the message).
 export function addStudentToEvent(db, teacherId, eventId, studentId, now = new Date()) {
   return db.transaction(() => {
-    if (!db.prepare("SELECT 1 FROM events WHERE id = ? AND status = 'published'").get(eventId)) {
-      return { error: 'events.participants.errors.notPublished' };
-    }
+    const event = db.prepare("SELECT * FROM events WHERE id = ? AND status = 'published'").get(eventId);
+    if (!event) return { error: 'events.participants.errors.notPublished' };
     if (!db.prepare(`SELECT 1 FROM users WHERE id = ? AND role = 'student' AND active = 1`).get(studentId)) {
       return { error: 'events.participants.errors.notFound' };
     }
     if (db.prepare('SELECT 1 FROM registrations WHERE event_id = ? AND student_id = ?').get(eventId, studentId)) {
       return { error: 'events.participants.errors.already' };
     }
-    const blocked = registrationLimits(db, studentId, eventId);
+    const blocked = registrationLimits(db, studentId, event, 'events.participants.errors');
     if (blocked) return blocked;
     db.prepare('INSERT INTO registrations (event_id, student_id, added_by, created_at) VALUES (?, ?, ?, ?)')
       .run(eventId, studentId, teacherId, toIso(now));

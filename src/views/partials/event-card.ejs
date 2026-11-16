@@ -1,8 +1,25 @@
 <%#
-  One published event on the front page (§6). Takes `event` (with brautir and signups) and the
-  heading `level`. The "Nánar" link stretches over the whole card, so the card opens the event.
+  One published event on the front page (§6). Takes `event` (with brautir and signups), the heading
+  `level` and, in the teacher's preview, `preview`. The "Nánar" link stretches over the whole card,
+  so the card opens the event; "Skrá" and "Afskrá" (BR-66) sit above it. The page's `window` and
+  `signedUp` (this student's sign-ups, by event id) decide which of them shows. The server checks
+  every rule again, and says why when it refuses (BR-34). The button's autocomplete="off" stops
+  Firefox bringing it back disabled after a reload, since card-signup.js disables it while it sends.
 -%>
-<% const title = eventText(event, 'title'); const level = locals.level ?? 3; -%>
+<%
+  const title = eventText(event, 'title');
+  const level = locals.level ?? 3;
+  const viewer = locals.currentUser;
+  const signup = locals.signedUp?.get(event.id);
+  const full = event.signups >= event.capacity;
+  let action = null;
+  if (locals.preview) action = 'preview';
+  else if (locals.window?.open && !viewer && !full) action = 'login';
+  else if (locals.window?.open && viewer?.role === 'student') {
+    if (signup) action = signup.attended ? null : 'cancel';
+    else if (!full) action = 'signup';
+  }
+-%>
 <article class="event-card">
   <img class="event-card__image" src="<%= event.image_file ? `/uploads/${event.image_file}` : '/img/default-event.svg' %>" alt="<%= title %>" loading="lazy">
   <div class="event-card__body">
@@ -18,10 +35,26 @@
       <% } -%>
       <li class="badge"><%= formatFee(event.fee_isk) %></li>
       <li class="badge"><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %></li>
-      <% if (event.signups >= event.capacity) { -%>
+      <% if (full) { -%>
       <li class="badge badge--full"><%= t('events.full') %></li>
       <% } -%>
+      <% if (signup?.attended) { -%>
+      <li class="badge badge--done"><%= t('home.card.attended') %></li>
+      <% } -%>
     </ul>
-    <a class="button event-card__more" href="/events/<%= event.id %>"><%= t('events.more') %><span class="visually-hidden">: <%= title %></span></a>
+    <div class="event-card__actions">
+      <% if (action === 'signup' || action === 'cancel') { -%>
+      <form class="event-card__action" method="post" action="/events/<%= event.id %>" data-card-signup>
+        <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+        <input type="hidden" name="returnTo" value="<%= currentPath %>">
+        <button type="submit" autocomplete="off" class="button<%= action === 'cancel' ? ' button--secondary' : '' %>" name="action" value="<%= action %>"><%= t(`home.card.${action}`) %><span class="visually-hidden">: <%= title %></span></button>
+      </form>
+      <% } else if (action === 'login') { -%>
+      <a class="button event-card__action" href="/login?next=/events/<%= event.id %>"><%= t('home.card.signup') %><span class="visually-hidden">: <%= title %></span></a>
+      <% } else if (action === 'preview') { -%>
+      <button type="button" class="button event-card__action" disabled><%= t('home.card.signup') %></button>
+      <% } -%>
+      <a class="button event-card__more<%= action ? ' button--secondary' : '' %>" href="<%= locals.preview ? '#event-details' : `/events/${event.id}` %>"><%= t('events.more') %><span class="visually-hidden">: <%= title %></span></a>
+    </div>
   </div>
 </article>

@@ -182,7 +182,7 @@ describe('the import page (BR-14 to BR-18)', () => {
     // Bjarni is logged in when the import runs.
     site.db.prepare('UPDATE users SET code_hash = ? WHERE id = ?').run(await hashCode('123456'), bjarni.id);
     const bjarniBrowser = site.browser();
-    assert.equal((await bjarniBrowser.login('0000000302', '123456')).location, '/my-events');
+    assert.equal((await bjarniBrowser.login('0000000302', '123456')).location, '/');
 
     const preview = await importFile(csv(
       '0000000301;Anna Jónsdóttir;anna.j@example.is;Starfsbraut;ÍSLE2MB05',

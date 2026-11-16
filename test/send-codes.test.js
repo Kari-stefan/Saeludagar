@@ -55,13 +55,13 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
   test('BR-07: each previous code works until the new one is sent, then stops working', async () => {
     const [first] = students;
     await admin.post('/admin/codes');
-    assert.equal((await site.browser().login(first.kennitala, first.code)).location, '/my-events');
+    assert.equal((await site.browser().login(first.kennitala, first.code)).location, '/');
     const emails = await site.sendEmails();
     assert.equal(emails.length, 5);
     const email = emails.find((e) => e.to.address === 'nemandi1@example.is');
     assert.equal((await site.browser().login(first.kennitala, first.code)).status, 401);
     const newCode = codeFrom(email);
-    assert.equal((await site.browser().login(first.kennitala, newCode)).location, '/my-events');
+    assert.equal((await site.browser().login(first.kennitala, newCode)).location, '/');
     first.code = newCode;
   });
 
@@ -147,7 +147,7 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
   test('BR-07: only admins can send codes', async () => {
     const other = await site.addUser({ name: 'Annar Kennari' });
     const teacherBrowser = site.browser();
-    assert.equal((await teacherBrowser.login(other.kennitala, other.code)).location, '/teacher');
+    assert.equal((await teacherBrowser.login(other.kennitala, other.code)).location, '/');
     assert.equal((await teacherBrowser.post('/admin/codes')).status, 403);
     assert.deepEqual(queued(), []);
   });

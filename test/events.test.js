@@ -7,6 +7,9 @@ import { ROOT_DIR } from '../src/config.js';
 import { createEvent, getEvent, updateEvent, validateEvent } from '../src/services/events.js';
 import { insertEvent, startSite } from './helpers.js';
 
+// The front page's "Viðburðir sem þú sérð um" section.
+const managedPart = (html) => /id="managed-events"[\s\S]*?<\/section>/.exec(html)?.[0] ?? '';
+
 const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200, 1)]);
 const JPG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 2)]);
 const WEBP = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP'), Buffer.alloc(200, 3)]);
@@ -251,7 +254,7 @@ describe('what guests and students see (BR-23 to BR-26, BR-60)', () => {
 
   test('BR-61: the Icelandic event pages say "viðburður", never "atburður"', async () => {
     for (const url of ['/', `/events/${open}`]) assert.doesNotMatch((await as.guest.get(url)).html, /atburð/i, url);
-    for (const url of ['/teacher', '/teacher/events/new', `/teacher/events/${open}`, `/teacher/events/${open}/edit`]) {
+    for (const url of ['/', '/teacher/events/new', `/teacher/events/${open}`, `/teacher/events/${open}/edit`]) {
       assert.doesNotMatch((await as.owner.get(url)).html, /atburð/i, url);
     }
   });
@@ -381,8 +384,8 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     assert.ok(eventRow(id));
 
     const res = await as.owner.post(`/teacher/events/${id}`, { action: 'delete', confirm: '1' });
-    assert.equal(res.location, '/teacher');
-    assert.match((await as.owner.get('/teacher')).html, /Viðburðinum var eytt: Gönguferð/);
+    assert.equal(res.location, '/#managed-events');
+    assert.match((await as.owner.get('/')).html, /Viðburðinum var eytt: Gönguferð/);
     assert.equal(eventRow(id), undefined);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM registrations WHERE event_id = ?').pluck().get(id), 0);
     assert.ok(!uploads().includes(image), 'the image file is deleted');
@@ -409,7 +412,7 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
 
     site.db.prepare('UPDATE registrations SET attended = 0').run();
     const byAdmin = await as.admin.post(`/teacher/events/${id}`, { action: 'delete', confirm: '1' });
-    assert.equal(byAdmin.location, '/teacher');
+    assert.equal(byAdmin.location, '/#managed-events');
     assert.equal(eventRow(id), undefined);
   });
 
@@ -445,7 +448,7 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
   });
 
   test('§3: a co-teacher edits, previews and publishes, but cannot delete or manage co-teachers', async () => {
-    assert.match((await as.coteacher.get('/teacher')).html, /Sameiginlegur viðburður/, 'on the co-teacher\'s home page');
+    assert.match(managedPart((await as.coteacher.get('/')).html), /Sameiginlegur viðburður/, 'in the co-teacher\'s section of the front page');
     const edit = await as.coteacher.get(`/teacher/events/${id}/edit`);
     assert.equal(edit.status, 200);
     assert.doesNotMatch(edit.html, /id="coteachers"/);
@@ -465,7 +468,7 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
     }
     assert.equal((await as.other.postForm(`/teacher/events/${id}/edit`, fields({ title_is: 'Stolið' }))).status, 403);
     assert.equal(eventRow(id).title_is, 'Sameiginlegur viðburður');
-    assert.doesNotMatch((await as.other.get('/teacher')).html, /Sameiginlegur viðburður/);
+    assert.doesNotMatch(managedPart((await as.other.get('/')).html), /Sameiginlegur viðburður/);
     assert.equal((await as.student.get(`/teacher/events/${id}`)).status, 403);
     assert.equal((await as.guest.get(`/teacher/events/${id}`)).location, '/login');
     assert.equal((await as.owner.get('/teacher/events/99999')).status, 404);

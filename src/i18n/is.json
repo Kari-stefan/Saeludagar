@@ -32,8 +32,6 @@
     "event": "Viðburður",
     "login": "Innskráning",
     "newCode": "Fá nýjan kóða",
-    "myEvents": "Mínir viðburðir",
-    "teacherHome": "Svæði viðburðastjóra",
     "eventNew": "Nýr viðburður",
     "eventEdit": "Breyta viðburði",
     "eventPreview": "Forskoðun viðburðar",
@@ -271,7 +269,6 @@
   "home": {
     "noDays": "Dagsetningar Sæludaga hafa ekki verið ákveðnar enn.",
     "days": "Sæludagar: {days}",
-    "filterLabel": "Sía eftir braut",
     "allBrautir": "Allar brautir",
     "noEvents": "Engir viðburðir enn.",
     "searchLabel": "Leita að viðburði",
@@ -282,23 +279,63 @@
     "filter": "Sía",
     "sortLabel": "Röðun",
     "apply": "Nota",
-    "clear": "Hreinsa",
     "sort": {
-      "date": "Dagsetning, elst fyrst",
+      "date": "Dagsetning, elst fyrst (sjálfgefið)",
       "date-desc": "Dagsetning, nýjast fyrst",
+      "time": "Tími, snemma fyrst",
+      "time-desc": "Tími, seint fyrst",
       "fee": "Verð, lægst fyrst",
       "fee-desc": "Verð, hæst fyrst",
-      "name": "Nafn, A til Ö",
-      "name-desc": "Nafn, Ö til A"
+      "name": "Stafrófsröð, A til Ö",
+      "name-desc": "Stafrófsröð, Ö til A",
+      "before-noon": "Fyrir hádegi fyrst",
+      "after-noon": "Eftir hádegi fyrst"
     },
-    "activeSearch": "Leit: „{search}“",
-    "activeSort": "Röðun: {sort}",
-    "activeBraut": "Braut: {braut}",
     "noMatches": "Enginn viðburður passar við leitina. Prófaðu annað orð eða hreinsaðu síuna.",
     "mine": "Þínir viðburðir",
     "others": "Aðrir viðburðir",
     "mineNone": "Þú hefur ekki skráð þig á neina viðburði ennþá.",
-    "seeOthers": "Skoða aðra viðburði"
+    "seeOthers": "Skoða aðra viðburði",
+    "sortButton": "Raða",
+    "clearAll": "Hreinsa allt",
+    "counterLabel": "skráningar af hámarki",
+    "filters": {
+      "fee": "Verð",
+      "free": "Aðeins ókeypis",
+      "feeMin": "Frá (kr.)",
+      "feeMax": "Til (kr.)",
+      "braut": "Braut",
+      "date": "Dagsetning",
+      "from": "Frá",
+      "to": "Til",
+      "time": "Hvenær viðburðurinn hefst",
+      "noon": "Fyrir eða eftir hádegi"
+    },
+    "noon": {
+      "any": "Allur dagurinn",
+      "before": "Fyrir hádegi",
+      "after": "Eftir hádegi"
+    },
+    "active": {
+      "label": "Valið",
+      "clear": "Hreinsa: {choice}",
+      "search": "Leit: „{search}“",
+      "sort": "Röðun: {sort}",
+      "braut": "Braut: {braut}",
+      "free": "Aðeins ókeypis",
+      "feeMin": "Verð frá {fee}",
+      "feeMax": "Verð til {fee}",
+      "from": "Frá {date}",
+      "to": "Til {date}",
+      "timeFrom": "Hefst í fyrsta lagi kl. {time}",
+      "timeTo": "Hefst í síðasta lagi kl. {time}"
+    },
+    "card": {
+      "signup": "Skrá",
+      "cancel": "Afskrá",
+      "attended": "Mæting skráð",
+      "failed": "Ekki tókst að ljúka aðgerðinni. Athugaðu nettenginguna og reyndu aftur."
+    }
   },
   "events": {
     "restricted": "Aðeins fyrir nemendur brautar",
@@ -324,7 +361,7 @@
       "published": "Birtur"
     },
     "draftHelp": "Nemendur sjá viðburðinn ekki fyrr en hann er birtur. Forskoðaðu hann fyrst.",
-    "created": "Viðburðurinn var vistaður sem drög.",
+    "created": "Viðburðurinn var vistaður sem drög. Nemendur sjá hann ekki fyrr en þú birtir hann.",
     "saved": "Breytingarnar voru vistaðar.",
     "published": "Viðburðurinn hefur verið birtur.",
     "deleted": "Viðburðinum var eytt: {title}",
@@ -334,7 +371,9 @@
       "banner": "Forskoðun.",
       "help": "Svona sjá nemendur viðburðinn.",
       "back": "Aftur í umsjón viðburðar",
-      "link": "Forskoða"
+      "link": "Forskoða",
+      "cardHeading": "Spjaldið á forsíðunni",
+      "pageHeading": "Síða viðburðarins"
     },
     "delete": {
       "heading": "Eyða viðburði",
@@ -375,7 +414,8 @@
         "overlap": "Viðburðurinn skarast á við {title} ({when}), sem nemandinn er þegar skráður á.",
         "notSignedUp": "Nemandinn er ekki skráður á þennan viðburð.",
         "attended": "Ekki er hægt að fjarlægja nemanda eftir að mæting hefur verið skráð.",
-        "notPublished": "Aðeins er hægt að bæta nemendum við birta viðburði."
+        "notPublished": "Aðeins er hægt að bæta nemendum við birta viðburði.",
+        "dayLimit": "Nemandinn er þegar skráður á {max} viðburði þennan dag, sem er hámarkið á einum degi."
       },
       "links": {
         "attendance": "Mætingarlisti",
@@ -413,7 +453,8 @@
       "chooseImage": "Velja mynd",
       "newImage": "Valin mynd",
       "saveDraft": "Vista drög",
-      "save": "Vista"
+      "save": "Vista",
+      "required": "Reitir merktir * eru nauðsynlegir."
     },
     "errors": {
       "tooLong": "Textinn er of langur",
@@ -433,21 +474,26 @@
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
       "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum."
     },
-    "more": "Nánar"
+    "more": "Nánar",
+    "dialog": {
+      "imageHeading": "Mynd fyrir viðburð",
+      "attach": "Hengja við skrá",
+      "close": "Loka",
+      "cancel": "Hætta við",
+      "progress": "Framvinda vistunar",
+      "failed": "Ekki tókst að vista viðburðinn. Athugaðu nettenginguna og reyndu aftur.",
+      "sessionEnded": "Innskráningin þín rann út, svo ekki tókst að vista viðburðinn. Endurhlaðaðu síðuna og skráðu þig inn aftur. Það sem þú skrifaðir hér tapast, svo afritaðu það fyrst."
+    }
   },
   "signups": {
     "heading": "Skráning",
     "signUp": "Skrá mig",
     "cancel": "Afskrá mig",
-    "actions": "Aðgerðir",
     "loginFirst": "Þú skráir þig inn með kennitölu og kóða og kemur svo aftur hingað.",
     "youAreSignedUp": "Þú hefur skráð þig á þennan viðburð.",
     "attended": "Mæting hefur verið skráð.",
-    "signedUp": "Skráning tókst. Viðburðurinn er nú á Mínum viðburðum.",
+    "signedUp": "Skráning tókst. Viðburðurinn er nú undir Þínum viðburðum.",
     "cancelled": "Þú hefur afskráð þig og plássið er laust fyrir aðra.",
-    "count": "Skráningar: {count} / {max}",
-    "none": "Þú hefur ekki skráð þig á neinn viðburð enn.",
-    "browse": "Skoða viðburði",
     "attendance": "Mæting",
     "attendedYes": "Skráð",
     "attendedNo": "Ekki skráð",
@@ -466,7 +512,8 @@
       "limit": "Þú hefur þegar skráð þig á {max} viðburði, sem er hámarkið. Afskráðu þig af öðrum fyrst.",
       "overlap": "Viðburðurinn skarast á við {title} ({when}), sem þú hefur skráð þig á.",
       "notSignedUp": "Þú hefur ekki skráð þig á þennan viðburð.",
-      "attended": "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð."
+      "attended": "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð.",
+      "dayLimit": "Þú hefur þegar skráð þig á {max} viðburði þennan dag, sem er hámarkið á einum degi. Afskráðu þig af öðrum þeirra fyrst."
     }
   },
   "theme": {
@@ -480,10 +527,10 @@
     "howHeading": "Svona virkar þetta",
     "steps": {
       "login": "Þú færð 6 stafa kóða í tölvupósti og skráir þig inn með kennitölunni þinni og kóðanum. Ef kóðinn týnist geturðu fengið nýjan á innskráningarsíðunni.",
-      "signup": "Á meðan skráning er opin skráir þú þig á allt að {max} viðburði. Viðburðirnir mega ekki skarast í tíma, og sumir eru aðeins fyrir nemendur ákveðinna brauta.",
+      "signup": "Á meðan skráning er opin skráir þú þig á allt að {max} viðburði, þó að hámarki {perDay} sama daginn. Viðburðirnir mega ekki skarast í tíma, og sumir eru aðeins fyrir nemendur ákveðinna brauta.",
       "cancel": "Á meðan skráning er opin geturðu líka afskráð þig, og þá losnar plássið strax.",
       "attend": "Þú mætir á viðburðinn og viðburðastjóri skráir mætinguna.",
-      "choose": "Þegar mætingin hefur verið skráð velur þú á „Mínum viðburðum“ hvaða áfangi fær fjarvistarstigin dregin frá. Þú getur breytt valinu fram að frestinum hér að ofan."
+      "choose": "Þegar mætingin hefur verið skráð velur þú undir „Þínum viðburðum“ á forsíðunni hvaða áfangi fær fjarvistarstigin dregin frá. Þú getur breytt valinu fram að frestinum hér að ofan."
     },
     "pointsHeading": "Fjarvistarstig",
     "points": "Hver mæting á viðburð gildir sem {points} stig í einum áfanga. Hægt er að fá að hámarki {perCourse} stig dregin frá í hverjum áfanga, í allt að {max} áföngum (samtals {total} stig).",

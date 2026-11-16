@@ -229,6 +229,10 @@ $wide: 48rem;
   display: none;
 }
 
+.menu__toggle .icon {
+  display: block;
+}
+
 .menu[open] .menu__when-open {
   display: inline-flex;
 }
@@ -259,7 +263,6 @@ $wide: 48rem;
   background: var(--color-bg);
   border-left: 4px solid var(--color-brand);
   box-shadow: -8px 0 24px var(--color-shadow);
-  animation: menu-in 0.2s ease-out;
 
   .nav-links {
     flex-direction: column;
@@ -299,15 +302,70 @@ $wide: 48rem;
   }
 }
 
+// The animations hang on the open state, not on the panel itself: a closed <details> keeps its
+// content's styles, so an animation declared on the panel only ever runs once. public/js/menu.js
+// adds .is-closing for the closing animation and then closes the menu; keep its time the same.
+@media (prefers-reduced-motion: no-preference) {
+  .menu[open] .menu__panel {
+    animation: menu-in 0.2s ease-out;
+  }
+
+  .menu[open] .menu__backdrop {
+    animation: menu-fade-in 0.2s ease-out;
+  }
+
+  .menu[open] .menu__when-open .icon {
+    animation: menu-icon-in 0.2s ease-out;
+  }
+
+  .menu.is-closing .menu__panel {
+    animation: menu-out 0.2s ease-in forwards;
+  }
+
+  .menu.is-closing .menu__backdrop {
+    animation: menu-fade-out 0.2s ease-in forwards;
+  }
+
+  .menu.is-closing .menu__when-open .icon {
+    animation: menu-icon-out 0.2s ease-in forwards;
+  }
+}
+
 @keyframes menu-in {
   from {
     transform: translateX(100%);
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .menu__panel {
-    animation: none;
+@keyframes menu-out {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes menu-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes menu-icon-in {
+  from {
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+}
+
+@keyframes menu-icon-out {
+  to {
+    opacity: 0;
+    transform: rotate(90deg);
   }
 }
 

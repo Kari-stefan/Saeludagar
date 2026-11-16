@@ -1,19 +1,26 @@
 <%- include('../partials/header', { pageTitle: t('pages.home') }) %>
 <h1><%= t('pages.home') %></h1>
+<%# After "Skrá" or "Afskrá" on a card (BR-66), public/js/card-signup.js puts the server's new message and content into these two, so the sections, counts and message all come from the server. -%>
+<div class="home-flash" data-home-flash>
+  <%- include('../partials/flash') %>
+</div>
+<div data-home-content data-network-error="<%= t('home.card.failed') %>">
 <% if (days.length === 0) { -%>
 <p><%= t('home.noDays') %></p>
 <% } else { -%>
 <p class="lead"><%= t('home.days', { days: days.map((day) => formatDate(day)).join(', ') }) %></p>
-<% const otherNames = { search: 'q', sort: 'sort', braut: 'braut' }; -%>
-<% if (mine) { -%>
-<%# BR-64: a student's own events first, then the rest, each list with its own search and sort. -%>
+<% } -%>
+<% const otherNames = { search: 'q', sort: 'sort' }; -%>
+<% if (mine && days.length > 0) { -%>
+<%# BR-64: a student's own events first, with the "n/4" counter. M7 adds the course choice here. -%>
 <section class="home-section home-section--mine" id="mine-events" aria-labelledby="mine-heading">
   <div class="home-section__head">
-    <h2 id="mine-heading"><%= t('home.mine') %></h2>
+    <h2 id="mine-heading"><%= t('home.mine') %> <span class="home-counter"><%= signedUp.size %>/<%= maxSignups %><span class="visually-hidden"> <%= t('home.counterLabel') %></span></span></h2>
     <% if (mine.total > 0) { -%>
-    <%- include('../partials/browse-controls', { id: 'mine', label: t('home.searchMine'), names: { search: 'mq', sort: 'msort', braut: null }, values: mine, anchor: 'mine-events' }) %>
+    <%- include('../partials/browse-controls', { id: 'mine', label: t('home.searchMine'), names: { search: 'mq', sort: 'msort' }, values: mine, filterable: false, anchor: 'mine-events' }) %>
     <% } -%>
   </div>
+  <%- include('../partials/signup-window', { window }) %>
   <% if (mine.total === 0) { -%>
   <p class="empty"><%= t('home.mineNone') %></p>
   <p><a class="button button--secondary" href="#other-events"><%= t('home.seeOthers') %></a></p>
@@ -27,18 +34,34 @@
   </div>
   <% } -%>
 </section>
+<% } -%>
+<% if (managed) { -%>
+<%- include('../partials/managed-events', { managed }) %>
+<% } -%>
+<% if (days.length > 0) { -%>
+<% if (mine) { -%>
 <section class="home-section" id="other-events" aria-labelledby="others-heading">
   <div class="home-section__head">
     <h2 id="others-heading"><%= t('home.others') %></h2>
-    <%- include('../partials/browse-controls', { id: 'others', label: t('home.searchOthers'), names: otherNames, values: others, anchor: 'other-events' }) %>
+    <%- include('../partials/browse-controls', { id: 'others', label: t('home.searchOthers'), names: otherNames, values: others, filterable: true, anchor: 'other-events' }) %>
   </div>
   <%- include('../partials/event-groups', { groups: others.groups, filtered: others.filtered, level: 3 }) %>
 </section>
 <% } else { -%>
 <div class="home-section__head home-section__head--end">
-  <%- include('../partials/browse-controls', { id: 'events', label: t('home.searchLabel'), names: otherNames, values: others, anchor: null }) %>
+  <%- include('../partials/browse-controls', { id: 'events', label: t('home.searchLabel'), names: otherNames, values: others, filterable: true, anchor: null }) %>
 </div>
 <%- include('../partials/event-groups', { groups: others.groups, filtered: others.filtered, level: 2 }) %>
 <% } -%>
 <% } -%>
+</div>
+<% if (managed && days.length > 0) { -%>
+<%# §6: for those who can manage events. A plain link without JavaScript; event-dialog.js opens the dialog instead. -%>
+<div class="fab-wrap">
+  <a class="button fab" href="/teacher/events/new" data-open-event-dialog><%- include('../partials/icon', { name: 'plus' }) %><%= t('pages.eventNew') %></a>
+</div>
+<%- include('../partials/event-dialog') %>
+<script src="/js/event-dialog.js" defer></script>
+<% } -%>
+<script src="/js/card-signup.js" defer></script>
 <%- include('../partials/footer') %>

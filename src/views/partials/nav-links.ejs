@@ -1,12 +1,10 @@
 <%#
   The header's links (§6), shown in the wide-screen bar and in the mobile drawer. The current page
-  is marked "page", and a page inside an area (such as an event under Kennarasvæði) marks the
+  is marked "page", and a page inside an area (such as a page under Stjórnendasvæði) marks the
   area "true". Takes `user`.
 -%>
 <%
   const links = [['/', t('nav.home')], ['/info', t('nav.info')]];
-  if (user?.role === 'student') links.push(['/my-events', t('pages.myEvents')]);
-  if (user?.canManageEvents || user?.isAdmin) links.push(['/teacher', t('pages.teacherHome')]);
   if (user?.isAdmin) links.push(['/admin', t('pages.adminHome')]);
   const here = locals.navPath ?? '';
 -%>

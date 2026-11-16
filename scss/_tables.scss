@@ -1,6 +1,9 @@
-// Data tables. On narrow screens the table scrolls sideways inside its wrapper.
+// Data tables. On narrow screens the table scrolls sideways inside its wrapper. The wrapper is
+// positioned so that it also holds the table's visually hidden texts, which would otherwise widen
+// the page.
 
 .table-wrap {
+  position: relative;
   overflow-x: auto;
   margin-bottom: var(--space-4);
 }

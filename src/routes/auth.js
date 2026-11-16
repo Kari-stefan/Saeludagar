@@ -21,7 +21,7 @@ export function authRouter({ accounts }) {
 
   router.get('/login', (req, res) => {
     const next = eventPath(req.query.next);
-    if (req.user) return res.redirect(303, next ?? homePathFor(req.user));
+    if (req.user) return res.redirect(303, next ?? homePathFor());
     res.render('public/login', { next });
   });
 
@@ -46,18 +46,18 @@ export function authRouter({ accounts }) {
     Object.assign(req.session, { userId: user.id, role: user.role, isAdmin: user.isAdmin, lang });
     if (theme) req.session.theme = theme;
     req.session.cookie.maxAge = user.role === 'student' ? STUDENT_SESSION_MS : TEACHER_SESSION_MS; // BR-09
-    res.redirect(303, next ?? homePathFor(user));
+    res.redirect(303, next ?? homePathFor());
   });
 
   // A logged-in user goes to their home page, as on /login, where the confirmation would not show.
   router.get('/login/new-code', (req, res) => {
-    if (req.user) return res.redirect(303, homePathFor(req.user));
+    if (req.user) return res.redirect(303, homePathFor());
     res.render('public/new-code');
   });
 
   // BR-08: the same message whatever happens, shown on the login page.
   router.post('/login/new-code', (req, res) => {
-    if (req.user) return res.redirect(303, homePathFor(req.user));
+    if (req.user) return res.redirect(303, homePathFor());
     const kennitala = normalizeKennitala(req.body?.kennitala);
     if (!kennitala) {
       return res.status(400).render('public/new-code', { errors: { kennitala: 'validation.kennitala' } });

@@ -9,6 +9,8 @@ const HOUR = 60 * 60 * 1000;
 
 // Card titles in page order, whatever their heading level.
 const titles = (html) => [...html.matchAll(/<h(\d) class="event-card__title">([^<]+)<\/h\1>/g)].map((m) => m[2]);
+// The active choices shown under a list's controls (BR-63).
+const chips = (html) => [...html.matchAll(/<li class="chip"><span>([^<]+)<\/span>/g)].map((m) => m[1]);
 // A student's front page split into its two sections (BR-64).
 const sections = (html) => {
   const mine = html.indexOf('id="mine-events"');
@@ -140,10 +142,10 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     assert.match(html, /name="q" value="ferð"/);
     assert.match(html, /<input type="radio" name="sort" value="name-desc" checked>/);
     assert.match(html, /<option value="Rafmagnsbraut" selected>Rafmagnsbraut<\/option>/);
-    assert.match(html, /<p class="browse__active">Leit: „ferð“ · Röðun: Nafn, Ö til A · Braut: Rafmagnsbraut <a href="\/">Hreinsa<\/a><\/p>/);
-    const sortOnly = (await as.guest.get('/?sort=fee')).html;
-    assert.match(sortOnly, /<p class="browse__active">Röðun: Verð, lægst fyrst <a href="\/">Hreinsa<\/a><\/p>/);
-    assert.doesNotMatch((await as.guest.get('/')).html, /browse__active/, 'no summary when nothing is chosen');
+    assert.deepEqual(chips(html), ['Leit: „ferð“', 'Braut: Rafmagnsbraut', 'Röðun: Stafrófsröð, Ö til A']);
+    assert.match(html, /<li><a href="\/">Hreinsa allt<\/a><\/li>/);
+    assert.deepEqual(chips((await as.guest.get('/?sort=fee')).html), ['Röðun: Verð, lægst fyrst']);
+    assert.doesNotMatch((await as.guest.get('/')).html, /class="chips"/, 'nothing to show when nothing is chosen');
   });
 
   test('BR-63: unknown or repeated query values are ignored', async () => {
@@ -159,7 +161,7 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     assert.deepEqual(titles(html), ['A walk', 'Andlitsmálun', 'Ástarbréf', 'Bíóferð', 'Ökuskóli']);
     assert.match(html, />Search<\/button>/);
     assert.match(html, />Filter<\/summary>/);
-    assert.match(html, /Name, A to Z/);
+    assert.match(html, /Alphabetical, A to Z/);
   });
 
   test('BR-64: a student sees Þínir viðburðir above Aðrir viðburðir, and signing up or cancelling moves the event', async () => {
@@ -180,7 +182,7 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
 
   test('BR-64: with no sign-ups the student is told so and pointed to the other events', async () => {
     const { mine } = sections((await as.sara.get('/')).html);
-    assert.match(mine, /<h2 id="mine-heading">Þínir viðburðir<\/h2>/);
+    assert.match(mine, /<h2 id="mine-heading">Þínir viðburðir <span class="home-counter">0\/4/);
     assert.match(mine, /Þú hefur ekki skráð þig á neina viðburði ennþá\./);
     assert.match(mine, /<a class="button button--secondary" href="#other-events">Skoða aðra viðburði<\/a>/);
     assert.doesNotMatch(mine, /id="mine-search"/, 'no search for an empty list');
@@ -202,8 +204,8 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     // Each form carries the other list's choices, so using one keeps the other.
     assert.match(page.mine, /<form class="browse" method="get" action="\/#mine-events"[^>]*>\s*<input type="hidden" name="q" value="öku">\s*<input type="hidden" name="sort" value="fee-desc">/);
     assert.match(page.others, /<form class="browse" method="get" action="\/#other-events"[^>]*>\s*<input type="hidden" name="mq" value="bíó">/);
-    assert.match(page.mine, /<a href="\/\?q=%C3%B6ku&amp;sort=fee-desc#mine-events">Hreinsa<\/a>/);
-    assert.match(page.others, /<a href="\/\?mq=b%C3%AD%C3%B3#other-events">Hreinsa<\/a>/);
+    assert.match(page.mine, /<a class="chip__clear" href="\/\?q=%C3%B6ku&amp;sort=fee-desc#mine-events">/, 'clearing own search keeps the other list\'s');
+    assert.match(page.others, /<a href="\/\?mq=b%C3%AD%C3%B3#other-events">Hreinsa allt<\/a>/);
 
     const empty = sections((await as.jona.get('/?mq=ekkert')).html);
     assert.match(empty.mine, /Enginn viðburður passar við leitina\./);
@@ -257,7 +259,7 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     assert.match(html, /<a class="site-title" href="\/">Sæludagar<span class="visually-hidden"> – <\/span><span class="site-title__school">Prófunarskóli<\/span><\/a>/);
     assert.equal(html.match(/<a class="nav-links__link" href="\/info" aria-current="page">Upplýsingar<\/a>/g).length, 2, 'bar and drawer');
     assert.equal(html.match(/<a class="nav-links__link" href="\/">Heimasíða<\/a>/g).length, 2);
-    assert.equal(html.match(/href="\/my-events">Mínir viðburðir</g).length, 2);
+    assert.doesNotMatch(html, /href="\/my-events"|href="\/teacher"/, 'those pages moved to the front page');
     assert.equal(html.match(/<span>Skráð inn: Nemandi jona<\/span>/g).length, 2);
     assert.match(html, /<details class="menu">\s*<summary class="menu__toggle">[\s\S]*Opna valmynd[\s\S]*Loka valmynd[\s\S]*<\/summary>/);
     assert.match(html, /<script src="\/js\/menu.js" defer><\/script>/);

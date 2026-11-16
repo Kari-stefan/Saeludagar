@@ -6,6 +6,7 @@ export const ROOT_DIR = path.resolve(import.meta.dirname, '..');
 export const POINTS_PER_ATTENDANCE = 4;
 export const MAX_POINTS_PER_COURSE = 4;
 export const MAX_SIGNUPS_PER_STUDENT = 4;
+export const MAX_SIGNUPS_PER_DAY = 2;
 
 function resolvePath(value, fallback) {
   const p = value || fallback;

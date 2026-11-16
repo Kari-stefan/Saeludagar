@@ -1,26 +1,45 @@
 <%#
-  Search and "Sía" for one list on the front page (BR-63), as a plain GET form.
+  Search, "Sía" and "Raða" for one list on the front page (BR-63), as one plain GET form, so
+  applying any of them keeps the others.
   Takes:
   - `id`, unique on the page
   - `label`, the form's name for screen readers
-  - `names`, this form's query parameters: { search, sort, braut }, where braut is null for a list without the braut filter
-  - `values`, the list's { search, sort, braut }
-  - `state`, every choice on the page that is not the default
+  - `names`, this form's query parameters for { search, sort }
+  - `values`, the list's { search, sort, braut, filters }
+  - `filterable`, whether the list has "Sía"
   - `anchor`, the section to come back to
-  Uses `brautir` and `sorts` from the page. The other list's choices travel as hidden fields, so
-  using one list's controls keeps the other's (BR-64).
+  Uses `brautir`, `days`, `sorts`, `filterKeys` and `state` (every choice on the page that is not
+  the default) from the page. The other list's choices travel as hidden fields, so using one list's
+  controls keeps the other's (BR-64). The form's id lets public/js/card-signup.js keep it in place.
+  The two menus share a name, so opening one closes the other, also without JavaScript.
 -%>
 <%
-  const own = [names.search, names.sort, names.braut].filter(Boolean);
+  const filters = values.filters ?? {};
+  const own = [names.search, names.sort, ...(filterable ? ['braut', ...filterKeys] : [])];
   const kept = Object.entries(state).filter(([key]) => !own.includes(key));
-  const keptQuery = new URLSearchParams(kept).toString();
   const hash = anchor ? `#${anchor}` : '';
-  const active = [];
-  if (values.search) active.push(t('home.activeSearch', { search: values.search }));
-  if (values.sort !== sorts[0]) active.push(t('home.activeSort', { sort: t(`home.sort.${values.sort}`) }));
-  if (values.braut) active.push(t('home.activeBraut', { braut: values.braut }));
+  // The address without these parameters, for the clear links.
+  const without = (...keys) => {
+    const query = new URLSearchParams(Object.entries(state).filter(([key]) => !keys.includes(key))).toString();
+    return `/${query ? `?${query}` : ''}${hash}`;
+  };
+  // Always an amount: formatFee writes 0 as "Ókeypis", which reads wrongly after "Verð til".
+  const fee = (key) => (Number(filters[key]) === 0 ? t('format.fee', { amount: 0 }) : formatFee(Number(filters[key])));
+  const chips = [];
+  if (values.search) chips.push([t('home.active.search', { search: values.search }), names.search]);
+  if (values.braut) chips.push([t('home.active.braut', { braut: values.braut }), 'braut']);
+  if (filters.free) chips.push([t('home.active.free'), 'free']);
+  if (filters.fee_min) chips.push([t('home.active.feeMin', { fee: fee('fee_min') }), 'fee_min']);
+  if (filters.fee_max) chips.push([t('home.active.feeMax', { fee: fee('fee_max') }), 'fee_max']);
+  if (filters.from) chips.push([t('home.active.from', { date: formatDate(filters.from) }), 'from']);
+  if (filters.to) chips.push([t('home.active.to', { date: formatDate(filters.to) }), 'to']);
+  if (filters.time_from) chips.push([t('home.active.timeFrom', { time: filters.time_from }), 'time_from']);
+  if (filters.time_to) chips.push([t('home.active.timeTo', { time: filters.time_to }), 'time_to']);
+  if (filters.noon) chips.push([t(`home.noon.${filters.noon}`), 'noon']);
+  if (values.sort !== sorts[0]) chips.push([t('home.active.sort', { sort: t(`home.sort.${values.sort}`) }), names.sort]);
+  const filterCount = Object.keys(filters).length + (values.braut ? 1 : 0);
 -%>
-<form class="browse" method="get" action="/<%= hash %>" role="search" aria-label="<%= label %>">
+<form class="browse" method="get" action="/<%= hash %>" id="<%= id %>-browse" role="search" aria-label="<%= label %>">
   <% for (const [key, value] of kept) { -%>
   <input type="hidden" name="<%= key %>" value="<%= value %>">
   <% } -%>
@@ -28,8 +47,63 @@
     <label class="visually-hidden" for="<%= id %>-search"><%= t('home.searchLabel') %></label>
     <input class="field__input browse__search" id="<%= id %>-search" type="search" name="<%= names.search %>" value="<%= values.search %>" maxlength="100" placeholder="<%= t('home.searchPlaceholder') %>">
     <button type="submit" class="button"><%= t('home.search') %></button>
-    <details class="browse__menu">
-      <summary class="button button--secondary"><%= t('home.filter') %></summary>
+    <% if (filterable) { -%>
+    <details class="browse__menu" name="<%= id %>-menu">
+      <summary class="button button--secondary"><%= t('home.filter') %><% if (filterCount > 0) { %> (<%= filterCount %>)<% } %></summary>
+      <div class="browse__panel browse__panel--wide">
+        <fieldset class="browse__fieldset">
+          <legend><%= t('home.filters.fee') %></legend>
+          <label class="checkbox"><input type="checkbox" name="free" value="1"<% if (filters.free) { %> checked<% } %>> <%= t('home.filters.free') %></label>
+          <div class="browse__range">
+            <label for="<%= id %>-fee-min"><%= t('home.filters.feeMin') %></label>
+            <input class="field__input" id="<%= id %>-fee-min" type="number" name="fee_min" min="0" step="1" value="<%= filters.fee_min ?? '' %>">
+            <label for="<%= id %>-fee-max"><%= t('home.filters.feeMax') %></label>
+            <input class="field__input" id="<%= id %>-fee-max" type="number" name="fee_max" min="0" step="1" value="<%= filters.fee_max ?? '' %>">
+          </div>
+        </fieldset>
+        <div class="field">
+          <label class="field__label" for="<%= id %>-braut"><%= t('home.filters.braut') %></label>
+          <select class="field__input" id="<%= id %>-braut" name="braut">
+            <option value=""><%= t('home.allBrautir') %></option>
+            <% for (const name of brautir) { -%>
+            <option value="<%= name %>"<% if (name === values.braut) { %> selected<% } %>><%= name %></option>
+            <% } -%>
+          </select>
+        </div>
+        <fieldset class="browse__fieldset">
+          <legend><%= t('home.filters.date') %></legend>
+          <div class="browse__range">
+            <label for="<%= id %>-from"><%= t('home.filters.from') %></label>
+            <input class="field__input" id="<%= id %>-from" type="date" name="from" min="<%= days[0] %>" max="<%= days.at(-1) %>" value="<%= filters.from ?? '' %>">
+            <label for="<%= id %>-to"><%= t('home.filters.to') %></label>
+            <input class="field__input" id="<%= id %>-to" type="date" name="to" min="<%= days[0] %>" max="<%= days.at(-1) %>" value="<%= filters.to ?? '' %>">
+          </div>
+        </fieldset>
+        <fieldset class="browse__fieldset">
+          <legend><%= t('home.filters.time') %></legend>
+          <div class="browse__range">
+            <label for="<%= id %>-time-from"><%= t('home.filters.from') %></label>
+            <input class="field__input" id="<%= id %>-time-from" type="time" name="time_from" value="<%= filters.time_from ?? '' %>">
+            <label for="<%= id %>-time-to"><%= t('home.filters.to') %></label>
+            <input class="field__input" id="<%= id %>-time-to" type="time" name="time_to" value="<%= filters.time_to ?? '' %>">
+          </div>
+        </fieldset>
+        <fieldset class="browse__fieldset">
+          <legend><%= t('home.filters.noon') %></legend>
+          <div class="browse__radios">
+            <% for (const [value, labelKey] of [['', 'home.noon.any'], ['before', 'home.noon.before'], ['after', 'home.noon.after']]) { -%>
+            <label class="radio"><input type="radio" name="noon" value="<%= value %>"<% if ((filters.noon ?? '') === value) { %> checked<% } %>> <%= t(labelKey) %></label>
+            <% } -%>
+          </div>
+        </fieldset>
+        <div class="browse__apply">
+          <button type="submit" class="button"><%= t('home.apply') %></button>
+        </div>
+      </div>
+    </details>
+    <% } -%>
+    <details class="browse__menu" name="<%= id %>-menu">
+      <summary class="button button--secondary"><%= t('home.sortButton') %></summary>
       <div class="browse__panel">
         <fieldset class="browse__fieldset">
           <legend><%= t('home.sortLabel') %></legend>
@@ -37,22 +111,18 @@
           <label class="radio"><input type="radio" name="<%= names.sort %>" value="<%= sort %>"<% if (sort === values.sort) { %> checked<% } %>> <%= t(`home.sort.${sort}`) %></label>
           <% } -%>
         </fieldset>
-        <% if (names.braut) { -%>
-        <div class="field">
-          <label class="field__label" for="<%= id %>-braut"><%= t('home.filterLabel') %></label>
-          <select class="field__input" id="<%= id %>-braut" name="<%= names.braut %>">
-            <option value=""><%= t('home.allBrautir') %></option>
-            <% for (const name of brautir) { -%>
-            <option value="<%= name %>"<% if (name === values.braut) { %> selected<% } %>><%= name %></option>
-            <% } -%>
-          </select>
-        </div>
-        <% } -%>
         <button type="submit" class="button"><%= t('home.apply') %></button>
       </div>
     </details>
   </div>
-  <% if (active.length > 0) { -%>
-  <p class="browse__active"><%= active.join(' · ') %> <a href="/<%= keptQuery ? `?${keptQuery}` : '' %><%= hash %>"><%= t('home.clear') %></a></p>
+  <% if (chips.length > 0) { -%>
+  <ul class="chips" aria-label="<%= t('home.active.label') %>">
+    <% for (const [text, key] of chips) { -%>
+    <li class="chip"><span><%= text %></span> <a class="chip__clear" href="<%= without(key) %>"><%- include('icon', { name: 'close' }) %><span class="visually-hidden"><%= t('home.active.clear', { choice: text }) %></span></a></li>
+    <% } -%>
+    <% if (chips.length > 1) { -%>
+    <li><a href="<%= without(...own) %>"><%= t('home.clearAll') %></a></li>
+    <% } -%>
+  </ul>
   <% } -%>
 </form>

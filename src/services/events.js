@@ -1,6 +1,7 @@
 import { toIso } from '../db/index.js';
 import { eventText } from '../i18n/index.js';
 import { queueEmail } from './email.js';
+import { isValidDay } from './settings.js';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 const WHOLE_NUMBER = /^\d{1,9}$/;
@@ -11,6 +12,9 @@ const collator = new Intl.Collator('is');
 // The event form uses the column names as field names, so a form re-renders from its own values.
 const TEXT_FIELDS = ['title_is', 'title_en', 'host', 'location'];
 const LONG_FIELDS = ['description_is', 'description_en'];
+// A form value as text. A field sent twice or with a nested name arrives as something else, which
+// counts as nothing entered.
+const text = (value) => (typeof value === 'string' ? value : '');
 
 // BR-20, BR-21, BR-24, BR-26 and BR-28. `brautir` is what may be chosen (BR-18, plus the event's
 // own); `signups` is the event's current number of sign-ups. Returns { values, errors }, with
@@ -19,36 +23,44 @@ export function validateEvent(input, { days, brautir, signups = 0 }) {
   const values = {};
   const errors = {};
   for (const name of [...TEXT_FIELDS, ...LONG_FIELDS]) {
-    const raw = typeof input[name] === 'string' ? input[name].replace(/\r\n?/g, '\n').trim() : '';
+    const raw = text(input[name]).replace(/\r\n?/g, '\n').trim();
     values[name] = raw;
     const max = LONG_FIELDS.includes(name) ? 5000 : 200;
-    if (raw.length > max) errors[name] = 'events.errors.tooLong';
+    if (typeof (input[name] ?? '') !== 'string') errors[name] = 'events.errors.invalid';
+    else if (raw.length > max) errors[name] = 'events.errors.tooLong';
     else if (CONTROL_CHARACTERS.test(raw) || (!LONG_FIELDS.includes(name) && raw.includes('\n'))) errors[name] = 'events.errors.invalid';
   }
   for (const name of ['title_is', 'description_is', 'host', 'location']) {
     if (!values[name]) errors[name] ??= 'events.errors.required';
   }
 
-  values.capacity = String(input.capacity ?? '').trim();
+  values.capacity = text(input.capacity).trim();
   if (!WHOLE_NUMBER.test(values.capacity) || Number(values.capacity) < 1) errors.capacity = 'events.errors.capacity';
   else if (Number(values.capacity) < signups) errors.capacity = 'events.errors.capacityBelowSignups';
 
-  values.fee_isk = String(input.fee_isk ?? '').trim();
-  if (values.fee_isk && !WHOLE_NUMBER.test(values.fee_isk)) errors.fee_isk = 'events.errors.fee';
+  // An empty fee means free, so a fee that is not text must not pass as empty.
+  values.fee_isk = text(input.fee_isk).trim();
+  if (typeof (input.fee_isk ?? '') !== 'string' || (values.fee_isk && !WHOLE_NUMBER.test(values.fee_isk))) errors.fee_isk = 'events.errors.fee';
 
-  values.event_date = String(input.event_date ?? '');
+  values.event_date = text(input.event_date);
   if (!days.includes(values.event_date)) errors.event_date = 'events.errors.date';
 
-  values.start_time = String(input.start_time ?? '').trim();
-  values.end_time = String(input.end_time ?? '').trim();
+  values.start_time = text(input.start_time).trim();
+  values.end_time = text(input.end_time).trim();
   if (!TIME_PATTERN.test(values.start_time)) errors.start_time = 'events.errors.time';
   if (!TIME_PATTERN.test(values.end_time)) errors.end_time = 'events.errors.time';
   else if (!errors.start_time && values.end_time <= values.start_time) errors.end_time = 'events.errors.endBeforeStart';
 
-  values.brautir = [...new Set([].concat(input.brautir ?? []).filter((b) => typeof b === 'string'))];
-  if (values.brautir.some((b) => !brautir.includes(b))) errors.brautir = 'events.errors.braut';
+  // One braut arrives as text and several as a list. Object.values reads only the entries that
+  // are there: a field name with a huge index gives a list that is almost all holes, and walking
+  // those would hold up every other request.
+  const sent = input.brautir ?? [];
+  const chosen = typeof sent === 'string' ? [sent] : Array.isArray(sent) ? Object.values(sent) : [null];
+  values.brautir = [...new Set(chosen.filter((b) => typeof b === 'string'))];
+  if (chosen.some((b) => typeof b !== 'string') || values.brautir.some((b) => !brautir.includes(b))) errors.brautir = 'events.errors.braut';
   values.braut_restricted = input.braut_restricted === '1';
-  if (values.braut_restricted && values.brautir.length === 0) errors.brautir = 'events.errors.restrictedWithoutBraut';
+  if (typeof (input.braut_restricted ?? '') !== 'string') errors.brautir = 'events.errors.braut';
+  else if (values.braut_restricted && values.brautir.length === 0) errors.brautir = 'events.errors.restrictedWithoutBraut';
 
   return { values, errors };
 }
@@ -96,7 +108,7 @@ export function eventAccess(db, user, event) {
   return coteacher ? 'editor' : null;
 }
 
-// §6 teacher home: the events a teacher owns or co-teaches.
+// §6 front page, "Viðburðir sem þú sérð um": the events a person owns or co-teaches.
 export function teacherEvents(db, teacherId) {
   return db.prepare(`SELECT e.*, (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) AS signups FROM events e
     WHERE e.owner_id = ? OR EXISTS (SELECT 1 FROM event_coteachers c WHERE c.event_id = e.id AND c.teacher_id = ?)
@@ -120,8 +132,8 @@ export function publishedEvents(db, braut = null) {
   return withBrautir(db, events);
 }
 
-// BR-63: the front page's sort orders, the default first.
-export const SORTS = ['date', 'date-desc', 'fee', 'fee-desc', 'name', 'name-desc'];
+// BR-63: the orders in "Raða", the default first.
+export const SORTS = ['date', 'date-desc', 'time', 'time-desc', 'fee', 'fee-desc', 'name', 'name-desc', 'before-noon', 'after-noon'];
 const MAX_SEARCH_LENGTH = 100;
 const titleCollators = { is: new Intl.Collator('is'), en: new Intl.Collator('en-GB') };
 
@@ -132,6 +144,46 @@ export function searchTerm(value) {
 
 export function sortOrder(value) {
   return SORTS.includes(value) ? value : SORTS[0];
+}
+
+// BR-63: the query parameters of the filters in "Sía", besides the braut.
+export const FILTER_KEYS = ['free', 'fee_min', 'fee_max', 'from', 'to', 'time_from', 'time_to', 'noon'];
+
+// The filters from the query string. Anything unknown or malformed is left out, such as a date
+// that does not exist, so an odd address shows more events instead of an error. Returns only the
+// chosen ones, as strings.
+export function eventFilters(query) {
+  const valid = {
+    free: (value) => value === '1',
+    fee_min: (value) => WHOLE_NUMBER.test(value),
+    fee_max: (value) => WHOLE_NUMBER.test(value),
+    from: isValidDay,
+    to: isValidDay,
+    time_from: (value) => TIME_PATTERN.test(value),
+    time_to: (value) => TIME_PATTERN.test(value),
+    noon: (value) => value === 'before' || value === 'after',
+  };
+  return Object.fromEntries(FILTER_KEYS.filter((key) => typeof query[key] === 'string' && valid[key](query[key]))
+    .map((key) => [key, query[key]]));
+}
+
+// An event counts as before noon when it starts before 12:00 (BR-63).
+const NOON = '12:00';
+const startsAfterNoon = (event) => (event.start_time >= NOON ? 1 : 0);
+
+export function filterEvents(events, filters) {
+  const checks = {
+    free: (event) => event.fee_isk === 0,
+    fee_min: (event, value) => event.fee_isk >= Number(value),
+    fee_max: (event, value) => event.fee_isk <= Number(value),
+    from: (event, value) => event.event_date >= value,
+    to: (event, value) => event.event_date <= value,
+    time_from: (event, value) => event.start_time >= value,
+    time_to: (event, value) => event.start_time <= value,
+    noon: (event, value) => Boolean(startsAfterNoon(event)) === (value === 'after'),
+  };
+  const chosen = Object.entries(filters);
+  return events.filter((event) => chosen.every(([key, value]) => checks[key](event, value)));
 }
 
 const byTime = (a, b) => a.event_date.localeCompare(b.event_date) || a.start_time.localeCompare(b.start_time) || a.id - b.id;
@@ -148,10 +200,14 @@ export function browseEvents(events, { search = '', sort = SORTS[0], lang = 'is'
   const compare = {
     date: byTime,
     'date-desc': (a, b) => byTime(b, a),
+    time: (a, b) => a.start_time.localeCompare(b.start_time) || byTime(a, b),
+    'time-desc': (a, b) => b.start_time.localeCompare(a.start_time) || byTime(a, b),
     fee: (a, b) => a.fee_isk - b.fee_isk || byTime(a, b),
     'fee-desc': (a, b) => b.fee_isk - a.fee_isk || byTime(a, b),
     name: (a, b) => collator.compare(title(a), title(b)) || byTime(a, b),
     'name-desc': (a, b) => collator.compare(title(b), title(a)) || byTime(a, b),
+    'before-noon': (a, b) => startsAfterNoon(a) - startsAfterNoon(b) || byTime(a, b),
+    'after-noon': (a, b) => startsAfterNoon(b) - startsAfterNoon(a) || byTime(a, b),
   }[sort] ?? byTime;
   return found.sort(compare);
 }
@@ -259,7 +315,7 @@ export function deleteEvent(db, event, actorId) {
   })();
 }
 
-// Co-teachers (owner or admin only, §6): chosen from the active teachers.
+// Co-teachers (owner or admin only, §6): chosen from the active event managers (BR-67).
 export function coteacherCandidates(db, event) {
   return db.prepare(`SELECT id, name FROM users WHERE is_event_manager = 1 AND active = 1 AND id <> ?
     AND id NOT IN (SELECT teacher_id FROM event_coteachers WHERE event_id = ?)`).all(event.owner_id, event.id)
