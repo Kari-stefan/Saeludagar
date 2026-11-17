@@ -10,6 +10,7 @@
     "logout": "Útskráning",
     "home": "Heimasíða",
     "info": "Upplýsingar",
+    "points": "Fjarvistastig",
     "openMenu": "Opna valmynd",
     "closeMenu": "Loka valmynd",
     "signedIn": "Skráð inn: {name}",
@@ -32,6 +33,7 @@
     "event": "Viðburður",
     "login": "Innskráning",
     "newCode": "Fá nýjan kóða",
+    "points": "Fjarvistastig",
     "eventNew": "Nýr viðburður",
     "eventEdit": "Breyta viðburði",
     "eventPreview": "Forskoðun viðburðar",
@@ -85,7 +87,7 @@
       "studentToPromote": "Virkur nemandi",
       "promote": "Gera að viðburðastjóra",
       "listHeading": "Aðgangar viðburðastjóra",
-      "revokeHelp": "Ef viðburðastjóri sem missir réttindin á enn viðburði, sjá stjórnendur áfram um þá og geta fært umsjón í /admin/events.",
+      "revokeHelp": "Réttindin er aðeins hægt að taka af nemanda; kennari er alltaf viðburðastjóri. Ef nemandinn á enn viðburði sjá stjórnendur áfram um þá og geta fært umsjón í /admin/events.",
       "none": "Engir aðgangar viðburðastjóra enn.",
       "name": "Nafn",
       "email": "Netfang",
@@ -123,7 +125,8 @@
         "self": "Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin.",
         "inactive": "Virkjaðu aðganginn fyrst.",
         "inactiveStudent": "Aðeins er hægt að gera virka nemendur að viðburðastjórum.",
-        "alreadyManager": "Þessi aðgangur er nú þegar viðburðastjóri."
+        "alreadyManager": "Þessi aðgangur er nú þegar viðburðastjóri.",
+        "teacherKeepsRole": "Kennari er alltaf viðburðastjóri. Réttindin er aðeins hægt að taka af nemanda."
       }
     },
     "settings": {
@@ -185,7 +188,7 @@
     },
     "student_code": {
       "subject": "Kóðinn þinn fyrir Sæludaga",
-      "intro": "Á Sæludagavefnum skráir þú þig á viðburði á Sæludögum. Eftir að þú mætir velur þú áfanga sem fær fjarvistarstig felld niður. Kóðinn þinn er:",
+      "intro": "Á Sæludagavefnum skráir þú þig á viðburði á Sæludögum. Eftir að þú mætir velur þú áfanga sem fær fjarvistastig felld niður. Kóðinn þinn er:",
       "instructions": "Geymdu kóðann. Ef þú týnir honum geturðu fengið nýjan með „Fá nýjan kóða“ á innskráningarsíðunni.",
       "oldCode": "Eldri kóðar virka ekki lengur."
     },
@@ -264,7 +267,8 @@
       "noFile": "Veldu skrá til að hlaða upp.",
       "expired": "Innflutningurinn rann út eða var þegar staðfestur. Hladdu skránni upp aftur.",
       "changed": "Viðburðastjóri er kominn með eina af kennitölunum í skránni síðan henni var hlaðið upp. Ekkert var vistað. Hladdu skránni upp aftur."
-    }
+    },
+    "choicesCleared": "Áfangaval sem verður hreinsað því áfanginn er ekki lengur á lista nemandans: {count}"
   },
   "home": {
     "noDays": "Dagsetningar Sæludaga hafa ekki verið ákveðnar enn.",
@@ -446,12 +450,14 @@
       "feeHint": "0 þýðir ókeypis",
       "brautirHint": "Engin braut: fyrir alla. Merktu brautir svo hægt sé að sía eftir þeim, og hakaðu líka við „Aðeins fyrir nemendur brautar“ ef aðeins nemendur þeirra mega skrá sig.",
       "noBrautir": "Engar brautir enn. Þær koma úr nemendalistanum.",
-      "image": "Mynd (valfrjálst)",
-      "imageHint": "JPG, PNG eða WebP, mest 2 MB. Án myndar er sjálfgefin mynd sýnd.",
-      "currentImage": "Núverandi mynd",
+      "image": "Myndir (valfrjálst)",
+      "imagesHint": "Allt að {max} myndir: JPG, PNG eða WebP, mest 2 MB hver. Sú fyrsta er sýnd á spjaldi viðburðarins. Án myndar er sjálfgefin mynd sýnd.",
+      "savedImages": "Vistaðar myndir",
+      "chosenImages": "Valdar myndir",
+      "imageNumber": "Mynd {n}",
+      "imageCount": "Myndir: {count} af {max}",
+      "chooseImages": "Velja myndir",
       "removeImage": "Fjarlægja myndina",
-      "chooseImage": "Velja mynd",
-      "newImage": "Valin mynd",
       "saveDraft": "Vista drög",
       "save": "Vista",
       "required": "Reitir merktir * eru nauðsynlegir."
@@ -472,17 +478,34 @@
       "imageUpload": "Ekki tókst að taka við myndinni. Reyndu aftur.",
       "imageType": "Myndin verður að vera JPG, PNG eða WebP.",
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
-      "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum."
+      "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum.",
+      "tooManyImages": "Viðburður má mest hafa {max} myndir. Fjarlægðu mynd til að bæta annarri við."
     },
     "more": "Nánar",
     "dialog": {
-      "imageHeading": "Mynd fyrir viðburð",
+      "imageHeading": "Myndir fyrir viðburð",
       "attach": "Hengja við skrá",
       "close": "Loka",
       "cancel": "Hætta við",
       "progress": "Framvinda vistunar",
       "failed": "Ekki tókst að vista viðburðinn. Athugaðu nettenginguna og reyndu aftur.",
       "sessionEnded": "Innskráningin þín rann út, svo ekki tókst að vista viðburðinn. Endurhlaðaðu síðuna og skráðu þig inn aftur. Það sem þú skrifaðir hér tapast, svo afritaðu það fyrst."
+    },
+    "details": {
+      "description": "Lýsing",
+      "manager": "Viðburðastjóri",
+      "managerLogin": "Skráðu þig inn til að sjá netfangið.",
+      "group": "Hópur",
+      "groupNone": "Enginn hefur skráð sig enn.",
+      "groupPrivate": "Aðeins þau sem sjá um viðburðinn sjá hverjir eru skráðir."
+    },
+    "gallery": {
+      "label": "Myndir af viðburðinum",
+      "previous": "Fyrri mynd",
+      "next": "Næsta mynd",
+      "count": "Mynd {n} af {total}",
+      "total": "{total} myndir",
+      "alt": "{title}, mynd {n} af {total}"
     }
   },
   "signups": {
@@ -530,11 +553,11 @@
       "signup": "Á meðan skráning er opin skráir þú þig á allt að {max} viðburði, þó að hámarki {perDay} sama daginn. Viðburðirnir mega ekki skarast í tíma, og sumir eru aðeins fyrir nemendur ákveðinna brauta.",
       "cancel": "Á meðan skráning er opin geturðu líka afskráð þig, og þá losnar plássið strax.",
       "attend": "Þú mætir á viðburðinn og viðburðastjóri skráir mætinguna.",
-      "choose": "Þegar mætingin hefur verið skráð velur þú undir „Þínum viðburðum“ á forsíðunni hvaða áfangi fær fjarvistarstigin dregin frá. Þú getur breytt valinu fram að frestinum hér að ofan."
+      "choose": "Þegar mætingin hefur verið skráð setur þú fjarvistastigin á áfanga á síðunni „Fjarvistastig“. Þú getur breytt því fram að frestinum hér að ofan."
     },
-    "pointsHeading": "Fjarvistarstig",
+    "pointsHeading": "Fjarvistastig",
     "points": "Hver mæting á viðburð gildir sem {points} stig í einum áfanga. Hægt er að fá að hámarki {perCourse} stig dregin frá í hverjum áfanga, í allt að {max} áföngum (samtals {total} stig).",
-    "pointsOffice": "Vefurinn heldur ekki utan um fjarvistarstigin sjálf. Skrifstofa skólans færir frádráttinn inn í Innu eftir að fresturinn rennur út.",
+    "pointsOffice": "Vefurinn heldur ekki utan um fjarvistastigin sjálf. Skrifstofa skólans færir frádráttinn inn í Innu eftir að fresturinn rennur út.",
     "contactHeading": "Spurningar",
     "contactPlaceholder": "Upplýsingar um hvert á að leita með spurningar koma hér þegar skólinn hefur sent þær.",
     "toEvents": "Skoða viðburði"
@@ -554,8 +577,10 @@
     "errors": {
       "closed": "Ekki er hægt að breyta mætingu núna.",
       "notSignedUp": "Nemandinn er ekki lengur skráður á viðburðinn. Endurhlaðaðu síðuna.",
-      "network": "Ekki tókst að vista. Athugaðu nettenginguna og reyndu aftur, eða notaðu Vista-hnappinn."
-    }
+      "network": "Ekki tókst að vista. Athugaðu nettenginguna og reyndu aftur, eða notaðu Vista-hnappinn.",
+      "own": "Þú getur ekki skráð þína eigin mætingu. Annar viðburðastjóri viðburðarins eða stjórnandi gerir það."
+    },
+    "own": "Þú. Annar viðburðastjóri viðburðarins eða stjórnandi skráir mætingu þína."
   },
   "print": {
     "hint": "Prentaðu listann með prentskipun vafrans (Ctrl+P, eða Cmd+P á Mac).",
@@ -576,6 +601,29 @@
       "bodyLong": "Textinn má vera að hámarki 5.000 stafir.",
       "characters": "Textinn inniheldur ógild tákn.",
       "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn."
+    }
+  },
+  "points": {
+    "counter": "Stig til ráðstöfunar",
+    "counterText": "{left} stig eftir af {earned} sem þú hefur unnið þér inn",
+    "intro": "Fyrir hverja skráða mætingu á viðburð færðu {step} fjarvistastig. Settu þau á áfanga með + og taktu þau af aftur með −. Hver áfangi getur fengið mest {max} stig.",
+    "deadline": "Þú getur breytt þessu til {deadline}.",
+    "closed": "Fresturinn rann út {deadline}. Ekki er lengur hægt að breyta.",
+    "coursesHeading": "Áfangarnir þínir",
+    "noCourses": "Engir áfangar eru skráðir á þig. Hafðu samband við skrifstofu skólans ef það er ekki rétt.",
+    "noneEarned": "Þú hefur ekki unnið þér inn fjarvistastig enn. Þau bætast við þegar mæting þín á viðburð hefur verið skráð.",
+    "dropped": "Ekki lengur á listanum þínum",
+    "give": "Setja {step} stig á {course}",
+    "take": "Taka {step} stig af {course}",
+    "onCourse": "{points} stig á {course}",
+    "given": "{points} stig sett á {course}.",
+    "taken": "{points} stig tekin af {course}.",
+    "errors": {
+      "closed": "Fresturinn til að ráðstafa fjarvistastigum er liðinn.",
+      "notYourCourse": "Þessi áfangi er ekki á listanum þínum.",
+      "courseFull": "{course} hefur þegar fengið {max} stig, sem er hámarkið í einum áfanga.",
+      "noneLeft": "Þú átt engin stig eftir til að ráðstafa.",
+      "nothingToTake": "Engin stig eru á þessum áfanga."
     }
   }
 }

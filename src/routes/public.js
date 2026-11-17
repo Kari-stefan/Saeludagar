@@ -9,11 +9,11 @@ import {
   browseEvents, eventAccess, eventFilters, FILTER_KEYS, filterEvents, getEvent, publishedEvents, searchTerm, SORTS, sortOrder,
   teacherEvents,
 } from '../services/events.js';
-import { MAX_IMAGE_BYTES } from '../services/images.js';
+import { MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT } from '../services/images.js';
 import { brautList } from '../services/import.js';
 import { getSettings } from '../services/settings.js';
 import {
-  cancelSignup, signupFor, signUp, signupWindow, studentSignups,
+  cancelSignup, eventPeople, signupFor, signUp, signupWindow, studentSignups,
 } from '../services/signups.js';
 
 // The message for a refused sign-up or cancel (BR-34); an overlap names the other event.
@@ -97,6 +97,7 @@ export function publicRouter({ db }) {
       signedUp,
       maxSignups: MAX_SIGNUPS_PER_STUDENT,
       managed: canManage ? teacherEvents(db, req.user.id) : null,
+      maxImages: MAX_IMAGES_PER_EVENT,
       maxImageBytes: MAX_IMAGE_BYTES,
     });
   });
@@ -116,16 +117,19 @@ export function publicRouter({ db }) {
   });
 
   // §6 event page: published events, and drafts for those who may preview them (BR-22, BR-23).
-  // Students see "Skrá mig" or "Afskrá mig"; guests a link to log in that comes back here.
+  // Students see "Skrá mig" or "Afskrá mig"; guests a link to log in that comes back here. Who
+  // runs the event and who is in it follow BR-68.
   router.get('/events/:id', (req, res, next) => {
     const id = Number(req.params.id);
     const event = Number.isSafeInteger(id) ? getEvent(db, id) : undefined;
-    if (!event || (event.status !== 'published' && !eventAccess(db, req.user, event))) return next();
+    const access = event ? eventAccess(db, req.user, event) : null;
+    if (!event || (event.status !== 'published' && !access)) return next();
     const student = req.user?.role === 'student';
     res.render('public/event', {
       event,
       window: signupWindow(db),
       signup: student ? signupFor(db, req.user.id, event.id) ?? null : null,
+      ...eventPeople(db, event, { loggedIn: Boolean(req.user), access }),
     });
   });
 

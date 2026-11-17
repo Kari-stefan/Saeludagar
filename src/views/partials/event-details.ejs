@@ -1,8 +1,17 @@
-<%# An event as students see it (§6): the event page and the teacher's preview use the same partial. -%>
+<%#
+  An event as students see it (§6): the event page and the teacher's preview use the same partial.
+  The title and the facts, then two columns from 48rem wide: the images and the description, and
+  beside them the sign-up box, who runs the event and who is in it (BR-68). Takes:
+  - `event`
+  - `manager`: the owner's { name, email }, with email null for a guest; or null when the owner is
+    a student whom this viewer is not told about, and the host is shown instead
+  - `group`: the participants ([{ name, email }]) for those who manage the event; null for
+    everyone else, who see only the count
+  - `signupBox`: { window, signup, viewer, preview } for partials/signup-box, or null for no box
+-%>
 <% const title = eventText(event, 'title'); -%>
 <article class="event">
   <h1><%= title %></h1>
-  <img class="event__image" src="<%= event.image_file ? `/uploads/${event.image_file}` : '/img/default-event.svg' %>" alt="<%= title %>">
   <dl class="facts">
     <dt><%= t('events.when') %></dt>
     <dd><%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %></dd>
@@ -19,5 +28,49 @@
     <dt><%= t('events.places') %></dt>
     <dd><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %><% if (event.signups >= event.capacity) { %> <span class="badge badge--full"><%= t('events.full') %></span><% } %></dd>
   </dl>
-  <div class="event__description"><%= eventText(event, 'description') %></div>
+  <div class="event__columns">
+    <div class="event__main">
+      <%- include('event-gallery', { event, title }) %>
+      <section class="event-box" aria-labelledby="description-heading">
+        <h2 id="description-heading"><%= t('events.details.description') %></h2>
+        <div class="event__description"><%= eventText(event, 'description') %></div>
+      </section>
+    </div>
+    <div class="event__side">
+      <% if (signupBox) { -%>
+      <%- include('signup-box', { event, window: signupBox.window, signup: signupBox.signup, viewer: signupBox.viewer, preview: signupBox.preview }) %>
+      <% } -%>
+      <section class="event-box" aria-labelledby="manager-heading">
+        <h2 id="manager-heading"><%= t('events.details.manager') %></h2>
+        <% if (manager) { -%>
+        <p class="people__name"><%= manager.name %></p>
+        <% if (manager.email) { -%>
+        <p><a href="mailto:<%= manager.email %>"><%= manager.email %></a></p>
+        <% } else { -%>
+        <p class="field__hint"><%= t('events.details.managerLogin') %></p>
+        <% } -%>
+        <% } else { -%>
+        <p class="people__name"><%= event.host %></p>
+        <% } -%>
+      </section>
+      <section class="event-box" aria-labelledby="group-heading">
+        <h2 id="group-heading"><%= t('events.details.group') %></h2>
+        <p><%= t('events.signups', { count: event.signups, capacity: event.capacity }) %></p>
+        <% if (!group) { -%>
+        <p class="field__hint"><%= t('events.details.groupPrivate') %></p>
+        <% } else if (group.length === 0) { -%>
+        <p class="empty"><%= t('events.details.groupNone') %></p>
+        <% } else { -%>
+        <ul class="people" tabindex="0" aria-labelledby="group-heading">
+          <% for (const person of group) { -%>
+          <li class="people__person">
+            <span class="people__name"><%= person.name %></span>
+            <a href="mailto:<%= person.email %>"><%= person.email %></a>
+          </li>
+          <% } -%>
+        </ul>
+        <% } -%>
+      </section>
+    </div>
+  </div>
 </article>

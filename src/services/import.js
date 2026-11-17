@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import { parse } from 'csv-parse/sync';
 import { toIso } from '../db/index.js';
 import { isValidEmail, isValidName } from './accounts.js';
+import { audit } from './audit.js';
+import { choiceWindow } from './choices.js';
 import { normalizeKennitala } from './crypto.js';
 
 export const MAX_FILE_BYTES = 5 * 1024 * 1024; // AGENT_START §8
@@ -120,12 +122,19 @@ function plan(db, kt, students) {
   return { added, updated, deactivated };
 }
 
-// The summary shown before the confirm (§6): added, updated, deactivated, sign-ups to be removed.
+// The summary shown before the confirm (§6): added, updated, deactivated, sign-ups to be removed,
+// and course choices to be cleared because the course is no longer on the student's list (BR-17).
+// After the course-choice deadline none are cleared: the student could not give the points again.
 export function previewImport(db, kt, students) {
   const { added, updated, deactivated } = plan(db, kt, students);
+  const chosen = db.prepare('SELECT course_code FROM registrations WHERE student_id = ? AND course_code IS NOT NULL').pluck();
+  const choicesCleared = !choiceWindow(db).open ? 0
+    : updated.reduce((sum, student) => sum + chosen.all(student.id).filter((course) => !student.courses.includes(course)).length, 0);
   const signupsRemoved = db.prepare(`SELECT COUNT(*) FROM registrations
     WHERE attended = 0 AND student_id IN (SELECT value FROM json_each(?))`).pluck().get(JSON.stringify(deactivated));
-  return { students: students.length, added: added.length, updated: updated.length, deactivated: deactivated.length, signupsRemoved };
+  return {
+    students: students.length, added: added.length, updated: updated.length, deactivated: deactivated.length, signupsRemoved, choicesCleared,
+  };
 }
 
 // BR-16, BR-17: applies the import in one transaction. Returns the same counts as the preview,
@@ -143,6 +152,14 @@ export function applyImport(db, kt, students, actorId) {
     const update = db.prepare('UPDATE users SET name = ?, email = ?, braut = ?, active = 1, updated_at = ? WHERE id = ?');
     const clearCourses = db.prepare('DELETE FROM student_courses WHERE user_id = ?');
     const addCourse = db.prepare('INSERT INTO student_courses (user_id, course_code) VALUES (?, ?)');
+    // BR-17: points given to a course that is no longer on the student's list go back to them,
+    // while they can still give them to another course. After the course-choice deadline (BR-44)
+    // they could not, so the choice stays as the student left it.
+    const clearing = choiceWindow(db).open;
+    const orphaned = db.prepare(`SELECT id, event_id, course_code FROM registrations WHERE student_id = ? AND course_code IS NOT NULL
+      AND course_code NOT IN (SELECT course_code FROM student_courses WHERE user_id = ?)`);
+    const clearChoice = db.prepare('UPDATE registrations SET course_code = NULL, course_chosen_at = NULL WHERE id = ?');
+    let choicesCleared = 0;
 
     for (const student of added) {
       const id = insert.run(student.hmac, kt.encrypt(student.kennitala), student.name, student.email, student.braut, now, now)
@@ -153,6 +170,11 @@ export function applyImport(db, kt, students, actorId) {
       update.run(student.name, student.email, student.braut, now, student.id);
       clearCourses.run(student.id);
       for (const course of student.courses) addCourse.run(student.id, course);
+      for (const choice of clearing ? orphaned.all(student.id, student.id) : []) {
+        clearChoice.run(choice.id);
+        audit(db, 'choice.clear', actorId, choice.event_id, student.id, { course: choice.course_code, reason: 'import' });
+        choicesCleared += 1;
+      }
     }
 
     // Students missing from the file become inactive and are logged out (§8). Their sign-ups
@@ -167,7 +189,9 @@ export function applyImport(db, kt, students, actorId) {
     const signupsRemoved = db.prepare(`DELETE FROM registrations
       WHERE attended = 0 AND student_id IN (SELECT value FROM json_each(?))`).run(ids).changes;
 
-    return { students: students.length, added: added.length, updated: updated.length, deactivated: deactivated.length, signupsRemoved };
+    return {
+      students: students.length, added: added.length, updated: updated.length, deactivated: deactivated.length, signupsRemoved, choicesCleared,
+    };
   })();
 }
 

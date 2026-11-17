@@ -5,6 +5,7 @@
 -%>
 <%
   const links = [['/', t('nav.home')], ['/info', t('nav.info')]];
+  if (user?.role === 'student') links.push(['/points', t('nav.points')]);
   if (user?.isAdmin) links.push(['/admin', t('pages.adminHome')]);
   const here = locals.navPath ?? '';
 -%>

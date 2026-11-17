@@ -1,0 +1,58 @@
+<%#
+  §6, BR-69 "Fjarvistastig": laid out like the login page, with the counter where that page has its
+  back link and the courses in a centred box. Each stepper is a plain form: "−" takes a course's
+  points back and "+" gives it the points of one attendance. public/js/points.js sends a step
+  without reloading the page. The server checks every step, and the buttons only show what it
+  will allow. Takes `points` from services/choices.js.
+-%>
+<%- include('../partials/header', { pageTitle: t('pages.points') }) %>
+<div class="auth points" data-points data-network-error="<%= t('home.card.failed') %>">
+  <p class="points__counter" role="status" data-points-counter>
+    <span class="points__number" aria-hidden="true"><%= points.left %>/<%= points.earned %></span>
+    <span class="points__label" aria-hidden="true"><%= t('points.counter') %></span>
+    <span class="visually-hidden"><%= t('points.counterText', { left: points.left, earned: points.earned }) %></span>
+  </p>
+  <div class="auth__box auth__box--wide">
+    <h1><%= t('pages.points') %></h1>
+    <div data-points-flash>
+      <%- include('../partials/flash') %>
+    </div>
+    <p><%= t('points.intro', { step: points.step, max: points.max }) %></p>
+    <div data-points-deadline>
+      <% if (points.deadline) { -%>
+      <p><%= t(points.open ? 'points.deadline' : 'points.closed', { deadline: formatDateTime(points.deadline) }) %></p>
+      <% } -%>
+    </div>
+    <div data-points-courses>
+      <% if (points.courses.length === 0) { -%>
+      <p class="empty"><%= t('points.noCourses') %></p>
+      <% } else { -%>
+      <% if (points.earned === 0) { -%>
+      <p class="empty"><%= t('points.noneEarned') %></p>
+      <% } -%>
+      <h2 class="points__heading" id="points-courses-heading"><%= t('points.coursesHeading') %></h2>
+      <ul class="points__list" aria-labelledby="points-courses-heading">
+        <% for (const course of points.courses) { -%>
+        <li class="points__row">
+          <div class="points__name">
+            <span class="points__course"><%= course.code %></span>
+            <% if (course.dropped) { -%>
+            <span class="points__note"><%= t('points.dropped') %></span>
+            <% } -%>
+          </div>
+          <form class="stepper" method="post" action="/points" data-points-form>
+            <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+            <input type="hidden" name="course" value="<%= course.code %>">
+            <button type="submit" autocomplete="off" class="stepper__button" name="action" value="take"<% if (!course.canTake) { %> disabled<% } %>><span aria-hidden="true">−</span><span class="visually-hidden"><%= t('points.take', { step: points.step, course: course.code }) %></span></button>
+            <output class="stepper__value"><span aria-hidden="true"><%= course.points %></span><span class="visually-hidden"><%= t('points.onCourse', { points: course.points, course: course.code }) %></span></output>
+            <button type="submit" autocomplete="off" class="stepper__button" name="action" value="give"<% if (!course.canGive) { %> disabled<% } %>><span aria-hidden="true">+</span><span class="visually-hidden"><%= t('points.give', { step: points.step, course: course.code }) %></span></button>
+          </form>
+        </li>
+        <% } -%>
+      </ul>
+      <% } -%>
+    </div>
+  </div>
+</div>
+<script src="/js/points.js" defer></script>
+<%- include('../partials/footer') %>

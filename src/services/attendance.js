@@ -17,7 +17,8 @@ export function attendanceWindow(db, event, now = new Date()) {
 // BR-38: sets attendance for students of the event. `changes` is [{ studentId, attended }].
 // Unmarking also deletes the course choice (BR-41), which the database requires anyway. Each
 // change is logged (BR-56). Students no longer signed up (removed meanwhile) are skipped and
-// counted in `missing`. Returns { ok, changed, missing } or { error }.
+// counted in `missing`. Nobody marks their own attendance: a change to the marker's own row is
+// skipped and counted in `own`. Returns { ok, changed, missing, own } or { error }.
 export function setAttendance(db, teacherId, event, changes, now = new Date()) {
   return db.transaction(() => {
     if (!attendanceWindow(db, event, now).open) return { error: 'attendance.errors.closed' };
@@ -27,7 +28,12 @@ export function setAttendance(db, teacherId, event, changes, now = new Date()) {
       course_code = NULL, course_chosen_at = NULL WHERE id = ?`);
     let changed = 0;
     let missing = 0;
+    let own = 0;
     for (const { studentId, attended } of changes) {
+      if (studentId === teacherId) {
+        own += 1;
+        continue;
+      }
       const signup = find.get(event.id, studentId);
       if (!signup) {
         missing += 1;
@@ -44,6 +50,6 @@ export function setAttendance(db, teacherId, event, changes, now = new Date()) {
       }
       changed += 1;
     }
-    return { ok: true, changed, missing };
+    return { ok: true, changed, missing, own };
   }).immediate();
 }

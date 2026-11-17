@@ -1,0 +1,43 @@
+<%#
+  An event's images (BR-27) in the event form and in the "Nýr viðburður" dialog: the saved ones,
+  each with a remove checkbox, and a file field that takes several. public/js/image-preview.js adds
+  a preview of each chosen image with its own remove button, and keeps the total at the maximum;
+  the server checks everything again. Takes:
+  - `saved`, the saved images ([{ id, file }])
+  - `error`, an i18n key, or nothing
+  - `prefix`, for the ids
+  - `button`, true to show the file field as an "attach" button (the dialog, which needs the script
+    anyway); otherwise it is the browser's own field, which names the chosen files without it
+  Uses the page's `maxImages` and `maxImageBytes`.
+-%>
+<% const describedBy = `${prefix}-images-hint${error ? ` ${prefix}-images-error` : ''}`; -%>
+<div class="image-picker" data-image-picker data-max="<%= maxImages %>" data-max-bytes="<%= maxImageBytes %>"
+  data-too-many="<%= t('events.errors.tooManyImages', { max: maxImages }) %>" data-too-large="<%= t('events.errors.imageTooLarge') %>" data-wrong-type="<%= t('events.errors.imageType') %>"
+  data-remove-label="<%= t('events.form.removeImage') %>" data-count-label="<%= t('events.form.imageCount', { max: maxImages }) %>">
+  <p class="field__hint" id="<%= prefix %>-images-hint"><%= t('events.form.imagesHint', { max: maxImages }) %></p>
+  <% if (error) { -%>
+  <p class="field__error" id="<%= prefix %>-images-error"><%= t(error, { max: maxImages }) %></p>
+  <% } -%>
+  <div data-error-slot="images"></div>
+  <% if (saved.length > 0) { -%>
+  <ul class="image-list" aria-label="<%= t('events.form.savedImages') %>">
+    <% for (const [index, image] of saved.entries()) { -%>
+    <li class="image-list__item">
+      <img class="image-list__thumb" src="/uploads/<%= image.file %>" alt="<%= t('events.form.imageNumber', { n: index + 1 }) %>">
+      <label class="checkbox"><input type="checkbox" name="remove_images" value="<%= image.id %>" data-saved-image> <%= t('events.form.removeImage') %><span class="visually-hidden">: <%= t('events.form.imageNumber', { n: index + 1 }) %></span></label>
+    </li>
+    <% } -%>
+  </ul>
+  <% } -%>
+  <% if (button) { -%>
+  <label class="button button--secondary image-picker__attach">
+    <input class="visually-hidden" id="<%= prefix %>-images" name="images" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-describedby="<%= describedBy %>"<% if (error) { %> aria-invalid="true"<% } %>>
+    <span><%= t('events.dialog.attach') %></span>
+  </label>
+  <% } else { -%>
+  <label for="<%= prefix %>-images"><%= t('events.form.chooseImages') %></label>
+  <input class="field__input" id="<%= prefix %>-images" name="images" type="file" multiple accept="image/jpeg,image/png,image/webp" aria-describedby="<%= describedBy %>"<% if (error) { %> aria-invalid="true"<% } %>>
+  <% } -%>
+  <ul class="image-list" aria-label="<%= t('events.form.chosenImages') %>" data-image-previews hidden></ul>
+  <p class="field__hint" role="status" data-image-count></p>
+</div>

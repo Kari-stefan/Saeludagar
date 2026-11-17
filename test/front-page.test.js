@@ -393,7 +393,7 @@ describe('the front page', () => {
       const form = new FormData();
       form.append('_csrf', await browser.csrfToken('/'));
       for (const [name, value] of Object.entries(values)) form.append(name, value);
-      if (file) form.append('image', new Blob([file.bytes], { type: file.type }), file.name);
+      for (const one of [].concat(file ?? [])) form.append('images', new Blob([one.bytes], { type: one.type }), one.name);
       const res = await browser.request('POST', '/teacher/events/new', form, { Accept: 'application/json' });
       return { status: res.status, location: res.location, html: res.html, body: res.html.startsWith('{') ? JSON.parse(res.html) : null };
     }
@@ -423,11 +423,12 @@ describe('the front page', () => {
       }
       assert.match(dialog, /Reitir merktir \* eru nauðsynlegir\./);
       assert.match(dialog, /Heiti <span class="field__required" aria-hidden="true">\*<\/span>/);
-      assert.match(dialog, /<h3 id="new-event-image-heading">Mynd fyrir viðburð<\/h3>/);
+      assert.match(dialog, /<h3 id="new-event-image-heading">Myndir fyrir viðburð<\/h3>/);
       assert.match(dialog, /<span>Hengja við skrá<\/span>/);
-      assert.match(dialog, /type="file" accept="image\/jpeg,image\/png,image\/webp" data-max-bytes="2097152"/);
-      assert.match(dialog, /data-image-preview hidden/);
-      assert.match(dialog, /data-image-remove hidden/);
+      assert.match(dialog, /data-image-picker data-max="5" data-max-bytes="2097152"/);
+      assert.match(dialog, /name="images" type="file" multiple accept="image\/jpeg,image\/png,image\/webp"/);
+      assert.match(dialog, /data-image-previews hidden/);
+      assert.match(html, /<script src="\/js\/image-preview\.js" defer><\/script>\s*<script src="\/js\/event-dialog\.js" defer><\/script>/);
 
       const english = site.browser();
       await english.login(otherTeacher.kennitala, otherTeacher.code);
@@ -437,12 +438,14 @@ describe('the front page', () => {
 
     test('BR-22: an event saved from the dialog is a draft, kept with its creator and confirmed on the front page', async () => {
       event();
-      const res = await saveFromDialog(as.teacher, fields(), { bytes: png, type: 'image/png', name: 'mynd.png' });
+      const res = await saveFromDialog(as.teacher, fields(), [{ bytes: png, type: 'image/png', name: 'mynd.png' }, { bytes: png, type: 'image/png', name: 'onnur.png' }]);
       assert.equal(res.status, 200);
       assert.equal(res.body.ok, true);
       const saved = row(res.body.id);
       assert.deepEqual([saved.status, saved.owner_id, saved.title_is], ['draft', teacher.id, 'Úr glugganum']);
-      assert.match(saved.image_file, /^[0-9a-f-]{36}\.png$/);
+      const images = site.db.prepare('SELECT file FROM event_images WHERE event_id = ? ORDER BY position').pluck().all(res.body.id);
+      assert.equal(images.length, 2, 'the dialog takes several images (BR-27)');
+      for (const image of images) assert.match(image, /^[0-9a-f-]{36}\.png$/);
 
       const home = (await as.teacher.get('/')).html;
       assert.match(home, /Viðburðurinn var vistaður sem drög\. Nemendur sjá hann ekki fyrr en þú birtir hann\./);
@@ -510,10 +513,12 @@ describe('the front page', () => {
 
       const wrongFile = await saveFromDialog(as.teacher, fields(), { bytes: Buffer.from('ekki mynd'), type: 'image/png', name: 'mynd.png' });
       assert.equal(wrongFile.status, 400);
-      assert.ok(wrongFile.body.errors.image);
+      assert.equal(wrongFile.body.errors.images, 'Myndin verður að vera JPG, PNG eða WebP.');
       const tooLarge = await saveFromDialog(as.teacher, fields(), { bytes: Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024)]), type: 'image/png', name: 'stor.png' });
       assert.equal(tooLarge.status, 400);
-      assert.ok(tooLarge.body.errors.image);
+      assert.equal(tooLarge.body.errors.images, 'Myndin er of stór. Hámarkið er 2 MB.');
+      const six = Array.from({ length: 6 }, (_, n) => ({ bytes: png, type: 'image/png', name: `mynd-${n}.png` }));
+      assert.equal((await saveFromDialog(as.teacher, fields(), six)).body.errors.images, 'Viðburður má mest hafa 5 myndir. Fjarlægðu mynd til að bæta annarri við.');
       assert.equal(site.db.prepare('SELECT COUNT(*) FROM events').pluck().get(), before);
     });
 
@@ -549,8 +554,10 @@ describe('the front page', () => {
       assert.match(card, /href="#event-details"/);
       assert.doesNotMatch(card, /<form|data-card-signup/, 'nothing in it can be used');
       assert.match(html, /id="event-details"[\s\S]*<h1>Forskoðuð drög<\/h1>/);
-      // The event's title is the main heading, as on its page, and the card's comes after it.
-      assert.deepEqual(html.match(/<h[1-6]/g), ['<h1', '<h2', '<h2'], 'the headings are in order');
+      // The event's title is the main heading, as on its page; the boxes and the card come under it.
+      const headings = html.match(/<h[1-6]/g);
+      assert.equal(headings[0], '<h1');
+      assert.ok(headings.length > 3 && headings.slice(1).every((heading) => heading === '<h2'), 'the headings are in order');
     });
 
     test('§6: editing a published event keeps it published, and saving a draft does not publish it', async () => {

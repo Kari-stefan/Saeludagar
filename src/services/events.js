@@ -1,6 +1,7 @@
 import { toIso } from '../db/index.js';
 import { eventText } from '../i18n/index.js';
 import { queueEmail } from './email.js';
+import { MAX_IMAGES_PER_EVENT } from './images.js';
 import { isValidDay } from './settings.js';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -83,18 +84,34 @@ function columns(values) {
   };
 }
 
+// BR-27: an event's images live in event_images. The first is the one on its card, and queries
+// give it as image_file.
+const CARD_IMAGE = '(SELECT i.file FROM event_images i WHERE i.event_id = e.id ORDER BY i.position, i.id LIMIT 1) AS image_file';
+
+export function eventImages(db, eventId) {
+  return db.prepare('SELECT id, file FROM event_images WHERE event_id = ? ORDER BY position, id').all(eventId);
+}
+
+function addImages(db, eventId, files) {
+  const last = db.prepare('SELECT COALESCE(MAX(position), -1) FROM event_images WHERE event_id = ?').pluck().get(eventId);
+  const add = db.prepare('INSERT INTO event_images (event_id, file, position) VALUES (?, ?, ?)');
+  files.forEach((name, index) => add.run(eventId, name, last + 1 + index));
+}
+
 function withBrautir(db, events) {
   const brautir = db.prepare('SELECT braut FROM event_brautir WHERE event_id = ?').pluck();
   return events.map((event) => ({ ...event, brautir: brautir.all(event.id).sort(collator.compare) }));
 }
 
-// One event with its brautir, co-teachers and counts, or undefined.
+// One event with its brautir, images, co-teachers, owner and counts, or undefined.
 export function getEvent(db, id) {
-  const event = db.prepare(`SELECT e.*, u.name AS owner_name, (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) AS signups,
+  const event = db.prepare(`SELECT e.*, ${CARD_IMAGE}, u.name AS owner_name, u.email AS owner_email, u.role AS owner_role,
+    (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) AS signups,
     (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id AND r.attended = 1) AS attended
     FROM events e JOIN users u ON u.id = e.owner_id WHERE e.id = ?`).get(id);
   if (!event) return undefined;
   const [withLists] = withBrautir(db, [event]);
+  withLists.images = eventImages(db, id);
   withLists.coteachers = db.prepare(`SELECT u.id, u.name FROM event_coteachers c JOIN users u ON u.id = c.teacher_id
     WHERE c.event_id = ?`).all(id).sort((a, b) => collator.compare(a.name, b.name));
   return withLists;
@@ -125,7 +142,7 @@ export function allEvents(db) {
 // tagged with that braut, and events with no braut, which are for everyone (project owner's
 // decision). Sorted by day, then start time.
 export function publishedEvents(db, braut = null) {
-  const events = db.prepare(`SELECT e.*, (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) AS signups FROM events e WHERE e.status = 'published'
+  const events = db.prepare(`SELECT e.*, ${CARD_IMAGE}, (SELECT COUNT(*) FROM registrations r WHERE r.event_id = e.id) AS signups FROM events e WHERE e.status = 'published'
     AND (@braut IS NULL OR NOT EXISTS (SELECT 1 FROM event_brautir b WHERE b.event_id = e.id)
       OR EXISTS (SELECT 1 FROM event_brautir b WHERE b.event_id = e.id AND b.braut = @braut))
     ORDER BY e.event_date, e.start_time, e.id`).all({ braut });
@@ -240,19 +257,22 @@ function recheck(db, values, eventId) {
   return null;
 }
 
-// BR-22: a new event starts as a draft. Returns { id } or { field, error }.
-export function createEvent(db, ownerId, values, imageFile) {
+// BR-22: a new event starts as a draft. `imageFiles` are its saved images, in order (BR-27).
+// Returns { id } or { field, error }.
+export function createEvent(db, ownerId, values, imageFiles = []) {
   return db.transaction(() => {
     const problem = recheck(db, values, null);
     if (problem) return problem;
     const now = toIso();
     const c = columns(values);
+    if (imageFiles.length > MAX_IMAGES_PER_EVENT) return { field: 'images', error: 'events.errors.tooManyImages' };
     const id = Number(db.prepare(`INSERT INTO events (owner_id, title_is, title_en, description_is, description_en, host,
-      braut_restricted, capacity, fee_isk, image_file, event_date, start_time, end_time, location, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(ownerId, c.title_is, c.title_en, c.description_is,
-      c.description_en, c.host, c.braut_restricted, c.capacity, c.fee_isk, imageFile, c.event_date, c.start_time,
+      braut_restricted, capacity, fee_isk, event_date, start_time, end_time, location, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(ownerId, c.title_is, c.title_en, c.description_is,
+      c.description_en, c.host, c.braut_restricted, c.capacity, c.fee_isk, c.event_date, c.start_time,
       c.end_time, c.location, now, now).lastInsertRowid);
     setBrautir(db, id, values.brautir);
+    addImages(db, id, imageFiles);
     return { id };
   })();
 }
@@ -266,22 +286,31 @@ function studentsOf(db, eventId) {
 }
 
 // BR-28: a published event can still be edited. If the date, times or location change, every
-// student signed up gets an email. Existing sign-ups are not checked again. `imageFile` is the
-// new image name, or undefined to keep the current one. Returns { changed } (the changed fields)
-// or { field, error }.
-export function updateEvent(db, event, values, imageFile) {
+// student signed up gets an email. Existing sign-ups are not checked again. `removeImages` are
+// the ids of saved images to drop and `addImages` the names of new files, which go last (BR-27).
+// Returns { changed, removed } (the changed fields, and the files of the dropped images, for the
+// caller to delete) or { field, error }.
+export function updateEvent(db, event, values, { addImages: added = [], removeImages = [] } = {}) {
   return db.transaction(() => {
     const problem = recheck(db, values, event.id);
     if (problem) return problem;
+    // Counted here, inside the transaction, so two saves at once cannot leave more than 5.
+    const saved = eventImages(db, event.id);
+    const dropped = saved.filter((image) => removeImages.includes(image.id));
+    if (saved.length - dropped.length + added.length > MAX_IMAGES_PER_EVENT) {
+      return { field: 'images', error: 'events.errors.tooManyImages' };
+    }
     const c = columns(values);
-    if (imageFile !== undefined) c.image_file = imageFile;
     const changed = Object.keys(c).filter((key) => c[key] !== event[key]);
     db.prepare(`UPDATE events SET title_is = ?, title_en = ?, description_is = ?, description_en = ?, host = ?,
-      braut_restricted = ?, capacity = ?, fee_isk = ?, image_file = ?, event_date = ?, start_time = ?, end_time = ?,
+      braut_restricted = ?, capacity = ?, fee_isk = ?, event_date = ?, start_time = ?, end_time = ?,
       location = ?, updated_at = ? WHERE id = ?`).run(c.title_is, c.title_en, c.description_is, c.description_en, c.host,
-      c.braut_restricted, c.capacity, c.fee_isk, imageFile === undefined ? event.image_file : imageFile, c.event_date, c.start_time, c.end_time,
+      c.braut_restricted, c.capacity, c.fee_isk, c.event_date, c.start_time, c.end_time,
       c.location, toIso(), event.id);
     setBrautir(db, event.id, values.brautir);
+    const drop = db.prepare('DELETE FROM event_images WHERE id = ?');
+    for (const image of dropped) drop.run(image.id);
+    addImages(db, event.id, added);
 
     if (WHEN_AND_WHERE.some((key) => changed.includes(key))) {
       const payload = {
@@ -291,7 +320,7 @@ export function updateEvent(db, event, values, imageFile) {
       };
       for (const studentId of studentsOf(db, event.id)) queueEmail(db, { kind: 'event_changed', userId: studentId, payload });
     }
-    return { changed };
+    return { changed, removed: dropped.map((image) => image.file) };
   })();
 }
 
@@ -301,7 +330,7 @@ export function publishEvent(db, event) {
 
 // BR-29: blocked once attendance has been marked. Otherwise every student signed up gets an
 // email, and their sign-ups go with the event (recorded in the audit log, BR-56).
-// Returns { error } or { image } (the file to delete).
+// Returns { error } or { images } (the files to delete).
 export function deleteEvent(db, event, actorId) {
   return db.transaction(() => {
     if (getEvent(db, event.id).attended > 0) return { error: 'events.errors.attendanceMarked' };
@@ -310,8 +339,9 @@ export function deleteEvent(db, event, actorId) {
     db.prepare(`INSERT INTO audit_log (at, actor_id, action, event_id, student_id, details)
       SELECT ?, ?, 'signup.delete', event_id, student_id, '{"reason":"event_deleted"}' FROM registrations WHERE event_id = ?`)
       .run(toIso(), actorId, event.id);
+    const images = eventImages(db, event.id).map((image) => image.file);
     db.prepare('DELETE FROM events WHERE id = ?').run(event.id);
-    return { image: event.image_file };
+    return { images };
   })();
 }
 

@@ -194,11 +194,13 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     return { manager: { ...manager, isEventManager: true } };
   });
 
-  // Admin-only: remove Event Manager rights while keeping the account and data.
+  // Admin-only: take the event-manager role from a student again, keeping the account and its
+  // data. A teacher account always has the role (BR-67).
   const revokeEventManager = db.transaction((actorId, userId) => {
     const row = userById.get(userId);
     if (!row || row.is_event_manager !== 1) return null;
     const manager = toTeacher(row);
+    if (row.role !== 'student') return { manager, error: 'admin.teachers.errors.teacherKeepsRole' };
     setEventManager.run(0, toIso(), row.id);
     const ownership = { owned: ownedEvents.get(row.id), coteaching: coteaching.get(row.id) };
     audit(db, 'event-manager.revoke', actorId, null, row.id, ownership);

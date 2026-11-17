@@ -1,4 +1,4 @@
--- Schema version 2 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
+-- Schema version 3 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
 -- Timestamps are ISO-8601 UTC text; event dates are 'YYYY-MM-DD' and times 'HH:MM'.
 
 -- Exactly one row (id = 1).
@@ -57,7 +57,6 @@ CREATE TABLE events (
   braut_restricted  INTEGER NOT NULL DEFAULT 0 CHECK (braut_restricted IN (0,1)),
   capacity          INTEGER NOT NULL CHECK (capacity >= 1),
   fee_isk           INTEGER NOT NULL DEFAULT 0 CHECK (fee_isk >= 0),
-  image_file        TEXT,                         -- file name in UPLOAD_DIR; NULL = default image
   event_date        TEXT    NOT NULL,             -- must be in saeludagar_days when saved (checked in code)
   start_time        TEXT    NOT NULL,             -- 'HH:MM'
   end_time          TEXT    NOT NULL,
@@ -79,6 +78,16 @@ CREATE TABLE event_coteachers (
   teacher_id  INTEGER NOT NULL REFERENCES users(id),
   PRIMARY KEY (event_id, teacher_id)
 );
+
+-- Up to 5 images per event (BR-27), in the order chosen. The first is the one on the event's card.
+-- An event with no row here shows the default image.
+CREATE TABLE event_images (
+  id        INTEGER PRIMARY KEY,
+  event_id  INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  file      TEXT    NOT NULL UNIQUE,              -- file name in UPLOAD_DIR
+  position  INTEGER NOT NULL
+);
+CREATE INDEX event_images_event ON event_images(event_id, position);
 
 -- One row per sign-up. Attendance and the course choice live on the sign-up.
 CREATE TABLE registrations (
