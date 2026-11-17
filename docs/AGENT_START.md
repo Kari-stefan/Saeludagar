@@ -201,7 +201,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 - **BR-55** An admin can purge the data after the export. If nobody has purged 30 days after the course-choice deadline, the system purges automatically.
   - A purge deletes all student data: students, course lists, codes, sign-ups, attendance, course choices, student sessions, queued emails to students, and the audit log.
   - It sets every event back to draft.
-  - Teacher accounts and events are kept.
+  - Teacher accounts and events are kept. An event owned by a student who is an event manager (BR-67) is kept too: it moves to the admin who runs the purge (decided 17 November 2026), and the student's co-teacher links are removed with the student. The automatic purge, which no admin runs, gives such an event to the active admin whose account is oldest.
 - **BR-56** The system keeps an audit log of who changed attendance, sign-ups and course choices, and of who gave or took away the event-manager role (BR-67), and when. Admins can view it. The purge deletes it.
 
 ### Privacy and language
@@ -1118,7 +1118,7 @@ Do:
 - A Linux deployment guide in the README (systemd, nginx, HTTPS, cron or timer for backups, how to set the environment variables, and an nginx request size limit of at least 12 MB, so that an event form with 5 images of 2 MB gets through). **Do not deploy.**
 
 Acceptance:
-- **Purge:** tests show the purge deletes all student data (BR-55) and sets events to draft, and the automatic purge triggers exactly as described in section 8.
+- **Purge:** tests show the purge deletes all student data (BR-55) and sets events to draft, that an event owned by a student event manager moves to the admin who ran the purge, and that the automatic purge triggers exactly as described in section 8.
 - **Backup:** a backup restores into a temporary database, and that is tested.
 - **Load test:** against a local test server, 1,000 fake students who are already logged in send their sign-up requests within the same minute. The result must show zero 5xx errors, no event over its maximum and no student over 4 sign-ups or over 2 on one day. Report p50 and p95 response times, including login timings.
 - **Manual checks:** a keyboard-only walkthrough of the student, teacher and admin flows, and checks in Chrome, Firefox and Safari (desktop plus mobile emulation), documented in the README.
@@ -1166,7 +1166,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 19 | **Where to run the load test:** a staging copy on the school's server, or locally only? | M8 | Run it locally. |
 | 20 | **Wording of all emails** (codes, notices): school management to approve. | Launch | Draft the texts. |
 | 21 | **Student event managers and privacy:** #52 lets an admin make a student an event manager (BR-67). That student then sees the names, brauts and emails of the participants of their events and can email them, and can search every active student by name and braut, although §9 and BR-23 say students never see other participants' names and only an event's teachers see emails. They can also sign up for their own event and mark their own or a friend's attendance, which removes absence points. Is that acceptable? Separately: an admin can take the role from a teacher too, and that teacher then cannot be given it back without editing the database. Should the role be removable only from students? An account that loses the role also leaves the "Viðburðastjórar" page, admins and the admin's own account included, so it can no longer be sent a code, deactivated or have its admin rights changed there (BR-11). | §9, BR-11, BR-23, BR-38, BR-67 | Answered on 13 November 2026: students can still be given the role, and they see their own events' participants as #52 built it. But nobody marks their own attendance (BR-38), and the role can be taken away only from a student, so a teacher account always has it and stays on the "Viðburðastjórar" page (BR-67). Built in M6c. |
-| 22 | **The purge and student event managers:** BR-55 deletes every student and keeps the events. A student with the event-manager role (BR-67) can own or co-teach events, and the database refuses to delete a user who does. What should the purge do with those events and that student? | BR-55, M8 | Ask before building the purge. |
+| 22 | **The purge and student event managers:** BR-55 deletes every student and keeps the events. A student with the event-manager role (BR-67) can own or co-teach events, and the database refuses to delete a user who does. What should the purge do with those events and that student? Answered on 17 November 2026: the events move to the admin who runs the purge, and the student's co-teacher links are removed with the student (BR-55). The automatic purge has no admin running it, so there the events go to the active admin whose account is oldest; that part is the builder's choice, for the project owner to change. | BR-55, M8 | Build as answered, in M8. |
 | 23 | **Moving an event onto a full day:** when a published event is moved to another day, a student signed up for it can end up with more than 2 events that day (BR-65). Is that acceptable, as it is for overlaps (BR-28), or should the move be refused? | BR-28, BR-65 | Not checked again, as for overlaps; the students get the change email. |
 
 ---
