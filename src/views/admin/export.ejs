@@ -1,3 +1,31 @@
+<%# BR-48, BR-49: the office export. The page shows only counts; no kennitala ever appears here (BR-19). -%>
 <%- include('../partials/header', { pageTitle: t('pages.export') }) %>
 <h1><%= t('pages.export') %></h1>
+<p><%= t('export.intro') %></p>
+
+<% if (summary.final) { -%>
+<div class="alert alert--success">
+  <p><strong><%= t('export.final') %></strong> <%= t('export.finalSince', { deadline: formatDateTime(summary.deadline) }) %></p>
+</div>
+<% } else { -%>
+<div class="alert">
+  <p><strong><%= t('export.provisional') %></strong> <%= summary.deadline ? t('export.provisionalUntil', { deadline: formatDateTime(summary.deadline) }) : t('export.provisionalNoDeadline') %></p>
+</div>
+<% } -%>
+
+<ul class="stats">
+  <li><%= t('export.rows', { count: summary.rows }) %></li>
+  <li><%= t('export.withoutCourse', { count: summary.withoutCourse }) %></li>
+</ul>
+<% if (summary.withoutCourse > 0) { -%>
+<p><%= t('export.withoutCourseHelp') %></p>
+<% } -%>
+<% if (summary.rows === 0) { -%>
+<p><%= t('export.empty') %></p>
+<% } -%>
+
+<div class="button-row">
+  <a class="button" href="/admin/export.csv" download aria-describedby="export-privacy"><%= t('export.download') %></a>
+</div>
+<p class="field__hint" id="export-privacy"><%= t('export.privacy') %></p>
 <%- include('../partials/footer') %>

@@ -332,9 +332,9 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET/POST /admin/codes` | Send codes | The number of active students, a warning that previous codes stop working, a Confirm button, and progress (queued / sent / failed). |
 | `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away from a student (BR-67). |
 | `GET /admin/events` | All events | Every event with its owner, status and "n / max", linking to the management page. |
-| `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline, the number of rows, and the number of rows without a course. |
+| `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline and a "final" label after it, the number of rows, the number of rows without a course, and a reminder that the file holds kennitölur. |
 | `GET/POST /admin/purge` | Purge | A description of what will be deleted, a typed confirmation, and the date of the automatic purge. |
-| `GET /admin/audit` | Audit log | Newest first, filterable by event or student, showing who, what and when. |
+| `GET /admin/audit` | Audit log | Newest first, 100 entries a page, filterable by event and by student name, showing who, what and when. An event or a person that no longer exists is shown as such. |
 
 ### Errors
 403, 404 and 500 pages, bilingual. Production error pages show no stack traces.
@@ -607,14 +607,18 @@ Between the two steps, the parsed result is kept only in server memory for at mo
 - The file is served at `GET /admin/export.csv`, for admins only.
 - **Format:** UTF-8 with a BOM, `;` delimiter and CRLF line endings, so it opens correctly in Excel with Icelandic settings.
 - **Header:** `kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning`.
-- **Rows:** one per registration with `attended = 1`.
+- **Rows:** one per registration with `attended = 1`, whether or not the student is still active (BR-17).
   - `stig` = 4
   - `vidburdur` = the Icelandic title
   - `dagsetning` = the event date as `YYYY-MM-DD`
   - `afangi` is empty if no course was chosen
   
-  Sort by name, then date.
+  Sort by name in Icelandic alphabetical order, then date, then start time. Two students with the same name are not mixed: each one's rows stay together.
 - **File name:** `saeludagar-fjarvistir-YYYY-MM-DD.csv`, using the download date.
+- **Kennitala:** written as `DDMMYY-NNNN`, with the hyphen, so that a spreadsheet keeps it as text and does not drop a leading zero.
+- **Quoting:** a value that contains `;`, a double quote or a line break is wrapped in double quotes, and a double quote inside it is doubled.
+- **Formulas:** a name, braut, course or title that starts with `=`, `+`, `-`, `@`, a tab or a carriage return gets an apostrophe in front, so that a spreadsheet shows it as text and does not run it as a formula.
+- **Caching:** the answer carries `Cache-Control: no-store`, because the file holds kennitölur.
 - There is no connection to Inna (out of scope). The office enters the data by hand.
 
 ### Image uploads
@@ -1150,7 +1154,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 7 | **Who maintains the site** after launch (imports, settings, updates, problems). | §10, M8 README handover | Write the README for a newcomer. |
 | 8 | **Off-server storage** for daily backups and for the encryption keys. | §9, §10, M8 | Back up to `BACKUP_DIR` only. |
 | 9 | **Can Berglind deliver the CSV** in the defined format, including emails, course codes and braut names suitable for display? | §8 import, M3 | Build the defined format. |
-| 10 | **Does the office accept** the export columns for entering into Inna? | §8 export, M7 | Build as specified. |
+| 10 | **Does the office accept** the export columns for entering into Inna? The kennitala is written with a hyphen (`DDMMYY-NNNN`) so that Excel keeps a leading zero, and text that Excel would run as a formula gets an apostrophe in front; confirm both with the office too. | §8 export, M7 | Build as specified. |
 | 11 | **Data protection officer:** must the school's persónuverndarfulltrúi review the site before launch, and would they require a privacy notice (currently there is none, BR-58)? | §9, launch | Build without a privacy page. |
 | 12 | **"Senda kóða" a second time:** currently it gives everyone new codes and the old ones stop working (BR-07). Should it skip students who have already received a code? | BR-07, M3 | Build BR-07 as written. |
 | 13 | **Removing a marked attendee:** may a teacher remove a student whose attendance is already marked? That would also delete the attendance and the course choice. Answered on 15 October 2026: no. While attendance is marked there is no remove button, only a note to unmark the attendance first (BR-37). | BR-37, M6 | Built in M6. |
