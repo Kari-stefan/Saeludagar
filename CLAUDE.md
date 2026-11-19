@@ -116,6 +116,7 @@ npm run migrate                                                # create or upgra
 ```
 
 - The tests pass when the summary at the end says `fail 0`. They use temporary databases and never touch `.env` or `data/`.
+- A test that passes with its file can fail when run alone by name, because in some `describe` blocks the tests build on each other (`docs/conventions.md`, Tests). If a test fails alone, run its whole file before you conclude anything.
 - `npm run dev`, `npm run migrate`, `npm run create-admin` and `npm run seed:dev` use the developer's `.env` and the database in `data/`. `docs/run.md` has the first-time setup, every npm script and every environment variable.
 - There is no linter, formatter, type checker, coverage tool or CI. `npm test` is the only automated check.
 - There is no deploy command. Deployment arrives in milestone 8 and is on the "Ask first" list.

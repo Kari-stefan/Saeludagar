@@ -100,7 +100,8 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 
 - Put tests in `test/`, one file per feature, named `<topic>.test.js` in kebab-case (`test/new-code.test.js`). `test/helpers.js` is shared setup. Use `node:test` and `node:assert/strict`, import from `../src/...` and `./helpers.js`.
 - Add a test to the file that already covers the page or rule: search `test/` for the page's address or the BR ID. Inside the file, put it in the `describe` block whose setup it needs. Start a new file only for a new feature.
-- Make a new test create the events, users and sign-ups it checks (`insertEvent`, `site.addUser`), instead of counting on what an earlier test left behind. Run it alone with `--test-name-pattern` before you report: it must pass on its own as well as with the whole file.
+- Know which kind of block you are adding to. Some blocks reset their data before every test, so each test stands alone: `test/points.test.js` empties its tables in `beforeEach`. In other blocks the tests build on each other and fail when run alone: in `test/events.test.js`, the block `co-teachers and who manages what` uses events that its earlier tests created. In a new test, create what you check (`insertEvent`, `site.addUser`) where you can, so that it also passes alone. Where you build on the block's earlier tests, as the tests around you do, say so in your report.
+- A syntax error in a test file shows as one failing test for the whole file, and the pass count drops by the number of tests in that file.
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
   - `site.addUser({ role, name, email, isAdmin, code })` inserts an account with a known code and returns `{ id, kennitala, code }`. Kennitölur count up from `0000000001`.
@@ -150,7 +151,7 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 
 ## Traps
 
-- Git stores every text file with LF line endings, and the repository has no `.gitattributes`. On a Windows checkout with `core.autocrlf` on, many working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, and do not convert or reformat a file to silence the warning. Before you script an edit, check which ending the file has: a search string that spans two lines with `\n` between them does not match a CRLF file, so match one line at a time.
+- Git stores every text file with LF line endings, and the repository has no `.gitattributes`. On a Windows checkout with `core.autocrlf` on, many working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, and do not convert or reformat a file to silence the warning. Claude Code's Edit tool keeps a file's line endings, also when a change spans several lines, so use it rather than a script. If you do script an edit, check first which ending the file has: a search string that spans two lines with `\n` between them does not match a CRLF file, so match one line at a time.
 - For a one-off script, use `node`, the one runtime every checkout has. On Windows, `python3` can be the Microsoft Store placeholder, which hangs instead of running.
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
