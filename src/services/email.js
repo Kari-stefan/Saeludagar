@@ -138,7 +138,8 @@ export async function renderEmail(kind, data) {
   const rendered = await ejs.renderFile(path.join(EMAIL_VIEWS, `${kind}.ejs`), { ...data, languages }, {
     escape: (value) => (value == null ? '' : String(value)),
   });
-  // A Windows checkout gives the templates CRLF line endings; the email is the same either way.
+  // A checkout can hold the templates with CRLF line endings (an older clone, or an editor that
+  // saves them so); the email is the same either way.
   const text = rendered.replace(/\r\n?/g, '\n');
   // A subject that reads the same in both languages, such as a teacher's own subject line, is
   // given once.

@@ -1,3 +1,4 @@
-# Shell scripts keep LF line endings in every checkout: a cloud session runs
-# .claude/hooks/cloud-setup.sh on Linux, where a CRLF script fails.
-*.sh text eol=lf
+# Every text file has LF line endings, in the repository and in every checkout. A cloud session
+# runs .claude/hooks/cloud-setup.sh on Linux, where a CRLF script fails, and mixed endings on
+# Windows made scripted edits fail.
+* text=auto eol=lf

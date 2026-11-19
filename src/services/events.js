@@ -163,6 +163,16 @@ export function sortOrder(value) {
   return SORTS.includes(value) ? value : SORTS[0];
 }
 
+// §6: an event's number as it is written in an address, without a leading zero.
+const EVENT_ID_PATTERN = /^[1-9]\d{0,8}$/;
+
+// The event number from an address segment: digits only, no sign, no space, no leading zero and
+// at most nine digits, so each event has one address. Null for anything else. Number() alone
+// would also read "0x10", "1e1", "1.0" and " 16" as numbers.
+export function parseEventId(value) {
+  return typeof value === 'string' && EVENT_ID_PATTERN.test(value) ? Number(value) : null;
+}
+
 // BR-63: the query parameters of the filters in "Sía", besides the braut.
 export const FILTER_KEYS = ['free', 'fee_min', 'fee_max', 'from', 'to', 'time_from', 'time_to', 'noon'];
 
