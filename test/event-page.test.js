@@ -148,3 +148,17 @@ describe('"Hópur" (BR-23, BR-68)', () => {
     }
   });
 });
+
+describe('the address of an event (§6)', () => {
+  test('§6: only a plain event number opens an event; any other address is a 404', async () => {
+    const id = insertEvent(site.db, people.owner.id);
+    assert.equal((await as.guest.get(`/events/${id}`)).status, 200);
+    assert.equal((await as.owner.get(`/teacher/events/${id}`)).status, 200);
+    const spellings = [`0x${id.toString(16)}`, `${id}e0`, `${id}.0`, `%20${id}`, `${id}%20`, `+${id}`, `-${id}`, `0${id}`, 'abc'];
+    for (const spelling of spellings) {
+      for (const path of [`/events/${spelling}`, `/teacher/events/${spelling}`, `/teacher/events/${spelling}/print`]) {
+        assert.equal((await as.owner.get(path)).status, 404, path);
+      }
+    }
+  });
+});

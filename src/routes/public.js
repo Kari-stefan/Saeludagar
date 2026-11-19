@@ -6,7 +6,7 @@ import { LANGUAGES } from '../i18n/index.js';
 import { setFlash } from '../middleware/flash.js';
 import { safeReturnPath, THEMES } from '../middleware/language.js';
 import {
-  browseEvents, eventAccess, eventFilters, FILTER_KEYS, filterEvents, getEvent, publishedEvents, searchTerm, SORTS, sortOrder,
+  browseEvents, eventAccess, eventFilters, FILTER_KEYS, filterEvents, getEvent, parseEventId, publishedEvents, searchTerm, SORTS, sortOrder,
   teacherEvents,
 } from '../services/events.js';
 import { MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT } from '../services/images.js';
@@ -120,8 +120,8 @@ export function publicRouter({ db }) {
   // Students see "Skrá mig" or "Afskrá mig"; guests a link to log in that comes back here. Who
   // runs the event and who is in it follow BR-68.
   router.get('/events/:id', (req, res, next) => {
-    const id = Number(req.params.id);
-    const event = Number.isSafeInteger(id) ? getEvent(db, id) : undefined;
+    const id = parseEventId(req.params.id);
+    const event = id === null ? undefined : getEvent(db, id);
     const access = event ? eventAccess(db, req.user, event) : null;
     if (!event || (event.status !== 'published' && !access)) return next();
     const student = req.user?.role === 'student';
@@ -136,8 +136,8 @@ export function publicRouter({ db }) {
   // BR-31 to BR-36: sign up or cancel, then back to the event page, or the front page for a card
   // (BR-66), with the result.
   router.post('/events/:id', (req, res, next) => {
-    const id = Number(req.params.id);
-    if (!Number.isSafeInteger(id)) return next();
+    const id = parseEventId(req.params.id);
+    if (id === null) return next();
     const page = `/events/${id}`;
     if (!req.user) return res.redirect(303, `/login?next=${encodeURIComponent(page)}`);
     if (req.user.role !== 'student') return res.status(403).render('errors/403');
