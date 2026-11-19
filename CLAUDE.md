@@ -6,6 +6,8 @@ A bilingual (ÍS/EN) school website. Students sign up for Sæludagar events (vi�
 
 ## Model routing (hard rule, enforced by hook)
 
+This section is for the main session. If you are a subagent, do the task you were given yourself and do not delegate it.
+
 You (the main session, Fable 5.2) are the planner and decision-maker, not the main
 code-writer. Spend your capacity on reasoning; hand implementation to cheaper agents.
 
@@ -55,7 +57,6 @@ If I explicitly name a model for a task, use that model.
 - The `spec-reviewer` agent (`/review`, `/milestone`) is an Agent call like any other, so it needs a `model` too.
 - The hook needs `python` on the PATH. If it cannot run, or cannot read its input, the call goes ahead. The rule above applies whether or not the hook speaks.
 - A session keeps the hooks it started with. After changing the hook or its settings, start a new session.
-- If you are a subagent, this section does not ask you to delegate. Do the task you were given and report back as the handoff asked.
 
 ## Hard rules
 
@@ -77,9 +78,10 @@ Stop and ask before any of these. Never leave one of them to a subagent.
 
 **Scope**
 - Build only what `docs/AGENT_START.md` specifies. Do not add features, abstractions or dependencies beyond it.
-- When you are asked for something the specification does not have, write it into `docs/AGENT_START.md` first, in the sections it changes (§4 for a rule, §6 for a page, §7 for data), then build it. The specification stays the source of truth.
+- When you are asked for something the specification does not have, write it into `docs/AGENT_START.md` first, then build it. What a page shows or does goes in §6. A rule about what people may do, or what the system must guarantee, goes in §4 with the next free BR number and a row in §16. Data goes in §7. The specification stays the source of truth.
 - Build one milestone at a time (AGENT_START §13) and do not build ahead. After a milestone, report "✅ [what was completed]" and how to verify it, then wait for the go-ahead.
 - If the spec is unclear or contradicts itself, or an open question (AGENT_START §15) blocks the work, stop and ask. Do not guess.
+- A small detail that the request and the spec leave open, and that is easy to change later, is not a reason to stop. Examples are the wording of a label, which existing control to reuse, and the name of a function. Settle it the way the nearest existing page or function does, write it into the spec if users can see it, and list it in your report so it can be confirmed or changed. A detail that changes a business rule, the data model or who can see what is never small: stop and ask.
 - Ask with AskUserQuestion. Write the questions in Icelandic, put the recommended option first and mark it "(mælt með)". Write everything else in English.
 
 **Git**
@@ -127,7 +129,8 @@ A change is finished when all of these hold:
 4. If you changed `scss/`, `npm run build:css` finishes without an error.
 5. Every doc the change made inaccurate is updated in the same change.
 6. Nothing on the "Ask first" list was done without approval, and nothing under "Never touch" changed.
-7. Your report says what you changed, which commands you ran and what they printed.
+7. You have read your own `git diff`. It holds only what the task needs, and every comment still describes the code under it.
+8. Your report says what you changed, which commands you ran and what they printed, and lists the small details you settled yourself (see "Scope").
 
 A milestone also needs these:
 - The read-only `spec-reviewer` agent has reviewed it. `/milestone N` runs the reviewer as its fifth step, and `/review` runs it on its own.

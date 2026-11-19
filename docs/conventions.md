@@ -44,6 +44,8 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 
 ## Services
 
+- One file per area: `attendance.js`, `signups.js`, `events.js`, `choices.js` and so on. Put a new function in the file of the area it belongs to, and start a new file only for a new area. A helper that reads or checks a request value lives there too, as `searchTerm` and `sortOrder` do in `src/services/events.js` and `isValidDay` in `src/services/settings.js`. There is no `utils` folder.
+- Name a function for what it returns or does: `eventParticipants`, `studentPoints`, `attendanceWindow`, `setAttendance`.
 - Take `db` first, then the actor or subject id, then the rest, then `now = new Date()` last: `givePoints(db, studentId, course, now)`.
 - Return a result, do not throw, for failures a user can cause: `{ ok: true }` or `{ error: 'points.errors.closed', params }`, where `error` is an i18n key and `params` fills its placeholders. Validators return `{ values, errors }` with `errors` keyed by field (`validateTeacher`, `saveTimes`). The route turns the key into a flash or a field error.
 - Wrap changes that must stand or fall together in `db.transaction(() => { ... })`. Add `.immediate()` when the function checks something and then writes, and two simultaneous requests could both pass the check: `signUp`, `cancelSignup`, `givePoints`, `takePoints`, `setAttendance`. Put every check inside the transaction, not in the route. Transactions in `src/services/accounts.js`, `events.js` and `import.js` are plain `db.transaction` (most files do not use `.immediate()`; match the file).
@@ -96,6 +98,7 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 ## Tests
 
 - Put tests in `test/`, one file per feature, named `<topic>.test.js` in kebab-case (`test/new-code.test.js`). `test/helpers.js` is shared setup. Use `node:test` and `node:assert/strict`, import from `../src/...` and `./helpers.js`.
+- Add a test to the file that already covers the page or rule: search `test/` for the page's address or the BR ID. Inside the file, put it in the `describe` block whose setup it needs. Start a new file only for a new feature.
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
   - `site.addUser({ role, name, email, isAdmin, code })` inserts an account with a known code and returns `{ id, kennitala, code }`. Kennitölur count up from `0000000001`.
@@ -131,11 +134,12 @@ describe('the info page (§6)', () => {
 });
 ```
 
-- Start the title with the ID of what it covers, then a colon and a plain sentence: `BR-69: nobody can give away more points than they have earned`, `BR-31: students can sign up and cancel only while the window is open`, `§9 item 2, §11: no two page scripts declare the same top-level name`. Most titles start this way. A test that covers no single rule, such as `unknown paths get the 404 page`, has a plain title. Put the milestone and the rules in a comment at the top of the file.
+- Start the title with the ID of what it covers, then a colon and a plain sentence: `BR-69: nobody can give away more points than they have earned`, `BR-31: students can sign up and cancel only while the window is open`, `§9 item 2, §11: no two page scripts declare the same top-level name`. Most titles start this way. A test that covers no single rule, such as `unknown paths get the 404 page`, has a plain title. Put the milestone and the rules in a comment at the top of the file. If a change touches no business rule, start the title with the spec section the behaviour belongs to (`§6:` for a page) or leave it plain. Never borrow the ID of a rule that does not state the behaviour.
 - Write a test for every business rule a change touches (the definition of done in [../CLAUDE.md](../CLAUDE.md) requires it), and test the rule through the service as well as the page (`BR-69: the service refuses on its own, without the route`). To find the rule a piece of code serves, read the comment above it and look the ID up in [AGENT_START.md](AGENT_START.md) §4.
-- Give a bug fix a test that fails without the fix. The fixes in this repository's history did: commits `59995b5` and `b8e6c70` each changed `test/` together with the fix. A refactor that changes no behaviour needs no new test; the existing tests must still pass.
+- Give a bug fix a test that fails without the fix: write the test first and run it to see it fail, then fix, and say in your report that you saw it fail. The fixes in this repository's history came with tests: commits `59995b5` and `b8e6c70` each changed `test/` together with the fix. A refactor that changes no behaviour needs no new test; the existing tests must still pass.
 - Use only fake data: kennitölur like `0000000001`, emails at `example.is` (`kennari@example.is`). Never real student data.
 - Tests never touch `data/` or `.env`: `startSite` and `tempDatabase` use a folder under the OS temp directory, and `testConfig` sets its own keys.
+- The tests read the HTML the server sends. The repository has no browser test tool. If your change affects how a page looks or behaves in a browser and you did not look at it in one, say so in your report.
 - The commands for all tests, one file and one test by name, and how to read the result, are in [../CLAUDE.md](../CLAUDE.md) under Commands. Some tests check error handling on purpose, so error messages above the summary are normal.
 
 ## Commits and pull requests
@@ -144,6 +148,7 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 
 ## Traps
 
+- Git stores every text file with LF line endings, and the repository has no `.gitattributes`. On a Windows checkout with `core.autocrlf` on, many working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, do not convert or reformat a file to silence the warning, and when you script an edit, match one line at a time.
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
 - Multipart forms are CSRF-checked inside the route, after multer, with `verifyCsrf`. Add the route's path to `UPLOAD_ROUTES` in `src/middleware/csrf.js`, or the global check refuses the form because it cannot read the body. See `/admin/import` in `src/routes/admin.js`.
