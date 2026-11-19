@@ -132,24 +132,25 @@ describe('the info page (§6)', () => {
 ```
 
 - Start the title with the ID of what it covers, then a colon and a plain sentence: `BR-69: nobody can give away more points than they have earned`, `BR-31: students can sign up and cancel only while the window is open`, `§9 item 2, §11: no two page scripts declare the same top-level name`. Most titles start this way. A test that covers no single rule, such as `unknown paths get the 404 page`, has a plain title. Put the milestone and the rules in a comment at the top of the file.
-- Write a test for every business rule a change touches (AGENT_START §13), and test the rule through the service as well as the page (`BR-69: the service refuses on its own, without the route`).
+- Write a test for every business rule a change touches (the definition of done in [../CLAUDE.md](../CLAUDE.md) requires it), and test the rule through the service as well as the page (`BR-69: the service refuses on its own, without the route`). To find the rule a piece of code serves, read the comment above it and look the ID up in [AGENT_START.md](AGENT_START.md) §4.
+- Give a bug fix a test that fails without the fix. The fixes in this repository's history did: commits `59995b5` and `b8e6c70` each changed `test/` together with the fix. A refactor that changes no behaviour needs no new test; the existing tests must still pass.
 - Use only fake data: kennitölur like `0000000001`, emails at `example.is` (`kennari@example.is`). Never real student data.
 - Tests never touch `data/` or `.env`: `startSite` and `tempDatabase` use a folder under the OS temp directory, and `testConfig` sets its own keys.
-- The commands for all tests, one file and one test by name are in [../CLAUDE.md](../CLAUDE.md) under Commands. A passing run ends with `ℹ fail 0`. Some tests check error handling on purpose, so error messages above the summary are normal.
+- The commands for all tests, one file and one test by name, and how to read the result, are in [../CLAUDE.md](../CLAUDE.md) under Commands. Some tests check error handling on purpose, so error messages above the summary are normal.
+
+## Commits and pull requests
+
+Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CLAUDE.md) under Hard rules, Git. Write the subject as one line that says what changed, as the history does: `Milestone 6c: event page and Fjarvistastig`, `Show a clear error when the port is already in use`.
 
 ## Traps
 
-- `public/css/main.css` is generated and git-ignored. Run `npm run build:css` after changing `scss/`, or pages have no styling.
-- i18n JSON is read once at start. A text change needs a server restart; `npm run dev` restarts only on `src/` and `.env` changes.
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
 - Multipart forms are CSRF-checked inside the route, after multer, with `verifyCsrf`. Add the route's path to `UPLOAD_ROUTES` in `src/middleware/csrf.js`, or the global check refuses the form because it cannot read the body. See `/admin/import` in `src/routes/admin.js`.
-- `package.json` lists `backup` and `loadtest` scripts, but the files `backup.js` and `loadtest.js` in `scripts/` do not exist yet (milestone 8). Running them fails with "Cannot find module".
-- `/admin/export`, `/admin/audit` and `/admin/purge` are placeholders for milestones 7 and 8. `test/smoke.test.js` expects `/admin/export.csv` to answer 501 and `test/access.test.js` lists it, so a real export must update both.
-- `npm install` can print an audit notice that suggests `npm audit fix`. Do not run it: it changes package versions, and whether to upgrade a package is the project owner's decision. Report the notice and ask.
-- The `.gitkeep` files keep empty folders in git. Leave them.
+- `test/smoke.test.js` expects `/admin/export.csv` to answer 501 and `test/access.test.js` lists it, because the office export is not built yet. Building it means updating both tests.
+- `npm install` can print an audit notice that suggests `npm audit fix`. Do not act on it yourself; see "Never touch" in [../CLAUDE.md](../CLAUDE.md).
 - Stored times are UTC ISO strings. Iceland is UTC+0 all year, so stored time is local time; the formatters in `src/i18n/index.js` still name `Atlantic/Reykjavik`.
-- Never show, log or put a kennitala in a URL (`src/services/crypto.js`, `src/services/import.js`, `src/middleware/errors.js`). The error handler logs only the stack, because body-parser errors carry the raw form body.
+- The error handler logs only the stack of an error, never its body, because body-parser errors carry the raw form, which can hold a kennitala or a code (`src/middleware/errors.js`). Keep it that way. The privacy rules are in [../CLAUDE.md](../CLAUDE.md).
 - Emails never carry a login code in the outbox payload (`src/services/email.js`); codes are made when the email is sent.
 - Names sort in Icelandic order with `new Intl.Collator('is')`, not with SQL `ORDER BY` or `localeCompare` (`src/services/signups.js`).
 - A session cookie named `sid` is the only cookie (BR-57). The language and theme live in the session, so do not add a cookie for a new preference.

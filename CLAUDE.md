@@ -55,10 +55,11 @@ If I explicitly name a model for a task, use that model.
 - The `spec-reviewer` agent (`/review`, `/milestone`) is an Agent call like any other, so it needs a `model` too.
 - The hook needs `python` on the PATH. If it cannot run, or cannot read its input, the call goes ahead. The rule above applies whether or not the hook speaks.
 - A session keeps the hooks it started with. After changing the hook or its settings, start a new session.
+- If you are a subagent, this section does not ask you to delegate. Do the task you were given and report back as the handoff asked.
 
 ## Hard rules
 
-These have no exceptions. If a task seems to need one, stop and ask.
+These have no exceptions. If a task seems to need one, stop and ask. "Ask" means ask the person you are working for in this session, and wait for the answer.
 
 **Privacy**
 - Never read, print or commit `.env`, anything in `data/` (the database) or anything in `backups/`.
@@ -67,7 +68,7 @@ These have no exceptions. If a task seems to need one, stop and ask.
 
 **Ask first**
 
-Stop and ask the project owner before any of these. Never leave one of them to a subagent.
+Stop and ask before any of these. Never leave one of them to a subagent.
 - Adding a dependency that is not in the table in AGENT_START §10
 - Changing the data model (`src/db/schema.sql`, `src/db/migrate.js`)
 - Deleting files
@@ -76,7 +77,7 @@ Stop and ask the project owner before any of these. Never leave one of them to a
 
 **Scope**
 - Build only what `docs/AGENT_START.md` specifies. Do not add features, abstractions or dependencies beyond it.
-- When the project owner asks for something the specification does not have, write it into `docs/AGENT_START.md` first, then build it. The specification stays the source of truth.
+- When you are asked for something the specification does not have, write it into `docs/AGENT_START.md` first, in the sections it changes (§4 for a rule, §6 for a page, §7 for data), then build it. The specification stays the source of truth.
 - Build one milestone at a time (AGENT_START §13) and do not build ahead. After a milestone, report "✅ [what was completed]" and how to verify it, then wait for the go-ahead.
 - If the spec is unclear or contradicts itself, or an open question (AGENT_START §15) blocks the work, stop and ask. Do not guess.
 - Ask with AskUserQuestion. Write the questions in Icelandic, put the recommended option first and mark it "(mælt með)". Write everything else in English.
@@ -87,20 +88,19 @@ Stop and ask the project owner before any of these. Never leave one of them to a
 - No `Co-Authored-By` lines or other Claude attribution in commits or pull requests. `.claude/settings.json` turns it off as well.
 
 **Docs**
-- Any change that makes a doc inaccurate must update that doc in the same commit. For `CLAUDE.md` and `.claude/`, see "Never touch".
+- Any change that makes a doc inaccurate must update that doc in the same commit. If you were not asked to commit, make the doc edit as part of the same change. For `CLAUDE.md` and `.claude/`, see "Never touch".
 
 ## Never touch
 
 | Path | Rule |
 |---|---|
-| `.env` | Secrets. Never read, print or commit it. `.env.example` is the committed template. |
-| `data/`, `backups/` | The database and its backups. Never read or commit their contents. |
+| `.env`, `data/`, `backups/` | See "Privacy" above. `.env.example` is the committed template for `.env`. |
 | `uploads/` | Event images written by the running site. Never add, edit or commit files there. |
 | `public/css/` | Generated from `scss/` by `npm run build:css`, and git-ignored. Edit `scss/` instead. |
-| `node_modules/`, `package-lock.json` | Written by npm. Never edit them by hand. Whether to upgrade a package, or to run `npm audit fix`, is the project owner's decision: ask. |
+| `node_modules/`, `package-lock.json` | Written by npm. Never edit them by hand. Whether to upgrade a package, or to run `npm audit fix`, is not yours to decide: ask. |
 | `.gitkeep` files | Leave them in place. They keep otherwise empty folders in git. |
 | `docs/requirements.md`, `docs/saeludagar-notes.txt`, `docs/design-requirements.md`, `docs/improvements-requirements.md`, `docs/wireframes-requirements.md` | The original notes and the project owner's briefs, kept as a record. Do not build from them and do not edit them to match the code. `docs/AGENT_START.md` is the specification. |
-| `CLAUDE.md`, `.claude/` | The project owner's instructions to agents. Change them only when the project owner asks. If your change would make one of them inaccurate, say so in your report and ask. |
+| `CLAUDE.md`, `.claude/` | The instructions to agents. Change them only when you are asked to. If your change would make one of them inaccurate, say so in your report and ask. |
 
 ## Commands
 
@@ -122,10 +122,10 @@ npm run migrate                                                # create or upgra
 
 A change is finished when all of these hold:
 1. `npm test` ends with `fail 0`.
-2. Every business rule (BR) the change touches has a test whose name includes the BR ID (AGENT_START §13). `docs/conventions.md` (Tests) shows how.
+2. Every business rule (BR) the change touches has a test whose name includes the BR ID. `docs/conventions.md` (Tests) shows how, and says what a bug fix and a refactor need.
 3. Every text the site shows is in both `src/i18n/is.json` and `src/i18n/en.json`, under the same key.
 4. If you changed `scss/`, `npm run build:css` finishes without an error.
-5. Every doc the change made inaccurate is updated in the same commit.
+5. Every doc the change made inaccurate is updated in the same change.
 6. Nothing on the "Ask first" list was done without approval, and nothing under "Never touch" changed.
 7. Your report says what you changed, which commands you ran and what they printed.
 
@@ -149,7 +149,7 @@ Run `/review` before every pull request.
 | Read | When |
 |---|---|
 | `README.md` (Status) | Before you start: what is built and what is next. |
-| `docs/AGENT_START.md` | The specification. Read the sections your task touches before you write code: §4 business rules (BR-01 to BR-69), §6 pages, §7 data model, §8 login, import, email, export and uploads, §9 security requirements, §10 allowed packages, §11 design, §13 build plan, §15 open questions. |
+| `docs/AGENT_START.md` | The specification. Read the sections your task touches before you write code: §4 business rules (each has an ID such as BR-31), §6 pages, §7 data model, §8 login, import, email, export and uploads, §9 security requirements, §10 allowed packages, §11 design, §13 build plan, §15 open questions. |
 | `docs/architecture.md` | Before changing code you have not seen: what runs, how a request is handled, the layers, where each kind of new code goes, and why things are built the way they are. |
 | `docs/conventions.md` | Before writing code or tests: the patterns, a file to copy from for each kind of change, how to write and run tests, and the traps. |
 | `docs/run.md` | To set up or run the site, for every npm script and environment variable, and when a command fails. |

@@ -269,7 +269,7 @@ Everyone's finished work is merged into `main` through pull requests. To bring i
 
 ## 8. Reset your local database
 
-This deletes everything in your **local development** database and starts empty. Only do this on your own computer, never on the school's server, where the data is real.
+This deletes everything in your **local development** database and starts empty. Only do this on your own computer, never on the school's server, where the data is real. Claude Code does not do this unless you ask it to: deleting files is on the "Ask first" list in [CLAUDE.md](../CLAUDE.md).
 
 1. Stop the server (`Ctrl+C`).
 2. Delete the database files:

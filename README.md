@@ -36,7 +36,7 @@ Node.js 24 LTS, Express 5, EJS, SCSS compiled to CSS, SQLite (better-sqlite3) an
 ## How we work
 
 ### Branches
-The branch and pull-request rules are in [CLAUDE.md](CLAUDE.md) under Hard rules (Git). They apply to people as well as to Claude Code.
+The branch and pull-request rules are in [CLAUDE.md](CLAUDE.md) under Hard rules, Git. They apply to people as well as to Claude Code.
 
 ### Building with Claude Code
 The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_START.md):
@@ -47,7 +47,7 @@ The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_
 4. Commit, push your branch and open a pull request into `main`.
 5. After it is merged, move on to the next milestone.
 
-`.claude/settings.json` makes Claude Code ask before `npm install`, `npm uninstall` and `git push`, blocks its Read tool from `.env`, `data/` and `backups/`, and runs a hook that requires every subagent to be started with a named model. The other rules, such as asking before deleting files or changing the data model, are instructions in [CLAUDE.md](CLAUDE.md), not settings.
+`.claude/settings.json` makes Claude Code ask before `npm install`, `npm uninstall` and `git push`, blocks its Read tool from `.env`, `data/` and `backups/`, and runs the model-routing hook (see [CLAUDE.md](CLAUDE.md), Model routing). The other rules, such as asking before deleting files or changing the data model, are instructions in [CLAUDE.md](CLAUDE.md), not settings.
 
 ## Setup
 
@@ -55,4 +55,4 @@ Follow **[docs/run.md](docs/run.md)**. It covers what you need, the first-time s
 
 ## Data protection
 
-The site handles students' kennitölur, names and emails, and many students are under 18. The rules that follow from that are in [CLAUDE.md](CLAUDE.md) under Hard rules (Privacy), and they apply to people as well as to Claude Code.
+The site handles students' kennitölur, names and emails, and many students are under 18. The rules that follow from that are in [CLAUDE.md](CLAUDE.md) under Hard rules, Privacy, and they apply to people as well as to Claude Code.

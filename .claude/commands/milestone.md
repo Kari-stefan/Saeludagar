@@ -7,7 +7,7 @@ Build milestone **$ARGUMENTS** from `docs/AGENT_START.md`, and nothing else.
 
 1. **Check the input.**
    - If no milestone number was given, ask for one (`CLAUDE.md`, Hard rules, says how to ask).
-   - If the previous milestone does not look finished and approved, ask before starting.
+   - If `README.md` (Status) does not list the previous milestone as built, ask before starting.
 2. **Read the spec.**
    - Read the whole §13 entry for this milestone, every section and BR it references, §10 (allowed packages) and §15 (open questions).
    - Read `docs/architecture.md` and `docs/conventions.md` for where code goes and how it is written here.
@@ -15,7 +15,7 @@ Build milestone **$ARGUMENTS** from `docs/AGENT_START.md`, and nothing else.
 3. **Build.**
    - Implement exactly the milestone's "Do" list.
    - Follow `CLAUDE.md`: the hard rules, the never-touch list and the definition of done.
-4. **Verify.** Run the milestone's acceptance checks (at least `npm test` once `package.json` exists) and fix failures that are within scope.
+4. **Verify.** Run `npm test` and the milestone's acceptance checks, and fix failures that are within scope.
 5. **Review.**
    - Have the `spec-reviewer` agent review the changes for this milestone. It is an Agent call, so name its `model` (`CLAUDE.md`, Model routing).
    - Fix its Blocking findings if they are within scope. Report anything you did not fix.
