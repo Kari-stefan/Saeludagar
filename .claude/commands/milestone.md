@@ -1,6 +1,6 @@
 ---
 description: Build one milestone from docs/AGENT_START.md, then stop for review
-argument-hint: <milestone number 1-8>
+argument-hint: <milestone, for example 7 or 6c>
 ---
 
 Build milestone **$ARGUMENTS** from `docs/AGENT_START.md`, and nothing else.

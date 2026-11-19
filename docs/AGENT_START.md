@@ -1,6 +1,6 @@
 # AGENT_START.md: Sæludagar website
 
-> This is the complete, standalone specification for you, the coding agent. The original planning files are in `docs/` (`requirements.md`, `saeludagar-notes.txt`) for reference only; where they differ from this document, this document wins. Build **milestone 1 only** (section 13), then stop and wait.
+> This is the complete, standalone specification for you, the coding agent. The original planning files are in `docs/` (`requirements.md`, `saeludagar-notes.txt`) for reference only; where they differ from this document, this document wins. Build one milestone at a time (section 13), then stop and wait. `README.md` (Status) says which milestones are built and which is next.
 
 ---
 
@@ -299,12 +299,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 |---|---|---|
 | `GET /` | Front page | The Sæludagar days. Above the events (right-aligned on wide screens), a plain GET form: a name search field, a "Leita" button, and a "Sía" menu with the filters (the braut filter has "Allar brautir" + each braut) and, beside it, a "Raða" menu with the orders (BR-63). Sorted by date, the events are grouped by day; otherwise they form one grid. Each choice other than the defaults shows under the controls with its own clear link, and "Hreinsa allt" clears them all. A message when nothing matches. For a logged-in student, the two sections of BR-64, each with its own search and order: "Þínir viðburðir" (at most 4 events) has the "n/4" counter and the sign-up window, is always one grid, has search and "Raða" only, and shows a marked attendance on the card; when it is empty it says so and links down to "Aðrir viðburðir"; "Aðrir viðburðir" works like the guest list, braut filter included. The search matches the Icelandic and the English title, whatever the page's language. Each event card shows the image, title, date and time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, a short description, the fee, "n / max", an "Uppselt" badge when full, a "Nánar" button to the event page, and "Skrá" or "Afskrá" as BR-66 says. For anyone who can manage events: a "Viðburðir sem þú sérð um" section (the events they own or co-teach, drafts included, with status, "n / max", and links to preview and publish), and, once there are Sæludagar days for an event to be on (BR-21), a floating "Nýr viðburður" button at the bottom right of the content. The button opens the event form in a dialog over the page, with a dark backdrop, the fields in about 2/3 of its width and "Myndir fyrir viðburð" (attach up to 5, preview each, remove any) in the other 1/3, stacked on narrow screens. Without JavaScript the button goes to `/teacher/events/new`. |
 | `GET /events/:id` | Event page (published only, or preview rights). The cards' "Nánar" button opens it | The title, then the facts: when, where, host, brautir, fee, "n / max" and "Uppselt". Below them two columns, 60% and 40% of the width from 48rem and one column on narrower screens. Left: the images (BR-27), one at a time, with arrows and a "Mynd n af m" count when there is more than one, and a layered look that shows more lie behind; then the description. Right: the sign-up box, with "Skrá mig" or "Afskrá mig" depending on state (guests are sent to log in) and the refusal reason when a sign-up fails; then "Viðburðastjóri" and, directly below it, "Hópur" (BR-68). |
+| `POST /events/:id` | Sign up or cancel (BR-31 to BR-36) | A logged-in student posts `action` as `signup` or `cancel`. Guests are sent to log in, other accounts get a 403, and any other `action` is a 400. Back to the event page, or the front page for a card, with the result. |
 | `GET /info` | "Upplýsingar" | What Sæludagar is and how the site works: logging in, signing up for at most 4 events and at most 2 on one day, attendance, and the course choice (§2 and the business rules). The current dates and deadlines from the settings. Contact details are a marked placeholder until the school supplies them; no rules or contacts are made up. |
 | `GET/POST /login` | Login | In a centred box, with a back link to the front page in the top-left corner. Kennitala and 6-digit code fields; the browser checks their format before sending. The generic error from BR-04. A link to "Fá nýjan kóða". There is no self-registration: accounts come from the CSV import and the admin. |
 | `GET/POST /login/new-code` | Request a new code | The same centred box, with a back link to the login page. A kennitala field. The same confirmation message whatever happens (BR-08). |
 | `POST /logout` | Log out | |
 | `POST /language` | Switch ÍS/EN | Returns to the same page. |
 | `POST /theme` | Switch light/dark (BR-62) | Returns to the same page. |
+| `GET /uploads/:file` | An event image | Served from `UPLOAD_DIR` under its random name (BR-27). |
 
 ### Student
 | Path | Purpose | Key elements |
@@ -318,12 +320,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET /teacher` | The old teacher home | Redirects to the "Viðburðir sem þú sérð um" section of the front page, which replaced it on 2 November 2026. |
 | `GET/POST /teacher/events/new`, `/teacher/events/:id/edit` | Event form (the dialog posts to the same address; this page is what "Nýr viðburður" opens without JavaScript) | All BR-20 fields, with the English fields clearly marked optional. Up to 5 images (BR-27): choose several at once, see a preview of each, and remove any of them, saved or newly chosen. Braut checkboxes (from BR-18) and the restriction flag. A co-teacher section (owner or admin only). Validation messages next to each field. |
 | `GET /teacher/events/:id/preview` | Preview | The public event page and, below it, the event's card as it shows on the front page, as a student sees them, with a "Forskoðun" (preview) banner. Works for drafts. |
-| `GET /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. |
-| `GET /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. A manager's own row cannot be ticked by them (BR-38). |
+| `GET/POST /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. The POST actions are publish, delete, add-coteacher, remove-coteacher, add-student and remove-student; delete and the co-teacher actions are for the owner or an admin only. |
+| `GET/POST /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. A manager's own row cannot be ticked by them (BR-38). |
 | `GET /teacher/events/:id/print` | Printable list | Event title, date, time and location, then a table of name, braut and an empty box. Uses a print stylesheet. |
 | `GET/POST /teacher/events/:id/message` | Message to participants | Subject and body (free text, written in any language) and a Send button. Shows the number of recipients. A deactivated student, kept on the event because their attendance is marked (BR-17), gets no email (BR-03) and is left out of the count and the copied email list. |
 
 ### Admin
+Pages that belong to a milestone that is not built yet (see `README.md`, Status) are placeholders that show only their title.
+
 | Path | Purpose | Key elements |
 |---|---|---|
 | `GET /admin` | Admin home | The current dates and windows, the email outbox status (queued / failed), and links to every admin page. No statistics; those are a Later item. |
@@ -584,7 +588,7 @@ Errors look like: "Lína 14: kennitala verður að vera 10 tölustafir" (English
 Between the two steps, the parsed result is kept only in server memory for at most 10 minutes, keyed by a random token stored in the admin's session. It is never written to disk (BR-15).
 
 ### Email (SMTP)
-- **Transport:** nodemailer SMTP, configured from `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (the school's noreply address). If `SMTP_HOST` is empty, as in development, use a transport that prints each email to the console instead of sending it.
+- **Transport:** nodemailer SMTP, configured from `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (the school's noreply address). If `SMTP_HOST` is empty, as in development, use a transport that prints each email to the console instead of sending it. In production, nothing is printed: sending fails with the error "SMTP_HOST is not set, so emails cannot be sent." and the email stays in the outbox to be retried.
 - **Outbox worker:**
   - Every email goes into `email_outbox`. A worker inside the app process sends due rows, priority 0 first.
   - It sends at most `SMTP_MAX_PER_MINUTE` per minute. The default is 30, the usual Microsoft 365 per-mailbox limit; confirm the school's real limit (open question 4).
@@ -713,7 +717,7 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 | better-sqlite3 | ^13.0.3 | SQLite driver; needs Node ≥ 22 and prebuilt binaries or build tools on the server |
 | multer | ^2.4.0 | Image and CSV uploads (memory storage) |
 | csv-parse | ^7.0.3 | Parsing the CSV import |
-| nodemailer | ^10.0.13 | Sending email over SMTP |
+| nodemailer | ^10.0.15 | Sending email over SMTP |
 | helmet | ^8.3.0 | Security headers and CSP |
 | sass (devDependency) | ^1.105.1 | Compiling SCSS to CSS with the `sass` CLI |
 
@@ -936,6 +940,8 @@ Everything in sections 3–11:
 
 ## 13. Build plan
 
+**Status:** `README.md` (Status) lists the milestones that are built. The entries for built milestones stay below as the record of what each one asked for; later milestones changed some of it.
+
 **General:**
 - Build one milestone at a time.
 - After each one, report as rule 3 in section 14 says, then wait.
@@ -1154,7 +1160,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 11 | **Data protection officer:** must the school's persónuverndarfulltrúi review the site before launch, and would they require a privacy notice (currently there is none, BR-58)? | §9, launch | Build without a privacy page. |
 | 12 | **"Senda kóða" a second time:** currently it gives everyone new codes and the old ones stop working (BR-07). Should it skip students who have already received a code? | BR-07, M3 | Build BR-07 as written. |
 | 13 | **Removing a marked attendee:** may a teacher remove a student whose attendance is already marked? That would also delete the attendance and the course choice. Answered on 15 October 2026: no. While attendance is marked there is no remove button, only a note to unmark the attendance first (BR-37). | BR-37, M6 | Built in M6. |
-| 14 | **Course list changes on re-import:** if a re-import removes a course from a student's list after they chose it, is the choice kept or cleared? Answered on 13 November 2026: cleared. The points return to the student, and the audit log records it (BR-17). | BR-17 / BR-41, M7 | Built in M6c. |
+| 14 | **Course list changes on re-import:** if a re-import removes a course from a student's list after they chose it, is the choice kept or cleared? Answered on 13 November 2026: cleared. The points return to the student, and the audit log records it (BR-17). After the course-choice deadline the choice is kept instead (BR-17). | BR-17 / BR-41, M7 | Built in M6c. |
 | 15 | **Unpublishing:** can a teacher take a published event back to draft? This is not specified, so it is not built. | §6 | Do not build. |
 | 16 | **Who is "gögn gæji"** in the planning notes? | Nothing | — |
 | 17 | **Exact dates for Sæludagar 2027**, the sign-up window and the deadline (expected March 2027). | Nothing (the admin enters them) | — |

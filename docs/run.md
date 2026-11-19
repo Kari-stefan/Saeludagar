@@ -127,7 +127,7 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone M6b):**
+**What you should see:**
 - **The header:**
   - The red school logo on the left.
   - "Sæludagar" in the middle, with the school's name under it if `SCHOOL_NAME` is set in `.env`.

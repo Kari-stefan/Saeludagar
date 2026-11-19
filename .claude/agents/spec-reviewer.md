@@ -29,7 +29,7 @@ From `docs/AGENT_START.md`, read:
 1. **Scope.**
    - Flag any feature, file or abstraction the milestone does not ask for, and any work belonging to a later milestone.
    - Flag every package in `package.json` that is not in the §10 table.
-   - Flag any change to `src/db/schema.sql` after milestone 1.
+   - Flag any change to `src/db/schema.sql` or `src/db/migrate.js` unless the milestone's §13 entry says the project owner approved it.
    - Flag deleted files.
 2. **Business rules.** For each BR in scope:
    - Is it implemented as written?

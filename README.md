@@ -57,13 +57,13 @@ Folders that are still empty hold a `.gitkeep` file so git keeps them.
 ### Building with Claude Code
 The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_START.md):
 
-1. Run `/milestone 1` (or the next number). Claude builds that milestone only, then stops.
+1. Run `/milestone` with the next milestone from the Status section above, for example `/milestone 7`. Claude builds that milestone only, then stops.
 2. Run `/review` to have the `spec-reviewer` agent check the changes against the business rules, the security requirements and the milestone's scope.
 3. Check the result yourself using the "how to verify" steps Claude gives.
 4. Commit, push your branch and open a pull request into `main`.
 5. After it is merged, move on to the next milestone.
 
-Claude Code asks before installing packages, pushing, or anything else section 14 of AGENT_START.md lists. It cannot read `.env`, the database or the backups. These rules are in `.claude/settings.json`.
+`.claude/settings.json` makes Claude Code ask before `npm install`, `npm uninstall` and `git push`, blocks its Read tool from `.env`, `data/` and `backups/`, and runs a hook that requires every subagent to be started with a named model. The other rules, such as asking before deleting files or changing the data model, are instructions in [CLAUDE.md](CLAUDE.md), not settings.
 
 ## Setup
 

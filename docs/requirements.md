@@ -1,5 +1,7 @@
 # Requirements
 
+> **Reference only.** These are the original requirements. `docs/AGENT_START.md` is the specification; where they differ, AGENT_START.md wins.
+
 
 ## Tilgangur
     Vefsíða fyrir skólann sem auðveldar nemendum að skrá sig í atburði á Sæludegi. Nemendur geta skráð sig inn með kennitölu og valið þá atburði sem þeir vilja sækja. Ef atburðir eru ætlaðir ákveðnum brautum er hægt að sía framboðið til að auðvelda leitina.
