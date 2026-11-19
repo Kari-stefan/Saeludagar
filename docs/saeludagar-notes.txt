@@ -1,3 +1,5 @@
+Reference only: these are the original meeting notes. docs/AGENT_START.md is the specification; where they differ, AGENT_START.md wins.
+
 Fólk:
 
 

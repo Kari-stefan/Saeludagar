@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-As of milestone 7 you can log in, and as admin you can create teacher accounts, set the Sæludagar dates, import students from a CSV file and send every student a code. Teachers create events, preview and publish them, everyone sees the published ones on the front page, and students sign up and cancel while sign-up is open. Teachers manage the participants, email them, take attendance on the day and print the list. The front page is where everyone works: students sign up from the event cards and see their own events there, and teachers create and find theirs there. The site has the school's logo and colours, light and dark mode, a phone menu, search, filters and sorting, and an Upplýsingar page. You create your own admin account with a command. Emails, such as login codes, are printed in the terminal instead of being sent. For quick tests, `npm run seed:dev` creates fake students without a CSV file. An event's page shows its images, who runs it and, to those who manage it, who has signed up; and students give their absence points to their courses on the Fjarvistastig page. As admin you can also download the office export and read the audit log. The purge page, from milestone 8, still shows only its title.
+What is built so far is listed in the [README](../README.md) under Status. Pages from milestones that are not built yet show only their title. Emails, such as login codes, are printed in the terminal instead of being sent.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -15,6 +15,9 @@ As of milestone 7 you can log in, and as admin you can create teacher accounts, 
 8. [Reset your local database](#8-reset-your-local-database)
 9. [Troubleshooting](#9-troubleshooting)
 10. [Where things are](#10-where-things-are)
+11. [npm scripts](#11-npm-scripts)
+12. [Environment variables](#12-environment-variables)
+13. [Cloud sessions](#13-cloud-sessions)
 
 ## 1. What you need
 
@@ -89,7 +92,7 @@ SCHOOL_NAME=Fjölbrautaskólinn í Breiðholti
 ```
 Save `.env` as UTF-8 (the default in VS Code), or "ö" and "ð" show up garbled.
 
-You can leave the other settings as they are; [README → Environment variables](../README.md#environment-variables) explains each one. Keep `SMTP_HOST` empty on your own computer, so emails are printed instead of sent.
+You can leave the other settings as they are; [section 12](#12-environment-variables) explains each one. Keep `SMTP_HOST` empty on your own computer, so emails are printed instead of sent.
 
 **4. Create the database:**
 ```
@@ -127,7 +130,7 @@ When you see `Sæludagar is running at http://localhost:3000`, open **http://loc
 
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
-**What you should see (milestone M6b):**
+**What you should see:**
 - **The header:**
   - The red school logo on the left.
   - "Sæludagar" in the middle, with the school's name under it if `SCHOOL_NAME` is set in `.env`.
@@ -250,6 +253,8 @@ All tests should pass: the summary at the end shows `ℹ fail 0`. The tests use 
 
 Some tests check error handling on purpose, so error messages in the output are normal as long as the summary says `fail 0`.
 
+To run one test file or one test by name, use the commands in [CLAUDE.md](../CLAUDE.md) under Commands.
+
 ## 7. Get the team's latest code
 
 Everyone's finished work is merged into `main` through pull requests. To bring it into your branch:
@@ -269,7 +274,7 @@ Everyone's finished work is merged into `main` through pull requests. To bring i
 
 ## 8. Reset your local database
 
-This deletes everything in your **local development** database and starts empty. Only do this on your own computer, never on the school's server, where the data is real.
+This deletes everything in your **local development** database and starts empty. Only do this on your own computer, never on the school's server, where the data is real. Claude Code does not do this unless you ask it to: deleting files is on the "Ask first" list in [CLAUDE.md](../CLAUDE.md).
 
 1. Stop the server (`Ctrl+C`).
 2. Delete the database files:
@@ -343,7 +348,7 @@ Find the message you see in the left column.
 | `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '…'` | Packages are missing or out of date | Stop `npm run dev`, then run `npm install`. |
 | `'sass' is not recognized as an internal or external command` (macOS/Linux: `sass: command not found` or `sass: not found`) | The packages aren't installed | Run `npm install`. |
 | `Error: Cannot find module '…scripts\backup.js'` (or `loadtest.js`) | That script isn't written yet | See [Not covered yet](#not-covered-yet). |
-| `gyp ERR!` or `node-gyp` during `npm install` | Your npm is older than 11.16, so it ignores the `allowScripts` setting in `package.json` and tries to compile better-sqlite3 | Install the current Node.js 24 LTS (check `npm -v`), then run `npm install` again. Quick workaround: `npm install --ignore-scripts`. |
+| `gyp ERR!` or `node-gyp` during `npm install` | Your npm is older than 11.16, so it ignores the `allowScripts` setting in `package.json` and tries to compile better-sqlite3 | Install the current Node.js 24 LTS (check `npm -v`), then run `npm install` again. Quick workaround: `npm install --ignore-scripts`. On a platform with no prebuilt binary (rare), compile it yourself, which needs Python and a C++ compiler: delete the `"better-sqlite3": false` line from `allowScripts` in your local `package.json` (don't commit that change), then run `npm install-scripts approve better-sqlite3` and `npm rebuild better-sqlite3`. |
 | `npm error code EPERM`, `being used by another process` or `Device or resource busy` | A running server (maybe in another terminal) is using the files you're installing or deleting | Stop it with `Ctrl+C`, then run the command again. If `npm install` stopped halfway, just run it again. |
 | `node: bad option: --env-file-if-exists=.env`, or `EBADENGINE` warnings | Your Node.js is too old | Install the current Node.js 24 LTS, then run `npm install` again. |
 
@@ -351,30 +356,60 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 
 ## 10. Where things are
 
-| Path | What it is | In git? |
-|---|---|---|
-| `.env` | Your private settings and secrets | No, never commit |
-| `data/saeludagar.db` | Your local database | No |
-| `public/css/main.css` | Built from `scss/` by `build:css` / `watch:css` | No |
-| `uploads/` | Event images, under random names | No |
-| `backups/` | Database backups (from milestone 8) | No |
-| `src/` | Server code, views, email templates and translations | Yes |
-| `scripts/` | Command-line scripts, such as `create-admin.js` | Yes |
-| `scss/` | Styles; brand colours are in `scss/_tokens.scss` | Yes |
-| `test/` | Tests | Yes |
-| `docs/` | Specification ([AGENT_START.md](AGENT_START.md)), original notes and this guide | Yes |
+[architecture.md](architecture.md) has the directory map: what each folder holds, which paths git ignores, and where new code goes.
 
 ### Not covered yet
 
-- **Scripts not written yet:**
-
-  | Script | Arrives in |
-  |---|---|
-  | `npm run backup` | milestone 8 |
-  | `npm run loadtest` | milestone 8 |
-
-  Running one of them now gives `Error: Cannot find module`.
+- **Scripts not written yet:** `npm run backup` and `npm run loadtest` (see [section 11](#11-npm-scripts)). Running one of them now gives `Error: Cannot find module`.
 - **Real email** needs the school's SMTP details (open question 4 in [AGENT_START.md](AGENT_START.md)). Until then, keep `SMTP_HOST` empty; emails are printed in the `npm run dev` terminal.
 - **Deployment notes** for the school's server (a Linux guide in the README) arrive in milestone 8. The deployment itself happens separately, once it is approved.
 
 This guide will be updated as those milestones land.
+
+## 11. npm scripts
+
+| Script | What it does | Status |
+|---|---|---|
+| `npm run dev` | Starts the site and restarts it when JavaScript in `src/` or `.env` changes | Built |
+| `npm run watch:css` | Rebuilds `public/css/main.css` when SCSS changes (not compressed, with a source map) | Built |
+| `npm run build:css` | Builds the CSS once, compressed | Built |
+| `npm start` | Starts the site (production) | Built |
+| `npm run migrate` | Creates the database, or upgrades an older one and keeps its data | Built |
+| `npm test` | Runs the tests | Built |
+| `npm run create-admin` | Creates the first admin account | Built |
+| `npm run seed:dev` | Creates fake students (with new codes) for trying student login. Development only | Built |
+| `npm run backup` | Backs up the database and uploads | Not built yet (milestone 8) |
+| `npm run loadtest` | 1,000-student sign-up load test | Not built yet (milestone 8) |
+
+## 12. Environment variables
+
+`.env.example` is the template; copy it to `.env` as [section 3](#3-first-time-setup) describes. `src/config.js` reads every variable.
+
+| Variable | Purpose | Default |
+|---|---|---|
+| `NODE_ENV` | `development` or `production` | `development` |
+| `PORT` | Port the site listens on | `3000` |
+| `BASE_URL` | Public address of the site, used in emails | `http://localhost:3000` |
+| `SCHOOL_NAME` | Shown in the header and the title: "Sæludagar – {SCHOOL_NAME}". Set it to `Fjölbrautaskólinn í Breiðholti` | empty |
+| `DATABASE_PATH` | SQLite database file | `./data/saeludagar.db` |
+| `UPLOAD_DIR` | Event images | `./uploads` |
+| `BACKUP_DIR` | Database backups | `./backups` |
+| `SESSION_SECRET` | **Required.** Signs the session cookie | none |
+| `KENNITALA_ENC_KEY` | **Required.** Encrypts kennitölur. If the two kennitala keys are lost, stored kennitölur cannot be read or matched: the student CSV has to be imported again, and every teacher account, the admin's included, created again. On the server, keep a copy of the keys somewhere other than the database backups. | none |
+| `KENNITALA_HMAC_KEY` | **Required.** A separate key for kennitala lookups | none |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server. `MAIL_FROM` (the noreply address) is required when `SMTP_HOST` is set. `SMTP_SECURE` is `true` for port 465 and `false` for port 587; the server won't start if they don't match. If `SMTP_HOST` is empty, development prints emails to the console instead of sending them; production never prints them, and they stay queued | empty, `587`, `false` |
+| `SMTP_MAX_PER_MINUTE` | Sending limit for bulk email | `30` |
+| `TRUST_PROXY` | Set to `1` behind nginx in production | `0` |
+| `NEW_CODE_LIMIT` | `off` removes the 10-minute limit on "Fá nýjan kóða" (BR-08) for testing. Only works when `NODE_ENV=development`; never set it on the server | empty (limit on) |
+
+## 13. Cloud sessions
+
+Claude Code can also work on the repository in a cloud session (claude.ai/code, or `claude --cloud` in a terminal). The session clones the repository from GitHub, so it only sees what is pushed. Push your branch first.
+
+- **What the session gets from the repository:** `CLAUDE.md`, and the settings, hooks, commands and reviewer agent in `.claude/`.
+- **What it does not get:** your `.env`, your database in `data/`, the images in `uploads/`, and anything configured only on your own computer.
+- **Node.js and packages:** `.claude/hooks/cloud-setup.sh` runs when a cloud session starts. It installs Node.js 24.20.0 (the cloud machines come with Node.js 20 to 22) after checking the download against its published checksum, puts it first on PATH for the commands Claude runs, and runs `npm ci`. On your own computer it does nothing.
+- **Tests and the site:** `npm test` needs nothing else. To run the site there, do the first-time setup of section 3 in the session. It creates a `.env` with new secrets and an empty database that exist only in that session.
+- **GitHub commands:** in a cloud session `gh pr` and `gh issue` do not work. Claude uses the session's built-in GitHub tools or `gh api` instead.
+- **Branches:** the session can push to any branch. The rule that nobody commits to `main` directly is in [CLAUDE.md](../CLAUDE.md). A branch protection rule on GitHub would enforce it.
+- **Projects and several repositories:** sessions with several repositories, and threads inside a claude.ai project, load only `CLAUDE.md`, not the hooks. There, start by asking Claude to run `bash .claude/hooks/cloud-setup.sh`. The script exits at once unless `CLAUDE_CODE_REMOTE` is `true`, which it is in every cloud session.

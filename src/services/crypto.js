@@ -10,11 +10,11 @@ export function normalizeKennitala(input) {
 function readKey(name, value) {
   const text = (value ?? '').trim();
   if (!text) {
-    throw new Error(`${name} is not set. Copy .env.example to .env and fill it in (see README, "Setup").`);
+    throw new Error(`${name} is not set. Copy .env.example to .env and fill it in (see docs/run.md, "First-time setup").`);
   }
   const key = Buffer.from(text, 'base64');
   if (key.length !== 32 || key.toString('base64') !== text) {
-    throw new Error(`${name} must be 32 random bytes, base64-encoded. Generate it as described in the README ("Setup", step 3).`);
+    throw new Error(`${name} must be 32 random bytes, base64-encoded. Generate it as described in docs/run.md ("First-time setup", step 3).`);
   }
   return key;
 }
@@ -25,7 +25,7 @@ export function kennitalaCrypto({ kennitalaEncKey, kennitalaHmacKey }) {
   const encKey = readKey('KENNITALA_ENC_KEY', kennitalaEncKey);
   const hmacKey = readKey('KENNITALA_HMAC_KEY', kennitalaHmacKey);
   if (encKey.equals(hmacKey)) {
-    throw new Error('KENNITALA_ENC_KEY and KENNITALA_HMAC_KEY must be different. Generate a separate value for each (see README, "Setup", step 3).');
+    throw new Error('KENNITALA_ENC_KEY and KENNITALA_HMAC_KEY must be different. Generate a separate value for each (see docs/run.md, "First-time setup", step 3).');
   }
 
   return {

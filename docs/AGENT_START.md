@@ -1,6 +1,6 @@
 # AGENT_START.md: Sæludagar website
 
-> This is the complete, standalone specification for you, the coding agent. The original planning files are in `docs/` (`requirements.md`, `saeludagar-notes.txt`) for reference only; where they differ from this document, this document wins. Build **milestone 1 only** (section 13), then stop and wait.
+> This is the complete, standalone specification for you, the coding agent. The original planning files are in `docs/` (`requirements.md`, `saeludagar-notes.txt`) for reference only; where they differ from this document, this document wins. Build one milestone at a time (section 13), then stop and wait. `README.md` (Status) says which milestones are built and which is next.
 
 ---
 
@@ -299,12 +299,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 |---|---|---|
 | `GET /` | Front page | The Sæludagar days. Above the events (right-aligned on wide screens), a plain GET form: a name search field, a "Leita" button, and a "Sía" menu with the filters (the braut filter has "Allar brautir" + each braut) and, beside it, a "Raða" menu with the orders (BR-63). Sorted by date, the events are grouped by day; otherwise they form one grid. Each choice other than the defaults shows under the controls with its own clear link, and "Hreinsa allt" clears them all. A message when nothing matches. For a logged-in student, the two sections of BR-64, each with its own search and order: "Þínir viðburðir" (at most 4 events) has the "n/4" counter and the sign-up window, is always one grid, has search and "Raða" only, and shows a marked attendance on the card; when it is empty it says so and links down to "Aðrir viðburðir"; "Aðrir viðburðir" works like the guest list, braut filter included. The search matches the Icelandic and the English title, whatever the page's language. Each event card shows the image, title, date and time, location, brautir, the "Aðeins fyrir nemendur brautar" badge when set, a short description, the fee, "n / max", an "Uppselt" badge when full, a "Nánar" button to the event page, and "Skrá" or "Afskrá" as BR-66 says. For anyone who can manage events: a "Viðburðir sem þú sérð um" section (the events they own or co-teach, drafts included, with status, "n / max", and links to preview and publish), and, once there are Sæludagar days for an event to be on (BR-21), a floating "Nýr viðburður" button at the bottom right of the content. The button opens the event form in a dialog over the page, with a dark backdrop, the fields in about 2/3 of its width and "Myndir fyrir viðburð" (attach up to 5, preview each, remove any) in the other 1/3, stacked on narrow screens. Without JavaScript the button goes to `/teacher/events/new`. |
 | `GET /events/:id` | Event page (published only, or preview rights). The cards' "Nánar" button opens it | The title, then the facts: when, where, host, brautir, fee, "n / max" and "Uppselt". Below them two columns, 60% and 40% of the width from 48rem and one column on narrower screens. Left: the images (BR-27), one at a time, with arrows and a "Mynd n af m" count when there is more than one, and a layered look that shows more lie behind; then the description. Right: the sign-up box, with "Skrá mig" or "Afskrá mig" depending on state (guests are sent to log in) and the refusal reason when a sign-up fails; then "Viðburðastjóri" and, directly below it, "Hópur" (BR-68). |
+| `POST /events/:id` | Sign up or cancel (BR-31 to BR-36) | A logged-in student posts `action` as `signup` or `cancel`. Guests are sent to log in, other accounts get a 403, and any other `action` is a 400. Back to the event page, or the front page for a card, with the result. |
 | `GET /info` | "Upplýsingar" | What Sæludagar is and how the site works: logging in, signing up for at most 4 events and at most 2 on one day, attendance, and the course choice (§2 and the business rules). The current dates and deadlines from the settings. Contact details are a marked placeholder until the school supplies them; no rules or contacts are made up. |
 | `GET/POST /login` | Login | In a centred box, with a back link to the front page in the top-left corner. Kennitala and 6-digit code fields; the browser checks their format before sending. The generic error from BR-04. A link to "Fá nýjan kóða". There is no self-registration: accounts come from the CSV import and the admin. |
 | `GET/POST /login/new-code` | Request a new code | The same centred box, with a back link to the login page. A kennitala field. The same confirmation message whatever happens (BR-08). |
 | `POST /logout` | Log out | |
 | `POST /language` | Switch ÍS/EN | Returns to the same page. |
 | `POST /theme` | Switch light/dark (BR-62) | Returns to the same page. |
+| `GET /uploads/:file` | An event image | Served from `UPLOAD_DIR` under its random name (BR-27). |
 
 ### Student
 | Path | Purpose | Key elements |
@@ -318,12 +320,14 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET /teacher` | The old teacher home | Redirects to the "Viðburðir sem þú sérð um" section of the front page, which replaced it on 2 November 2026. |
 | `GET/POST /teacher/events/new`, `/teacher/events/:id/edit` | Event form (the dialog posts to the same address; this page is what "Nýr viðburður" opens without JavaScript) | All BR-20 fields, with the English fields clearly marked optional. Up to 5 images (BR-27): choose several at once, see a preview of each, and remove any of them, saved or newly chosen. Braut checkboxes (from BR-18) and the restriction flag. A co-teacher section (owner or admin only). Validation messages next to each field. |
 | `GET /teacher/events/:id/preview` | Preview | The public event page and, below it, the event's card as it shows on the front page, as a student sees them, with a "Forskoðun" (preview) banner. Works for drafts. |
-| `GET /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. |
-| `GET /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. A manager's own row cannot be ticked by them (BR-38). |
+| `GET/POST /teacher/events/:id` | Event management | Status and a "Birta" (publish) button. A participant table (name, braut, email, attended). Add a student (name search) and remove buttons. Links to copy emails, send a message, print the list and take attendance. A delete button for the owner or an admin, disabled once attendance is marked. The POST actions are publish, delete, add-coteacher, remove-coteacher, add-student and remove-student; delete and the co-teacher actions are for the owner or an admin only. |
+| `GET/POST /teacher/events/:id/attendance` | Attendance checklist | A mobile-first list of participants with large checkboxes that save immediately. Read-only outside the BR-39 window. A manager's own row cannot be ticked by them (BR-38). |
 | `GET /teacher/events/:id/print` | Printable list | Event title, date, time and location, then a table of name, braut and an empty box. Uses a print stylesheet. |
 | `GET/POST /teacher/events/:id/message` | Message to participants | Subject and body (free text, written in any language) and a Send button. Shows the number of recipients. A deactivated student, kept on the event because their attendance is marked (BR-17), gets no email (BR-03) and is left out of the count and the copied email list. |
 
 ### Admin
+Pages that belong to a milestone that is not built yet (see `README.md`, Status) are placeholders that show only their title.
+
 | Path | Purpose | Key elements |
 |---|---|---|
 | `GET /admin` | Admin home | The current dates and windows, the email outbox status (queued / failed), and links to every admin page. No statistics; those are a Later item. |
@@ -331,7 +335,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET/POST /admin/import` | Student CSV import | Upload, then either the list of errors with line numbers, or a summary of changes (added, updated, deactivated, sign-ups to be removed, course choices to be cleared) with a Confirm button. |
 | `GET/POST /admin/codes` | Send codes | The number of active students, a warning that previous codes stop working, a Confirm button, and progress (queued / sent / failed). |
 | `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away from a student (BR-67). |
-| `GET /admin/events` | All events | Every event with its owner, status and "n / max", linking to the management page. |
+| `GET /admin/events` | All events | Every event with its owner, date and time, status and "n / max", linking to the management page. |
 | `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline and a "final" label after it, the number of rows, the number of rows without a course, and a reminder that the file holds kennitölur. |
 | `GET/POST /admin/purge` | Purge | A description of what will be deleted, a typed confirmation, and the date of the automatic purge. |
 | `GET /admin/audit` | Audit log | Newest first, 100 entries a page, filterable by event and by student name, showing who, what and when. An event or a person that no longer exists is shown as such. |
@@ -584,7 +588,7 @@ Errors look like: "Lína 14: kennitala verður að vera 10 tölustafir" (English
 Between the two steps, the parsed result is kept only in server memory for at most 10 minutes, keyed by a random token stored in the admin's session. It is never written to disk (BR-15).
 
 ### Email (SMTP)
-- **Transport:** nodemailer SMTP, configured from `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (the school's noreply address). If `SMTP_HOST` is empty, as in development, use a transport that prints each email to the console instead of sending it.
+- **Transport:** nodemailer SMTP, configured from `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (the school's noreply address). If `SMTP_HOST` is empty, as in development, use a transport that prints each email to the console instead of sending it. In production, nothing is printed: sending fails with the error "SMTP_HOST is not set, so emails cannot be sent." and the email stays in the outbox to be retried.
 - **Outbox worker:**
   - Every email goes into `email_outbox`. A worker inside the app process sends due rows, priority 0 first.
   - It sends at most `SMTP_MAX_PER_MINUTE` per minute. The default is 30, the usual Microsoft 365 per-mailbox limit; confirm the school's real limit (open question 4).
@@ -717,7 +721,7 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 | better-sqlite3 | ^13.0.3 | SQLite driver; needs Node ≥ 22 and prebuilt binaries or build tools on the server |
 | multer | ^2.4.0 | Image and CSV uploads (memory storage) |
 | csv-parse | ^7.0.3 | Parsing the CSV import |
-| nodemailer | ^10.0.13 | Sending email over SMTP |
+| nodemailer | ^10.0.15 | Sending email over SMTP |
 | helmet | ^8.3.0 | Security headers and CSP |
 | sass (devDependency) | ^1.105.1 | Compiling SCSS to CSS with the `sass` CLI |
 
@@ -735,91 +739,14 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 
 **Not allowed without asking first:** any package not in the table above. That includes i18n, rate-limit, session-store, ORM or query-builder, test-framework, CSS or JS framework, EJS layout, and "concurrently"-style packages.
 
-### npm scripts (created in milestone 1)
-| Script | What it does |
-|---|---|
-| `dev` | `node --watch --env-file=.env src/server.js` |
-| `watch:css` | `sass --watch scss/main.scss public/css/main.css` (run in a second terminal) |
-| `build:css` | Compiles SCSS once, compressed |
-| `start` | Production start |
-| `migrate` | Applies `src/db/schema.sql` |
-| `create-admin` | Creates the first admin (BR-13) |
-| `backup` | Runs `scripts/backup.js` |
-| `test` | `node --test` |
-| `loadtest` | The load test (milestone 8) |
-| `seed:dev` | Fake development data only |
+### npm scripts
+`package.json` defines the npm scripts. `docs/run.md` (section 11) says what each one does and which are not built yet.
 
 ### Project structure
-The folders below already exist, each with an empty `.gitkeep` file. Leave the `.gitkeep` files in place. `README.md`, `.gitignore`, `CLAUDE.md`, `.claude/` and `docs/` also exist. Do not change them unless asked, except where a milestone says to extend the README or `.gitignore`.
-```
-README.md              project overview and how the team works; setup is added in milestone 1
-.gitignore             already ignores node_modules, .env, data, uploads, backups, compiled CSS
-CLAUDE.md              project instructions for Claude Code (points here)
-.claude/
-  settings.json        shared Claude Code permissions and settings
-  agents/
-    spec-reviewer.md   read-only reviewer: business rules, security (§9), scope
-  commands/
-    milestone.md       /milestone N: build one milestone, then stop
-    review.md          /review: run spec-reviewer on the current changes
-docs/
-  AGENT_START.md       this specification
-  run.md               how to run the site locally; keep it current as milestones change commands
-  requirements.md      original requirements (reference only)
-  saeludagar-notes.txt original meeting notes (reference only)
-  design-requirements.md  design requirements from the project owner (reference only; built in M5b)
-  improvements-requirements.md  improvements brief from the project owner (reference only; built in M6b)
-  wireframes-requirements.md  event page and "Fjarvistastig" brief from the project owner (reference only; built in M6c)
-src/
-  server.js            entry point: env, start app, start jobs
-  app.js               express app (helmet, session, csrf, i18n, routes, errors)
-  config.js            env parsing and the constants 4 / 4 / 4 / 2 (BR-47)
-  db/                  index.js (connection + pragmas), schema.sql, migrate.js, sessionStore.js
-  middleware/          auth guards, csrf, language, error handlers
-  routes/              public.js, auth.js, student.js, teacher.js, admin.js
-  services/            crypto, codes, import, events, signups, attendance, choices, export, email, purge, audit
-  i18n/                is.json, en.json, index.js (t() with fallback to Icelandic)
-  jobs/                outbox.js, sessionCleanup.js, autoPurge.js
-  views/
-    partials/          header (with nav-links, header-actions, icon), footer, flash messages, event card,
-                       browse-controls, event-groups, managed-events and event-dialog (front page), event-fields and
-                       image-picker (event form and dialog), event-details and event-gallery (event page and preview)
-    public/ student/ teacher/ admin/ errors/
-    emails/            plain-text bilingual email templates
-scss/                  main.scss, _tokens.scss (brand colours), partials
-public/
-  css/                 compiled output (git-ignored)
-  js/                  small vanilla scripts (attendance autosave, copy emails, image preview, mobile menu, card sign-up, event dialog,
-                       gallery, points)
-  img/                 default-event.svg, logo.svg (the school logo)
-scripts/               create-admin.js, backup.js, loadtest.js, seed-dev.js
-test/                  node:test files, named by feature, referencing BR IDs
-data/                  SQLite database (git-ignored)
-uploads/               event images (git-ignored)
-backups/               local backups in development (git-ignored)
-```
+`docs/architecture.md` has the directory map: what each folder holds, where new code of each kind goes, and which planned files do not exist yet.
 
 ### Environment variables (`.env.example`)
-```
-NODE_ENV=development
-PORT=3000
-BASE_URL=http://localhost:3000
-SCHOOL_NAME=
-DATABASE_PATH=./data/saeludagar.db
-UPLOAD_DIR=./uploads
-BACKUP_DIR=./backups
-SESSION_SECRET=
-KENNITALA_ENC_KEY=
-KENNITALA_HMAC_KEY=
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-MAIL_FROM=
-SMTP_MAX_PER_MINUTE=30
-TRUST_PROXY=0
-```
+`.env.example` is the template. `docs/run.md` (section 12) explains every variable.
 
 ### Hosting
 These were decided in the interview; the items marked "assumed" still need confirming.
@@ -940,19 +867,19 @@ Everything in sections 3–11:
 
 ## 13. Build plan
 
+**Status:** `README.md` (Status) lists the milestones that are built. The entries for built milestones stay below as the record of what each one asked for; later milestones changed some of it.
+
 **General:**
 - Build one milestone at a time.
-- After each one, report as rule 3 in section 14 says, then wait.
-- Write `node:test` tests for every business rule the milestone touches, and put the BR ID in the test name.
-- Use only fake data.
+- `CLAUDE.md` has the rules that apply to every milestone: what to ask first, the tests each business rule needs, fake data only, and the report to give before waiting.
 
 ### M1: Scaffold and data model (no features)
 Do:
 - **Project files:**
-  - `package.json` with exactly the dependencies and scripts in section 10.
+  - `package.json` with exactly the dependencies in section 10 and the scripts in `docs/run.md` (section 11).
   - `.gitignore` already exists. It covers `node_modules`, `.env`, `data/*`, `uploads/*`, `backups/*`, `public/css/*` and `.claude/settings.local.json`, and keeps each `.gitkeep`. Only extend it if something new needs ignoring.
   - `.env.example`.
-  - `README.md` already exists. Fill in its "Setup" section: setup steps, generating keys, the scripts and the environment variables.
+  - `README.md` already exists. Its setup steps, key generation, scripts and environment variables now live in `docs/run.md`, and the README's "Setup" section points there.
 - **App shell:**
   - An Express 5 app with EJS, helmet (CSP), static files and error pages.
   - Header and footer partials.
@@ -1127,15 +1054,7 @@ Acceptance:
 
 ## 14. Agent rules
 
-- "Only build what this document specifies. Do not add features, abstractions, or dependencies beyond it."
-- "Stop and ask before: adding a dependency not listed in section 10, changing the data model after milestone 1, deleting files, running migrations on real data, or deploying."
-- "After each milestone output: ✅ [what was completed] and how to verify it, then wait for my go-ahead."
-
-Also:
-- Start with milestone 1 only. The project is still in an early phase.
-- If this document is unclear or contradicts itself, or if an open question in section 15 blocks your current milestone, stop and ask. Do not guess.
-- Never use real kennitölur or real student data anywhere.
-- Do not commit or push unless asked.
+The rules for agents are in `CLAUDE.md`: the hard rules (privacy, what to ask first, scope, git, docs), the never-touch list, the definition of done, and what to do when rules conflict.
 
 ---
 
@@ -1158,7 +1077,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 11 | **Data protection officer:** must the school's persónuverndarfulltrúi review the site before launch, and would they require a privacy notice (currently there is none, BR-58)? | §9, launch | Build without a privacy page. |
 | 12 | **"Senda kóða" a second time:** currently it gives everyone new codes and the old ones stop working (BR-07). Should it skip students who have already received a code? | BR-07, M3 | Build BR-07 as written. |
 | 13 | **Removing a marked attendee:** may a teacher remove a student whose attendance is already marked? That would also delete the attendance and the course choice. Answered on 15 October 2026: no. While attendance is marked there is no remove button, only a note to unmark the attendance first (BR-37). | BR-37, M6 | Built in M6. |
-| 14 | **Course list changes on re-import:** if a re-import removes a course from a student's list after they chose it, is the choice kept or cleared? Answered on 13 November 2026: cleared. The points return to the student, and the audit log records it (BR-17). | BR-17 / BR-41, M7 | Built in M6c. |
+| 14 | **Course list changes on re-import:** if a re-import removes a course from a student's list after they chose it, is the choice kept or cleared? Answered on 13 November 2026: cleared. The points return to the student, and the audit log records it (BR-17). After the course-choice deadline the choice is kept instead (BR-17). | BR-17 / BR-41, M7 | Built in M6c. |
 | 15 | **Unpublishing:** can a teacher take a published event back to draft? This is not specified, so it is not built. | §6 | Do not build. |
 | 16 | **Who is "gögn gæji"** in the planning notes? | Nothing | — |
 | 17 | **Exact dates for Sæludagar 2027**, the sign-up window and the deadline (expected March 2027). | Nothing (the admin enters them) | — |
