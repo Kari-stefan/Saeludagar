@@ -90,7 +90,7 @@ Stop and ask before any of these. Never leave one of them to a subagent.
 - No `Co-Authored-By` lines or other Claude attribution in commits or pull requests. `.claude/settings.json` turns it off as well.
 
 **Docs**
-- Any change that makes a doc inaccurate must update that doc in the same commit. If you were not asked to commit, make the doc edit as part of the same change. For `CLAUDE.md` and `.claude/`, see "Never touch".
+- Any change that makes a doc inaccurate must update that doc in the same commit. If you were not asked to commit, make the doc edit as part of the same change. To find the docs a change affects, search `README.md`, `CLAUDE.md` and `docs/` for the names it touches: a file, a function, a route, a command, a setting. For `CLAUDE.md` and `.claude/`, see "Never touch".
 
 ## Never touch
 

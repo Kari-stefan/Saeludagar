@@ -9,6 +9,7 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 | To add or change | Start from | Also touch |
 |---|---|---|
 | A page with a form | `src/routes/student.js` (route), `src/views/student/points.ejs` (view) | `src/i18n/is.json` and `src/i18n/en.json`; mount the router in `src/app.js`; a test in `test/` |
+| A plain form that searches or filters a list | `src/views/teacher/event.ejs` (the student search, a GET form), `src/views/partials/browse-controls.ejs` (the front page's search, filters and `<select>`) | a helper in the service that turns the query value into a known one (`searchTerm`, `sortOrder` in `src/services/events.js`); texts in both i18n files; a test |
 | A business rule in a service | `src/services/signups.js` | the BR comment above the function; `test/signups.test.js` |
 | A database write that must be atomic | `src/services/choices.js` (`givePoints`) | `audit()` call inside the transaction; `test/points.test.js` |
 | A UI text | `src/i18n/is.json` | the same key in `src/i18n/en.json`; restart the server |
@@ -44,7 +45,7 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 
 ## Services
 
-- One file per area: `attendance.js`, `signups.js`, `events.js`, `choices.js` and so on. Put a new function in the file of the area it belongs to, and start a new file only for a new area. A helper that reads or checks a request value lives there too, as `searchTerm` and `sortOrder` do in `src/services/events.js` and `isValidDay` in `src/services/settings.js`. There is no `utils` folder.
+- One file per area: `attendance.js`, `signups.js`, `events.js`, `choices.js` and so on. Put a new function in the file of the area it belongs to, and start a new file only for a new area. If two files could hold it, choose the one named for what the function returns: a count of attendances goes in `attendance.js`. A helper that reads or checks a request value lives there too, as `searchTerm` and `sortOrder` do in `src/services/events.js` and `isValidDay` in `src/services/settings.js`. There is no `utils` folder.
 - Name a function for what it returns or does: `eventParticipants`, `studentPoints`, `attendanceWindow`, `setAttendance`.
 - Take `db` first, then the actor or subject id, then the rest, then `now = new Date()` last: `givePoints(db, studentId, course, now)`.
 - Return a result, do not throw, for failures a user can cause: `{ ok: true }` or `{ error: 'points.errors.closed', params }`, where `error` is an i18n key and `params` fills its placeholders. Validators return `{ values, errors }` with `errors` keyed by field (`validateTeacher`, `saveTimes`). The route turns the key into a flash or a field error.
@@ -99,6 +100,7 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 
 - Put tests in `test/`, one file per feature, named `<topic>.test.js` in kebab-case (`test/new-code.test.js`). `test/helpers.js` is shared setup. Use `node:test` and `node:assert/strict`, import from `../src/...` and `./helpers.js`.
 - Add a test to the file that already covers the page or rule: search `test/` for the page's address or the BR ID. Inside the file, put it in the `describe` block whose setup it needs. Start a new file only for a new feature.
+- Make a new test create the events, users and sign-ups it checks (`insertEvent`, `site.addUser`), instead of counting on what an earlier test left behind. Run it alone with `--test-name-pattern` before you report: it must pass on its own as well as with the whole file.
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
   - `site.addUser({ role, name, email, isAdmin, code })` inserts an account with a known code and returns `{ id, kennitala, code }`. Kennitölur count up from `0000000001`.
@@ -148,7 +150,8 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 
 ## Traps
 
-- Git stores every text file with LF line endings, and the repository has no `.gitattributes`. On a Windows checkout with `core.autocrlf` on, many working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, do not convert or reformat a file to silence the warning, and when you script an edit, match one line at a time.
+- Git stores every text file with LF line endings, and the repository has no `.gitattributes`. On a Windows checkout with `core.autocrlf` on, many working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, and do not convert or reformat a file to silence the warning. Before you script an edit, check which ending the file has: a search string that spans two lines with `\n` between them does not match a CRLF file, so match one line at a time.
+- For a one-off script, use `node`, the one runtime every checkout has. On Windows, `python3` can be the Microsoft Store placeholder, which hangs instead of running.
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
 - Multipart forms are CSRF-checked inside the route, after multer, with `verifyCsrf`. Add the route's path to `UPLOAD_ROUTES` in `src/middleware/csrf.js`, or the global check refuses the form because it cannot read the body. See `/admin/import` in `src/routes/admin.js`.
