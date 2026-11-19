@@ -54,7 +54,8 @@ If I explicitly name a model for a task, use that model.
 
 ### Enforcement
 - `.claude/settings.json` runs `.claude/hooks/require-agent-model.mjs` before every Agent call. The hook blocks a call that has no `model` or that uses `subagent_type: "fork"`. It does not check which model you named.
-- The `spec-reviewer` agent (`/review`, `/milestone`) is an Agent call like any other, so it needs a `model` too.
+- The `spec-reviewer` agent (`/review`, `/milestone`) is an Agent call like any other. Launch it with `model: "opus"`: the review weighs every business rule and the security requirements.
+- Delegate with the Agent tool. Start a Workflow only when I ask for one, and give every agent in it a `model`: the hook cannot see inside a workflow.
 - The hook runs on Node, which the project needs anyway. If it cannot run, or cannot read its input, the call goes ahead. The rule above applies whether or not the hook speaks.
 - A session keeps the hooks it started with. After changing the hook or its settings, start a new session.
 
@@ -70,7 +71,7 @@ These have no exceptions. If a task seems to need one, stop and ask. "Ask" means
 **Ask first**
 
 Stop and ask before any of these. Never leave one of them to a subagent.
-- Adding a dependency that is not in the table in AGENT_START §10
+- Adding a dependency that is not in the table in AGENT_START §10, upgrading or removing one, or running `npm audit fix`
 - Changing the data model (`src/db/schema.sql`, `src/db/migrate.js`)
 - Deleting files
 - Running migrations on real data
@@ -85,7 +86,7 @@ Stop and ask before any of these. Never leave one of them to a subagent.
 - Ask with AskUserQuestion. Write the questions in Icelandic, put the recommended option first and mark it "(mælt með)". Write everything else in English.
 
 **Git**
-- `main` is the main branch. Never commit to it directly. Work on a personal branch (for example `kari`) and open a pull request into `main`; a teammate reviews and merges it.
+- `main` is the main branch. Never commit to it directly. Work on a personal branch (for example `kari`) and open a pull request into `main`; a teammate reviews and merges it. GitHub refuses a direct push to `main`.
 - Do not commit or push unless asked.
 - No `Co-Authored-By` lines or other Claude attribution in commits or pull requests. `.claude/settings.json` turns it off as well.
 
@@ -99,10 +100,10 @@ Stop and ask before any of these. Never leave one of them to a subagent.
 | `.env`, `data/`, `backups/` | See "Privacy" above. `.env.example` is the committed template for `.env`. |
 | `uploads/` | Event images written by the running site. Never add, edit or commit files there. |
 | `public/css/` | Generated from `scss/` by `npm run build:css`, and git-ignored. Edit `scss/` instead. |
-| `node_modules/`, `package-lock.json` | Written by npm. Never edit them by hand. Whether to upgrade a package, or to run `npm audit fix`, is not yours to decide: ask. |
+| `node_modules/`, `package-lock.json` | Written by npm. Never edit them by hand. Changing packages is on the "Ask first" list. |
 | `.gitkeep` files | Leave them in place. They keep otherwise empty folders in git. |
 | `docs/requirements.md`, `docs/saeludagar-notes.txt`, `docs/design-requirements.md`, `docs/improvements-requirements.md`, `docs/wireframes-requirements.md` | The original notes and the project owner's briefs, kept as a record. Do not build from them and do not edit them to match the code. `docs/AGENT_START.md` is the specification. |
-| `CLAUDE.md`, `.claude/` | The instructions to agents. Change them only when you are asked to. If your change would make one of them inaccurate, say so in your report and ask. |
+| `CLAUDE.md`, `.claude/` | The instructions to agents. Update a fact in them (a command, a path, the doc map) in the same change that makes it wrong. Change a rule in them only when you are asked to. |
 
 ## Commands
 
@@ -139,15 +140,21 @@ A milestone also needs these:
 - Its Blocking findings are fixed or reported.
 - You have given the "✅" report from "Scope" above and are waiting for the go-ahead.
 
-Run `/review` before every pull request.
+Run `/review` before a pull request, unless `/milestone` has just reviewed exactly these changes.
 
 ## When rules conflict
 
-1. A hard rule beats everything else in this file and in `docs/`.
-2. If an instruction is unclear, or two instructions contradict each other, stop and ask. Do not pick one.
-3. `docs/AGENT_START.md` beats the five reference files listed under "Never touch".
-4. When a doc and the code disagree about a fact (a command, a path, a version), the code is right: fix the doc. When the specification and the code disagree about what the site should do, stop and ask.
-5. "Build only what the spec specifies" does not rule out tests for the rules you touch or the doc updates your change needs. Both are part of the change.
+When two rules pull in different directions, the one higher in this list wins:
+1. The privacy rules and the "Never touch" list.
+2. The "Ask first" list.
+3. What you were asked to do in this session.
+4. `docs/AGENT_START.md`. It beats the five reference files listed under "Never touch".
+5. Doing only the task. Tests for the rules you touch and the doc updates your change needs are part of the task, not extras.
+6. The style of the code that is already there, over your own preference.
+
+Two more rules settle the rest:
+- If an instruction is unclear, or two instructions contradict each other and the list above does not settle it, stop and ask. Do not pick one.
+- When a doc and the code disagree about a fact (a command, a path, a version), the code is right: fix the doc. When the specification and the code disagree about what the site should do, stop and ask.
 
 ## Where the detail lives
 

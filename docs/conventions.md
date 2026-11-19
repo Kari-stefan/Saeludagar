@@ -100,7 +100,7 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 
 - Put tests in `test/`, one file per feature, named `<topic>.test.js` in kebab-case (`test/new-code.test.js`). `test/helpers.js` is shared setup. Use `node:test` and `node:assert/strict`, import from `../src/...` and `./helpers.js`.
 - Add a test to the file that already covers the page or rule: search `test/` for the page's address or the BR ID. Inside the file, put it in the `describe` block whose setup it needs. Start a new file only for a new feature.
-- Know which kind of block you are adding to. Some blocks reset their data before every test, so each test stands alone: `test/points.test.js` empties its tables in `beforeEach`. In other blocks the tests build on each other and fail when run alone: in `test/events.test.js`, the block `co-teachers and who manages what` uses events that its earlier tests created. In a new test, create what you check (`insertEvent`, `site.addUser`) where you can, so that it also passes alone. Where you build on the block's earlier tests, as the tests around you do, say so in your report.
+- A new test must pass when run alone. Create what it checks (`insertEvent`, `site.addUser`) instead of building on what an earlier test left behind, and run it by name before you report. `test/points.test.js` shows the pattern: it empties its tables in `beforeEach`. Some older blocks build on each other and fail when run alone, such as `co-teachers and who manages what` in `test/events.test.js`. Do not copy that.
 - A syntax error in a test file shows as one failing test for the whole file, and the pass count drops by the number of tests in that file.
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
@@ -151,12 +151,12 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 
 ## Traps
 
-- Git stores every text file with LF line endings. The one rule in `.gitattributes` keeps shell scripts LF in every checkout, because a cloud session runs `.claude/hooks/cloud-setup.sh` on Linux. On a Windows checkout with `core.autocrlf` on, many other working files have CRLF instead, and git prints `LF will be replaced by CRLF` after an edit. The warning is harmless. Keep each file's line endings as they are, and do not convert or reformat a file to silence the warning. Claude Code's Edit tool keeps a file's line endings, also when a change spans several lines, so use it rather than a script. If you do script an edit, check first which ending the file has: a search string that spans two lines with `\n` between them does not match a CRLF file, so match one line at a time.
+- Every text file has LF line endings, in the repository and in every checkout: `.gitattributes` sets `* text=auto eol=lf`. Do not save a file with CRLF. A cloud session runs `.claude/hooks/cloud-setup.sh` on Linux, where a CRLF script fails.
 - For a one-off script, use `node`, the one runtime every checkout has. On Windows, `python3` can be the Microsoft Store placeholder, which hangs instead of running.
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
 - Multipart forms are CSRF-checked inside the route, after multer, with `verifyCsrf`. Add the route's path to `UPLOAD_ROUTES` in `src/middleware/csrf.js`, or the global check refuses the form because it cannot read the body. See `/admin/import` in `src/routes/admin.js`.
-- `npm install` can print an audit notice that suggests `npm audit fix`. Do not act on it yourself; see "Never touch" in [../CLAUDE.md](../CLAUDE.md).
+- `npm install` can print an audit notice that suggests `npm audit fix`. Do not act on it yourself: upgrading a package and running `npm audit fix` are on the "Ask first" list in [../CLAUDE.md](../CLAUDE.md).
 - Stored times are UTC ISO strings. Iceland is UTC+0 all year, so stored time is local time; the formatters in `src/i18n/index.js` still name `Atlantic/Reykjavik`.
 - The error handler logs only the stack of an error, never its body, because body-parser errors carry the raw form, which can hold a kennitala or a code (`src/middleware/errors.js`). Keep it that way. The privacy rules are in [../CLAUDE.md](../CLAUDE.md).
 - Emails never carry a login code in the outbox payload (`src/services/email.js`); codes are made when the email is sent.
