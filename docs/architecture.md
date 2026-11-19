@@ -43,7 +43,7 @@ Routers and their guards (guards are in `src/middleware/auth.js`; a guest is red
 | `src/routes/teacher.js` | `/teacher` | `requireTeacher` on the whole router (event manager or admin), plus `requireEventAccess(db, 'editor' or 'owner')` on `/events/:id/...`. |
 | `src/routes/admin.js` | `/admin` | `requireAdmin` on the whole router. |
 
-Inside `/admin`, `/export`, `/purge` and `/audit` render placeholder pages and `/export.csv` answers 501. They are not built yet (milestone 7 for export and audit, milestone 8 for purge).
+Inside `/admin`, only `/purge` is still a placeholder page: `src/views/admin/purge.ejs` shows just the page title. It is not built yet (milestone 8).
 
 The error path: a route that throws, or calls `next(err)`, reaches `errorHandler` in `src/middleware/errors.js`. It uses `err.status` when it is 400 to 599, otherwise 500, and logs only the stack of server errors. Routes create such errors with `Object.assign(new Error('HTTP 400'), { status: 400 })`. A failed CSRF check renders the 403 page directly.
 
@@ -92,7 +92,13 @@ Dependencies are passed in, not imported as globals. `createApp({ config, db, se
 3. `createMailer` sends through nodemailer if `SMTP_HOST` is set. Without it, outside production, the email is printed to the console. In production the send throws.
 4. A failure updates `attempts`, `last_error` and `next_try_at` (1, 2, 4, 8, 16 minutes). After 5 retries `next_try_at` is `NULL` and the row stays. An email to an inactive user is deleted unsent.
 
-The audit log (`src/services/audit.js`, table `audit_log`) is written by `signups.js`, `attendance.js`, `choices.js`, `import.js` and `accounts.js` (event-manager grant and revoke), and directly by SQL in `deleteEvent` and `applyImport`. The page that shows it is not built yet (milestone 7).
+**f) The office export.**
+1. `GET /admin/export` renders the page with `exportSummary` (`src/services/export.js`), which counts the `registrations` rows with `attended = 1`, counts those with no `course_code`, and reads the course-choice deadline through `choiceWindow`.
+2. `GET /admin/export.csv` calls `exportRows` and passes the rows to `exportCsv`, which builds the file text. The file's format is in `docs/AGENT_START.md` §8 "Absence-system handoff (office export)", not here.
+3. `exportRows` selects one row for each `registrations` row with `attended = 1`, joined to `users` (`student_id`) and `events` (`event_id`). It does not filter on `users.active`. It reads `users.kennitala_enc`, `users.name`, `users.braut`, `registrations.course_code`, `events.title_is` and `events.event_date`. It is the only place in `src/` that calls `decrypt` on a kennitala.
+4. The route sets `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment` with the file name from `exportFileName`, and `Cache-Control: no-store`.
+
+The audit log (`src/services/audit.js`, table `audit_log`) is written by `signups.js`, `attendance.js`, `choices.js`, `import.js` and `accounts.js` (event-manager grant and revoke), and directly by SQL in `deleteEvent` and `applyImport`. The page that shows it is `/admin/audit`, which reads the log with `auditEntries` (one filtered page of entries, newest first) and `auditEvents` (the events for the filter list) from the same file.
 
 ## Directory map
 

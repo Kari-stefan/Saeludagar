@@ -41,7 +41,7 @@ The branch and pull-request rules are in [CLAUDE.md](CLAUDE.md) under Hard rules
 ### Building with Claude Code
 The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_START.md):
 
-1. Run `/milestone` with the next milestone from the Status section above, for example `/milestone 7`. Claude builds that milestone only, then stops.
+1. Run `/milestone` with the next milestone that the Status section above names. Claude builds that milestone only, then stops.
 2. Run `/review` to have the `spec-reviewer` agent check the changes against the business rules, the security requirements and the milestone's scope.
 3. Check the result yourself using the "how to verify" steps Claude gives.
 4. Commit, push your branch and open a pull request into `main`.

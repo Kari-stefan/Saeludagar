@@ -16,7 +16,7 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 | A browser script | `public/js/points.js` | `<script src="/js/NAME.js" defer></script>` in the view; `public/js/menu.js` for a script every page loads |
 | A style | `scss/_forms.scss` | `@use` line in `scss/main.scss` only for a new partial; `npm run build:css` |
 | An email template | `src/views/emails/new_code.ejs` | `emails.<kind>.*` in both i18n files; `queueEmail` in `src/services/email.js`; `test/email.test.js` |
-| An admin page | `src/routes/admin.js` (`/settings`), `src/views/admin/settings.ejs` | `pages.*` and `admin.*` texts; `test/settings.test.js` |
+| An admin page | `src/routes/admin.js` (`/settings`), `src/views/admin/settings.ejs`; for a page with a GET filter and paging, `src/routes/admin.js` (`/audit`), `src/views/admin/audit.ejs` | `pages.*` and `admin.*` texts; `test/settings.test.js` |
 | A command-line script | `scripts/create-admin.js` | an entry in `package.json` `scripts`; `test/create-admin.test.js` |
 | A test | `test/points.test.js` | `test/helpers.js` only if several files need the new helper |
 
@@ -156,7 +156,6 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 - Page scripts share one global scope. A repeated top-level name stops the second script (see Browser scripts).
 - The CSP blocks inline scripts and `style=` attributes. They fail silently in the browser, so a page can look right in a test and be broken for a user.
 - Multipart forms are CSRF-checked inside the route, after multer, with `verifyCsrf`. Add the route's path to `UPLOAD_ROUTES` in `src/middleware/csrf.js`, or the global check refuses the form because it cannot read the body. See `/admin/import` in `src/routes/admin.js`.
-- `test/smoke.test.js` expects `/admin/export.csv` to answer 501 and `test/access.test.js` lists it, because the office export is not built yet. Building it means updating both tests.
 - `npm install` can print an audit notice that suggests `npm audit fix`. Do not act on it yourself; see "Never touch" in [../CLAUDE.md](../CLAUDE.md).
 - Stored times are UTC ISO strings. Iceland is UTC+0 all year, so stored time is local time; the formatters in `src/i18n/index.js` still name `Atlantic/Reykjavik`.
 - The error handler logs only the stack of an error, never its body, because body-parser errors carry the raw form, which can hold a kennitala or a code (`src/middleware/errors.js`). Keep it that way. The privacy rules are in [../CLAUDE.md](../CLAUDE.md).
