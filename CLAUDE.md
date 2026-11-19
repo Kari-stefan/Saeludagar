@@ -53,9 +53,9 @@ Independent tasks go out in parallel in one message. Dependent tasks go out one 
 If I explicitly name a model for a task, use that model.
 
 ### Enforcement
-- `.claude/settings.json` runs `.claude/hooks/require-agent-model.py` before every Agent call. The hook blocks a call that has no `model` or that uses `subagent_type: "fork"`. It does not check which model you named.
+- `.claude/settings.json` runs `.claude/hooks/require-agent-model.mjs` before every Agent call. The hook blocks a call that has no `model` or that uses `subagent_type: "fork"`. It does not check which model you named.
 - The `spec-reviewer` agent (`/review`, `/milestone`) is an Agent call like any other, so it needs a `model` too.
-- The hook needs `python` on the PATH. If it cannot run, or cannot read its input, the call goes ahead. The rule above applies whether or not the hook speaks.
+- The hook runs on Node, which the project needs anyway. If it cannot run, or cannot read its input, the call goes ahead. The rule above applies whether or not the hook speaks.
 - A session keeps the hooks it started with. After changing the hook or its settings, start a new session.
 
 ## Hard rules
@@ -120,6 +120,7 @@ npm run migrate                                                # create or upgra
 - `npm run dev`, `npm run migrate`, `npm run create-admin` and `npm run seed:dev` use the developer's `.env` and the database in `data/`. `docs/run.md` has the first-time setup, every npm script and every environment variable.
 - There is no linter, formatter, type checker, coverage tool or CI. `npm test` is the only automated check.
 - There is no deploy command. Deployment arrives in milestone 8 and is on the "Ask first" list.
+- In a cloud session, `.claude/hooks/cloud-setup.sh` runs at the start: it puts Node.js 24 on PATH and installs the packages, and its one-line result is in your context. `docs/run.md` (section 13) says what a cloud session has and lacks.
 
 ## Definition of done
 
@@ -156,5 +157,5 @@ Run `/review` before every pull request.
 | `docs/AGENT_START.md` | The specification. Read the sections your task touches before you write code: §4 business rules (each has an ID such as BR-31), §6 pages, §7 data model, §8 login, import, email, export and uploads, §9 security requirements, §10 allowed packages, §11 design, §13 build plan, §15 open questions. |
 | `docs/architecture.md` | Before changing code you have not seen: what runs, how a request is handled, the layers, where each kind of new code goes, and why things are built the way they are. |
 | `docs/conventions.md` | Before writing code or tests: the patterns, a file to copy from for each kind of change, how to write and run tests, and the traps. |
-| `docs/run.md` | To set up or run the site, for every npm script and environment variable, and when a command fails. |
+| `docs/run.md` | To set up or run the site, for every npm script and environment variable, when a command fails, and for cloud sessions. |
 | `.claude/commands/milestone.md`, `.claude/commands/review.md`, `.claude/agents/spec-reviewer.md` | What `/milestone N` and `/review` do, and what the reviewer checks. |

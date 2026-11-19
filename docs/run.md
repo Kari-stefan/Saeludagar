@@ -17,6 +17,7 @@ What is built so far is listed in the [README](../README.md) under Status. Pages
 10. [Where things are](#10-where-things-are)
 11. [npm scripts](#11-npm-scripts)
 12. [Environment variables](#12-environment-variables)
+13. [Cloud sessions](#13-cloud-sessions)
 
 ## 1. What you need
 
@@ -400,3 +401,15 @@ This guide will be updated as those milestones land.
 | `SMTP_MAX_PER_MINUTE` | Sending limit for bulk email | `30` |
 | `TRUST_PROXY` | Set to `1` behind nginx in production | `0` |
 | `NEW_CODE_LIMIT` | `off` removes the 10-minute limit on "Fá nýjan kóða" (BR-08) for testing. Only works when `NODE_ENV=development`; never set it on the server | empty (limit on) |
+
+## 13. Cloud sessions
+
+Claude Code can also work on the repository in a cloud session (claude.ai/code, or `claude --cloud` in a terminal). The session clones the repository from GitHub, so it only sees what is pushed. Push your branch first.
+
+- **What the session gets from the repository:** `CLAUDE.md`, and the settings, hooks, commands and reviewer agent in `.claude/`.
+- **What it does not get:** your `.env`, your database in `data/`, the images in `uploads/`, and anything configured only on your own computer.
+- **Node.js and packages:** `.claude/hooks/cloud-setup.sh` runs when a cloud session starts. It installs Node.js 24.20.0 (the cloud machines come with Node.js 20 to 22) after checking the download against its published checksum, puts it first on PATH for the commands Claude runs, and runs `npm ci`. On your own computer it does nothing.
+- **Tests and the site:** `npm test` needs nothing else. To run the site there, do the first-time setup of section 3 in the session. It creates a `.env` with new secrets and an empty database that exist only in that session.
+- **GitHub commands:** in a cloud session `gh pr` and `gh issue` do not work. Claude uses the session's built-in GitHub tools or `gh api` instead.
+- **Branches:** the session can push to any branch. The rule that nobody commits to `main` directly is in [CLAUDE.md](../CLAUDE.md). A branch protection rule on GitHub would enforce it.
+- **Projects and several repositories:** sessions with several repositories, and threads inside a claude.ai project, load only `CLAUDE.md`, not the hooks. There, start by asking Claude to run `bash .claude/hooks/cloud-setup.sh`. The script exits at once unless `CLAUDE_CODE_REMOTE` is `true`, which it is in every cloud session.

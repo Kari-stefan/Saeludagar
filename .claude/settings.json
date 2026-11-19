@@ -12,7 +12,19 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-agent-model.py\""
+            "command": "node \"${CLAUDE_PROJECT_DIR}/.claude/hooks/require-agent-model.mjs\""
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/cloud-setup.sh\"",
+            "timeout": 300
           }
         ]
       }
