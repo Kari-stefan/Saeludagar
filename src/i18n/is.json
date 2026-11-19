@@ -221,9 +221,6 @@
     "serverText": "Villa kom upp. Reyndu aftur síðar.",
     "backHome": "Fara á forsíðu"
   },
-  "stub": {
-    "notImplemented": "Ekki tilbúið enn."
-  },
   "format": {
     "dateTime": "{date}, kl. {time}",
     "timeRange": "kl. {start}–{end}",
@@ -624,6 +621,72 @@
       "courseFull": "{course} hefur þegar fengið {max} stig, sem er hámarkið í einum áfanga.",
       "noneLeft": "Þú átt engin stig eftir til að ráðstafa.",
       "nothingToTake": "Engin stig eru á þessum áfanga."
+    }
+  },
+  "export": {
+    "intro": "Skráin er fyrir skrifstofu skólans, sem færir frádráttinn inn í Innu. Í henni er ein lína fyrir hverja skráða mætingu: kennitala, nafn, braut, áfangi, stig, viðburður og dagsetning.",
+    "provisional": "Bráðabirgðaútgáfa",
+    "provisionalUntil": "Nemendur geta enn breytt vali á áfanga til {deadline}, svo skráin getur breyst.",
+    "provisionalNoDeadline": "Frestur til að velja áfanga hefur ekki verið settur, svo skráin getur enn breyst.",
+    "final": "Lokaútgáfa",
+    "finalSince": "Fresturinn til að velja áfanga rann út {deadline}. Mæting og val á áfanga breytast ekki lengur.",
+    "rows": "Línur í skránni: {count}",
+    "withoutCourse": "Línur án áfanga: {count}",
+    "withoutCourseHelp": "Í þeim línum hefur nemandinn ekki sett stigin á áfanga, svo áfangadálkurinn er tómur.",
+    "empty": "Engin mæting hefur verið skráð enn, svo í skránni er aðeins línan með dálkaheitunum.",
+    "download": "Sækja skrána (CSV)",
+    "privacy": "Skráin inniheldur kennitölur. Geymdu hana á öruggum stað og eyddu henni þegar skrifstofan hefur fært stigin inn."
+  },
+  "auditLog": {
+    "intro": "Hér sést hver breytti skráningum, mætingu, vali á áfanga og réttindum viðburðastjóra, og hvenær. Nýjustu færslurnar eru efst.",
+    "filterHeading": "Sía færslur",
+    "filterEvent": "Viðburður",
+    "allEvents": "Allir viðburðir",
+    "filterStudent": "Nafn nemanda",
+    "apply": "Sía",
+    "clear": "Hreinsa síu",
+    "when": "Hvenær",
+    "who": "Hver",
+    "what": "Hvað",
+    "event": "Viðburður",
+    "student": "Nemandi",
+    "none": "Engar færslur eru í skránni.",
+    "noMatches": "Engar færslur passa við síuna.",
+    "showing": "Færslur {from}–{to} af {total}",
+    "newer": "Nýrri færslur",
+    "older": "Eldri færslur",
+    "unknownPerson": "Ekki lengur til",
+    "deletedEvent": "Viðburður nr. {id} (eytt)",
+    "course": "Áfangi: {course}",
+    "ownership": "Viðburðir sem viðkomandi átti þá: {owned}. Viðburðir sem meðviðburðastjóri: {coteaching}.",
+    "actions": {
+      "signup": {
+        "create": "Skráning á viðburð",
+        "delete": "Afskráning af viðburði"
+      },
+      "attendance": {
+        "set": "Mæting skráð",
+        "unset": "Mæting tekin til baka"
+      },
+      "choice": {
+        "set": "Stig sett á áfanga",
+        "clear": "Stig tekin af áfanga"
+      },
+      "event-manager": {
+        "grant": "Viðburðastjóraréttindi veitt",
+        "revoke": "Viðburðastjóraréttindi tekin"
+      }
+    },
+    "by": {
+      "student": "Nemandinn gerði þetta sjálfur",
+      "event_manager": "Viðburðastjóri gerði þetta fyrir nemandann"
+    },
+    "reason": {
+      "import": "Vegna innflutnings á nemendalista",
+      "event_deleted": "Viðburðinum var eytt",
+      "attendance": {
+        "unset": "Mætingin var tekin til baka"
+      }
     }
   }
 }

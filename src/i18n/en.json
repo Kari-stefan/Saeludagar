@@ -221,9 +221,6 @@
     "serverText": "An error occurred. Please try again later.",
     "backHome": "Go to the front page"
   },
-  "stub": {
-    "notImplemented": "Not ready yet."
-  },
   "format": {
     "dateTime": "{date}, {time}",
     "timeRange": "{start}–{end}",
@@ -624,6 +621,72 @@
       "courseFull": "{course} already has {max} points, which is the most one course can get.",
       "noneLeft": "You have no points left to give.",
       "nothingToTake": "There are no points on that course."
+    }
+  },
+  "export": {
+    "intro": "The file is for the school office, which enters the deductions into Inna. It has one row for each recorded attendance: kennitala, name, braut, course, points, event and date.",
+    "provisional": "Provisional",
+    "provisionalUntil": "Students can still change their course choices until {deadline}, so the file may change.",
+    "provisionalNoDeadline": "The course-choice deadline has not been set, so the file may still change.",
+    "final": "Final",
+    "finalSince": "The course-choice deadline passed on {deadline}. Attendance and course choices no longer change.",
+    "rows": "Rows in the file: {count}",
+    "withoutCourse": "Rows without a course: {count}",
+    "withoutCourseHelp": "In those rows the student has not given the points to a course, so the course column is empty.",
+    "empty": "No attendance has been recorded yet, so the file has only its header row.",
+    "download": "Download the file (CSV)",
+    "privacy": "The file contains kennitölur. Keep it somewhere safe, and delete it once the office has entered the points."
+  },
+  "auditLog": {
+    "intro": "This shows who changed sign-ups, attendance, course choices and Event Manager roles, and when. The newest entries are first.",
+    "filterHeading": "Filter the entries",
+    "filterEvent": "Event",
+    "allEvents": "All events",
+    "filterStudent": "Student's name",
+    "apply": "Filter",
+    "clear": "Clear the filter",
+    "when": "When",
+    "who": "Who",
+    "what": "What",
+    "event": "Event",
+    "student": "Student",
+    "none": "The log has no entries.",
+    "noMatches": "No entries match the filter.",
+    "showing": "Entries {from}–{to} of {total}",
+    "newer": "Newer entries",
+    "older": "Older entries",
+    "unknownPerson": "No longer exists",
+    "deletedEvent": "Event no. {id} (deleted)",
+    "course": "Course: {course}",
+    "ownership": "Events owned at the time: {owned}. Events co-managed: {coteaching}.",
+    "actions": {
+      "signup": {
+        "create": "Signed up for an event",
+        "delete": "Sign-up removed"
+      },
+      "attendance": {
+        "set": "Attendance recorded",
+        "unset": "Attendance taken back"
+      },
+      "choice": {
+        "set": "Points given to a course",
+        "clear": "Points taken off a course"
+      },
+      "event-manager": {
+        "grant": "Event Manager role granted",
+        "revoke": "Event Manager role removed"
+      }
+    },
+    "by": {
+      "student": "Done by the student",
+      "event_manager": "Done by an Event Manager for the student"
+    },
+    "reason": {
+      "import": "Because of a student list import",
+      "event_deleted": "The event was deleted",
+      "attendance": {
+        "unset": "The attendance was taken back"
+      }
     }
   }
 }

@@ -31,6 +31,11 @@
   gap: var(--space-1);
 }
 
+// A cell that stays on one line, such as a date and time: the table scrolls sideways instead.
+.table__nowrap {
+  white-space: nowrap;
+}
+
 .stats,
 .link-list {
   padding-left: var(--space-4);
