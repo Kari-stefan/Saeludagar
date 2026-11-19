@@ -4,6 +4,14 @@ A bilingual (ÍS/EN) school website. Students sign up for Sæludagar events (vi�
 
 `README.md` (Status) says which milestones are built and which is next. Read it before you start.
 
+## If you are not Claude Code
+
+Other coding agents, such as GitHub Copilot, read this file too. All of it applies to you, except what names a Claude Code feature:
+- Skip "Model routing". Do the task yourself.
+- Where a rule says to stop and ask, and you cannot ask and wait for an answer, stop that part of the work. Say in your pull request what needs deciding and why. Do not guess.
+- Nothing in `.claude/` runs for you: not the hooks, the permission prompts, `/milestone`, `/review` or the reviewer agent. Nothing enforces these rules for you, so follow them from this file.
+- `.github/workflows/copilot-setup-steps.yml` gives a GitHub Copilot agent Node.js 24 and the installed packages. `docs/run.md` (section 13) has the details.
+
 ## Model routing (hard rule, enforced by hook)
 
 This section is for the main session. If you are a subagent, do the task you were given yourself and do not delegate it.
