@@ -22,8 +22,9 @@ From `docs/AGENT_START.md`, read:
 - §7: the data model
 - §9: privacy and security
 - §10: the allowed packages
-- §14: the agent rules
 - §15: the open questions
+
+Also read `CLAUDE.md`: the hard rules, the never-touch list and the definition of done.
 
 ## Checks
 1. **Scope.**
@@ -59,7 +60,7 @@ From `docs/AGENT_START.md`, read:
 - Start with one line: **Ready**, **Needs changes**, or **Blocked** (blocked means an open question or missing information stops the milestone).
 - Then list findings grouped as **Blocking**, **Should fix** and **Note**. Each finding gives:
   - `file:line`
-  - the rule (BR-xx, §9 item n, §13 or §14)
+  - the rule (BR-xx, §9 item n, §13 or `CLAUDE.md`)
   - what is wrong
   - the smallest fix
 - Then list the acceptance criteria with ✅, ❌ or "not checkable".

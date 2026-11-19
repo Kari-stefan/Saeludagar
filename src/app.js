@@ -21,7 +21,7 @@ import { adminRouter } from './routes/admin.js';
 
 export function createApp({ config, db, sessionStore = new SqliteSessionStore(db) }) {
   if (!config.sessionSecret) {
-    throw new Error('SESSION_SECRET is not set. Copy .env.example to .env and fill it in (see README, "Setup").');
+    throw new Error('SESSION_SECRET is not set. Copy .env.example to .env and fill it in (see docs/run.md, "First-time setup").');
   }
   const kt = kennitalaCrypto(config);
   const accounts = createAccounts({ db, kt, newCodeLimit: config.newCodeLimit });

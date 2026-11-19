@@ -335,7 +335,7 @@ Pages that belong to a milestone that is not built yet (see `README.md`, Status)
 | `GET/POST /admin/import` | Student CSV import | Upload, then either the list of errors with line numbers, or a summary of changes (added, updated, deactivated, sign-ups to be removed, course choices to be cleared) with a Confirm button. |
 | `GET/POST /admin/codes` | Send codes | The number of active students, a warning that previous codes stop working, a Confirm button, and progress (queued / sent / failed). |
 | `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away from a student (BR-67). |
-| `GET /admin/events` | All events | Every event with its owner, status and "n / max", linking to the management page. |
+| `GET /admin/events` | All events | Every event with its owner, date and time, status and "n / max", linking to the management page. |
 | `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline, the number of rows, and the number of rows without a course. |
 | `GET/POST /admin/purge` | Purge | A description of what will be deleted, a typed confirmation, and the date of the automatic purge. |
 | `GET /admin/audit` | Audit log | Newest first, filterable by event or student, showing who, what and when. |
@@ -735,91 +735,14 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 
 **Not allowed without asking first:** any package not in the table above. That includes i18n, rate-limit, session-store, ORM or query-builder, test-framework, CSS or JS framework, EJS layout, and "concurrently"-style packages.
 
-### npm scripts (created in milestone 1)
-| Script | What it does |
-|---|---|
-| `dev` | `node --watch --env-file=.env src/server.js` |
-| `watch:css` | `sass --watch scss/main.scss public/css/main.css` (run in a second terminal) |
-| `build:css` | Compiles SCSS once, compressed |
-| `start` | Production start |
-| `migrate` | Applies `src/db/schema.sql` |
-| `create-admin` | Creates the first admin (BR-13) |
-| `backup` | Runs `scripts/backup.js` |
-| `test` | `node --test` |
-| `loadtest` | The load test (milestone 8) |
-| `seed:dev` | Fake development data only |
+### npm scripts
+`package.json` defines the npm scripts. `docs/run.md` (section 11) says what each one does and which are not built yet.
 
 ### Project structure
-The folders below already exist, each with an empty `.gitkeep` file. Leave the `.gitkeep` files in place. `README.md`, `.gitignore`, `CLAUDE.md`, `.claude/` and `docs/` also exist. Do not change them unless asked, except where a milestone says to extend the README or `.gitignore`.
-```
-README.md              project overview and how the team works; setup is added in milestone 1
-.gitignore             already ignores node_modules, .env, data, uploads, backups, compiled CSS
-CLAUDE.md              project instructions for Claude Code (points here)
-.claude/
-  settings.json        shared Claude Code permissions and settings
-  agents/
-    spec-reviewer.md   read-only reviewer: business rules, security (§9), scope
-  commands/
-    milestone.md       /milestone N: build one milestone, then stop
-    review.md          /review: run spec-reviewer on the current changes
-docs/
-  AGENT_START.md       this specification
-  run.md               how to run the site locally; keep it current as milestones change commands
-  requirements.md      original requirements (reference only)
-  saeludagar-notes.txt original meeting notes (reference only)
-  design-requirements.md  design requirements from the project owner (reference only; built in M5b)
-  improvements-requirements.md  improvements brief from the project owner (reference only; built in M6b)
-  wireframes-requirements.md  event page and "Fjarvistastig" brief from the project owner (reference only; built in M6c)
-src/
-  server.js            entry point: env, start app, start jobs
-  app.js               express app (helmet, session, csrf, i18n, routes, errors)
-  config.js            env parsing and the constants 4 / 4 / 4 / 2 (BR-47)
-  db/                  index.js (connection + pragmas), schema.sql, migrate.js, sessionStore.js
-  middleware/          auth guards, csrf, language, error handlers
-  routes/              public.js, auth.js, student.js, teacher.js, admin.js
-  services/            crypto, codes, import, events, signups, attendance, choices, export, email, purge, audit
-  i18n/                is.json, en.json, index.js (t() with fallback to Icelandic)
-  jobs/                outbox.js, sessionCleanup.js, autoPurge.js
-  views/
-    partials/          header (with nav-links, header-actions, icon), footer, flash messages, event card,
-                       browse-controls, event-groups, managed-events and event-dialog (front page), event-fields and
-                       image-picker (event form and dialog), event-details and event-gallery (event page and preview)
-    public/ student/ teacher/ admin/ errors/
-    emails/            plain-text bilingual email templates
-scss/                  main.scss, _tokens.scss (brand colours), partials
-public/
-  css/                 compiled output (git-ignored)
-  js/                  small vanilla scripts (attendance autosave, copy emails, image preview, mobile menu, card sign-up, event dialog,
-                       gallery, points)
-  img/                 default-event.svg, logo.svg (the school logo)
-scripts/               create-admin.js, backup.js, loadtest.js, seed-dev.js
-test/                  node:test files, named by feature, referencing BR IDs
-data/                  SQLite database (git-ignored)
-uploads/               event images (git-ignored)
-backups/               local backups in development (git-ignored)
-```
+`docs/architecture.md` has the directory map: what each folder holds, where new code of each kind goes, and which planned files do not exist yet.
 
 ### Environment variables (`.env.example`)
-```
-NODE_ENV=development
-PORT=3000
-BASE_URL=http://localhost:3000
-SCHOOL_NAME=
-DATABASE_PATH=./data/saeludagar.db
-UPLOAD_DIR=./uploads
-BACKUP_DIR=./backups
-SESSION_SECRET=
-KENNITALA_ENC_KEY=
-KENNITALA_HMAC_KEY=
-SMTP_HOST=
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=
-SMTP_PASS=
-MAIL_FROM=
-SMTP_MAX_PER_MINUTE=30
-TRUST_PROXY=0
-```
+`.env.example` is the template. `docs/run.md` (section 12) explains every variable.
 
 ### Hosting
 These were decided in the interview; the items marked "assumed" still need confirming.
@@ -944,17 +867,15 @@ Everything in sections 3–11:
 
 **General:**
 - Build one milestone at a time.
-- After each one, report as rule 3 in section 14 says, then wait.
-- Write `node:test` tests for every business rule the milestone touches, and put the BR ID in the test name.
-- Use only fake data.
+- `CLAUDE.md` has the rules that apply to every milestone: what to ask first, the tests each business rule needs, fake data only, and the report to give before waiting.
 
 ### M1: Scaffold and data model (no features)
 Do:
 - **Project files:**
-  - `package.json` with exactly the dependencies and scripts in section 10.
+  - `package.json` with exactly the dependencies in section 10 and the scripts in `docs/run.md` (section 11).
   - `.gitignore` already exists. It covers `node_modules`, `.env`, `data/*`, `uploads/*`, `backups/*`, `public/css/*` and `.claude/settings.local.json`, and keeps each `.gitkeep`. Only extend it if something new needs ignoring.
   - `.env.example`.
-  - `README.md` already exists. Fill in its "Setup" section: setup steps, generating keys, the scripts and the environment variables.
+  - `README.md` already exists. Its setup steps, key generation, scripts and environment variables now live in `docs/run.md`, and the README's "Setup" section points there.
 - **App shell:**
   - An Express 5 app with EJS, helmet (CSP), static files and error pages.
   - Header and footer partials.
@@ -1129,15 +1050,7 @@ Acceptance:
 
 ## 14. Agent rules
 
-- "Only build what this document specifies. Do not add features, abstractions, or dependencies beyond it."
-- "Stop and ask before: adding a dependency not listed in section 10, changing the data model after milestone 1, deleting files, running migrations on real data, or deploying."
-- "After each milestone output: ✅ [what was completed] and how to verify it, then wait for my go-ahead."
-
-Also:
-- Start with milestone 1 only. The project is still in an early phase.
-- If this document is unclear or contradicts itself, or if an open question in section 15 blocks your current milestone, stop and ask. Do not guess.
-- Never use real kennitölur or real student data anywhere.
-- Do not commit or push unless asked.
+The rules for agents are in `CLAUDE.md`: the hard rules (privacy, what to ask first, scope, git, docs), the never-touch list, the definition of done, and what to do when rules conflict.
 
 ---
 

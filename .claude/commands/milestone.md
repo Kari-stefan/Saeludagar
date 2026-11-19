@@ -6,21 +6,19 @@ argument-hint: <milestone, for example 7 or 6c>
 Build milestone **$ARGUMENTS** from `docs/AGENT_START.md`, and nothing else.
 
 1. **Check the input.**
-   - If no milestone number was given, ask for one with AskUserQuestion (in Icelandic, recommended option first, marked "(mælt með)").
+   - If no milestone number was given, ask for one (`CLAUDE.md`, Hard rules, says how to ask).
    - If the previous milestone does not look finished and approved, ask before starting.
 2. **Read the spec.**
-   - Read the whole §13 entry for this milestone, every section and BR it references, §10 (allowed packages and structure), §14 (agent rules) and §15 (open questions).
+   - Read the whole §13 entry for this milestone, every section and BR it references, §10 (allowed packages) and §15 (open questions).
+   - Read `docs/architecture.md` and `docs/conventions.md` for where code goes and how it is written here.
    - If an open question blocks this milestone, ask about it with AskUserQuestion before writing code.
 3. **Build.**
    - Implement exactly the milestone's "Do" list.
-   - Write `node:test` tests named after the BR IDs they cover.
-   - Use only fake data, such as the kennitala `0000000001`.
-   - Follow every rule in §14. In particular, stop and ask before adding a package outside §10, changing the data model after milestone 1, or deleting files.
+   - Follow `CLAUDE.md`: the hard rules, the never-touch list and the definition of done.
 4. **Verify.** Run the milestone's acceptance checks (at least `npm test` once `package.json` exists) and fix failures that are within scope.
 5. **Review.**
-   - Have the `spec-reviewer` agent review the changes for this milestone.
+   - Have the `spec-reviewer` agent review the changes for this milestone. It is an Agent call, so name its `model` (`CLAUDE.md`, Model routing).
    - Fix its Blocking findings if they are within scope. Report anything you did not fix.
 6. **Stop.**
-   - Output "✅ [what was completed]", how to verify it, and the reviewer's verdict.
+   - Give the "✅" report that `CLAUDE.md` (Hard rules, Scope) asks for, with how to verify the milestone and the reviewer's verdict.
    - Then wait for the go-ahead.
-   - Do not commit or push unless asked, and never add Claude attribution lines to commits.

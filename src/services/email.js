@@ -18,15 +18,15 @@ export function createMailer(config, { log = console.log, retryDelayMs = 3000, t
 
   if (host) {
     if (!from) {
-      throw new Error('MAIL_FROM is not set. Set it to the school\'s noreply address (see README, "Environment variables").');
+      throw new Error('MAIL_FROM is not set. Set it to the school\'s noreply address (see docs/run.md, "Environment variables").');
     }
     // Port 465 uses TLS from the start and 587 switches to it after connecting (RFC 8314). The
     // other way round, every send fails, so the server refuses to start instead.
     if (port === 465 && !secure) {
-      throw new Error('SMTP_PORT is 465, so SMTP_SECURE must be true (see README, "Environment variables").');
+      throw new Error('SMTP_PORT is 465, so SMTP_SECURE must be true (see docs/run.md, "Environment variables").');
     }
     if (port === 587 && secure) {
-      throw new Error('SMTP_PORT is 587, so SMTP_SECURE must be false (see README, "Environment variables").');
+      throw new Error('SMTP_PORT is 587, so SMTP_SECURE must be false (see docs/run.md, "Environment variables").');
     }
     // A mail server that does not answer (often a provider blocking mail ports) fails within
     // seconds instead of nodemailer's default two minutes, so the error shows up quickly.
