@@ -1,0 +1,34 @@
+name: Copilot Setup Steps
+
+# Prepares the machine of a GitHub Copilot coding agent before it starts work on this repository:
+# Node.js 24 and the packages from package-lock.json. It is not a CI check and tests nothing.
+# Claude Code cloud sessions use .claude/hooks/cloud-setup.sh instead. Keep the Node.js version
+# here the same as NODE_VERSION there.
+#
+# It also runs when this file changes, and can be started by hand from the Actions tab, so that a
+# mistake in it shows up before an agent meets it.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # Copilot only picks up a job with exactly this name.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Install Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.20.0"
+          cache: npm
+      - name: Install the packages
+        run: npm ci --no-audit --no-fund
