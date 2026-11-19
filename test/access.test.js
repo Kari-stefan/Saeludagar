@@ -34,7 +34,7 @@ describe('role guards (AGENT_START §8, §9 item 8)', () => {
     ['/teacher/events/1/attendance', '/login', 403, 200, 200],
     ['/admin', '/login', 403, 403, 200],
     ['/admin/teachers', '/login', 403, 403, 200],
-    ['/admin/export.csv', '/login', 403, 403, 501],
+    ['/admin/export.csv', '/login', 403, 403, 200],
     ['/admin/no-such-page', '/login', 403, 403, 404],
   ];
 

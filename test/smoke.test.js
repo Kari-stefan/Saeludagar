@@ -68,10 +68,12 @@ describe('app shell', () => {
     }
   });
 
-  test('GET /admin/export.csv is still a stub that answers 501', async () => {
-    const csv = await as.admin.get('/admin/export.csv');
-    assert.equal(csv.status, 501);
-    assert.equal(csv.html, 'Ekki tilbúið enn.');
+  test('GET /admin/export.csv answers 200 with a CSV file', async () => {
+    const cookie = [...as.admin.cookies].map(([name, value]) => `${name}=${value}`).join('; ');
+    const csv = await fetch(`${site.baseUrl}/admin/export.csv`, { headers: { cookie }, redirect: 'manual' });
+    assert.equal(csv.status, 200);
+    assert.match(csv.headers.get('content-type'), /^text\/csv; charset=utf-8$/);
+    assert.match(await csv.text(), /^kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning\r\n/);
   });
 
   test('a form body over 100 kB gets the error page without details', async () => {

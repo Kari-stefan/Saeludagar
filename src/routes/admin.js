@@ -4,8 +4,10 @@ import { requireAdmin } from '../middleware/auth.js';
 import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
 import { validateTeacher } from '../services/accounts.js';
+import { auditEntries, auditEvents } from '../services/audit.js';
 import { outboxStatus } from '../services/email.js';
-import { allEvents } from '../services/events.js';
+import { allEvents, searchTerm } from '../services/events.js';
+import { exportCsv, exportFileName, exportRows, exportSummary } from '../services/export.js';
 import {
   activeStudentCount, applyImport, brautList, holdImport, MAX_FILE_BYTES, previewImport, readStudentCsv, takeImport,
 } from '../services/import.js';
@@ -27,7 +29,7 @@ function readUpload(req, res, next) {
   });
 }
 
-// Mounted at /admin. Export, purge and audit are stubs until milestones 7 and 8.
+// Mounted at /admin. The purge is a stub until milestone 8.
 export function adminRouter({ config, db, kt, accounts }) {
   const router = express.Router();
   router.use(requireAdmin);
@@ -172,10 +174,36 @@ export function adminRouter({ config, db, kt, accounts }) {
 
   // §6: every event, with its owner, linking to its management page.
   router.get('/events', (req, res) => res.render('admin/events', { events: allEvents(db) }));
-  router.get('/export', (req, res) => res.render('admin/export'));
-  router.get('/export.csv', (req, res) => res.status(501).type('text/plain').send(res.locals.t('stub.notImplemented')));
+  // BR-48, BR-49: the office export. The page says how many rows the file has and whether it is
+  // still provisional. The file is built afresh on every download.
+  router.get('/export', (req, res) => res.render('admin/export', { summary: exportSummary(db) }));
+
+  // §8: the one place a kennitala is decrypted (BR-19). Never cached, because of what it holds.
+  router.get('/export.csv', (req, res) => {
+    res.set({
+      'Content-Type': 'text/csv; charset=utf-8',
+      'Content-Disposition': `attachment; filename="${exportFileName()}"`,
+      'Cache-Control': 'no-store',
+    });
+    res.send(exportCsv(exportRows(db, kt)));
+  });
+
   router.get('/purge', (req, res) => res.render('admin/purge'));
-  router.get('/audit', (req, res) => res.render('admin/audit'));
+
+  // BR-56: the audit log, newest first, filtered by event and by a student's name.
+  router.get('/audit', (req, res) => {
+    const eventId = Number(req.query.event);
+    const page = Number(req.query.page);
+    const filter = {
+      eventId: Number.isSafeInteger(eventId) && eventId > 0 ? eventId : null,
+      student: searchTerm(req.query.student),
+    };
+    res.render('admin/audit', {
+      filter,
+      events: auditEvents(db),
+      log: auditEntries(db, { ...filter, page: Number.isSafeInteger(page) && page > 0 ? page : 1 }),
+    });
+  });
 
   return router;
 }

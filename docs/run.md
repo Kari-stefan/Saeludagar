@@ -195,6 +195,8 @@ To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 secon
 - **Send a message.** **Senda póst** sends an email to everyone signed up. Each one is printed in the terminal with `Reply-To:` set to your address.
 - **Take attendance.** **Mætingarlisti** opens a phone-friendly checklist, where each tick saves at once. It only opens from 00:00 on the event's date, so to try it, add today as a Sæludagar day and give an event today's date. Without a course-choice deadline it stays open; after the deadline it is read-only. Nobody ticks their own name: a student who manages an event they are signed up for sees their own row greyed out, and another manager of the event or an admin ticks it.
 - **Give away absence points.** Log in as a student whose attendance has been ticked and click **Fjarvistastig** in the header. The counter at the top shows the points left and the points earned, such as "4/12": 4 for each ticked attendance. Each of the student's courses has **−** and **+**: **+** puts 4 points on the course and **−** takes them back. A course takes at most 4, and the buttons that can't be used are greyed out. After **Frestur til að velja áfanga** on Dagsetningar og frestir, the page is read-only. Of the `seed:dev` students, Jóna and Sara have courses and Páll has none, so he sees a message instead of a list. A student you import needs at least one course in the CSV to have a row here.
+- **Download the office export.** Stjórnendasvæði → **Útflutningur fyrir skrifstofu**. The page shows how many rows the file has, how many of them have no course yet, and whether it is still a **Bráðabirgðaútgáfa** (before **Frestur til að velja áfanga**, or when none is set) or the **Lokaútgáfa**. **Sækja skrána (CSV)** downloads `saeludagar-fjarvistir-YYYY-MM-DD.csv`, with one row for each ticked attendance. It opens in Excel with Icelandic letters and the kennitölur intact. On your own computer the kennitölur in it are the fake ones you created.
+- **Read the audit log.** Stjórnendasvæði → **Aðgerðaskrá** lists who changed sign-ups, attendance, course choices and event-manager rights, and when, newest first. Filter it by event or by part of a student's name.
 - **Print the list.** **Prenta lista** shows the participants with an empty box each. Your browser's print command (`Ctrl+P`) prints only the list.
 
 Who can open which page:
@@ -210,6 +212,8 @@ Who can open which page:
 | Admin area | http://localhost:3000/admin | Admins |
 | Teacher accounts | http://localhost:3000/admin/teachers | Admins |
 | Dates and deadlines | http://localhost:3000/admin/settings | Admins |
+| Office export | http://localhost:3000/admin/export | Admins |
+| Audit log | http://localhost:3000/admin/audit | Admins |
 | Student import | http://localhost:3000/admin/import | Admins |
 | Send codes | http://localhost:3000/admin/codes | Admins |
 

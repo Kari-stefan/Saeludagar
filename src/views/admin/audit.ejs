@@ -1,3 +1,108 @@
+<%#
+  BR-56: the audit log, newest first, 100 entries a page. The filter is a plain GET form, so the
+  address holds it and the page links keep it. Names and titles come from the database and are
+  always escaped; no kennitala is ever read for this page.
+-%>
+<%
+  const filtered = Boolean(filter.eventId || filter.student);
+  // The address of another page of the log with the same filter.
+  const pageUrl = (page) => {
+    const query = new URLSearchParams();
+    if (filter.eventId) query.set('event', String(filter.eventId));
+    if (filter.student) query.set('student', filter.student);
+    if (page > 1) query.set('page', String(page));
+    const search = query.toString();
+    return `/admin/audit${search ? `?${search}` : ''}`;
+  };
+  const eventName = (event) => (event.title_is === null && event.title_en === null
+    ? t('auditLog.deletedEvent', { id: event.id }) : eventText(event, 'title'));
+  // t() gives back the key when there is no text, so an unknown action shows as it is stored.
+  const actionText = (action) => {
+    const key = `auditLog.actions.${action}`;
+    const text = t(key);
+    return text === key ? action : text;
+  };
+  // One line for each detail the page knows; anything else in the details is left out.
+  const detailLines = (entry) => {
+    const details = entry.details ?? {};
+    const lines = [];
+    if (['student', 'event_manager'].includes(details.by)) lines.push(t(`auditLog.by.${details.by}`));
+    if (['import', 'event_deleted', 'attendance.unset'].includes(details.reason)) lines.push(t(`auditLog.reason.${details.reason}`));
+    if (typeof details.course === 'string' && details.course !== '') lines.push(t('auditLog.course', { course: details.course }));
+    if (entry.action === 'event-manager.revoke' && Number.isFinite(details.owned) && Number.isFinite(details.coteaching)) {
+      lines.push(t('auditLog.ownership', { owned: details.owned, coteaching: details.coteaching }));
+    }
+    return lines;
+  };
+-%>
 <%- include('../partials/header', { pageTitle: t('pages.audit') }) %>
 <h1><%= t('pages.audit') %></h1>
+<p><%= t('auditLog.intro') %></p>
+
+<form class="form" method="get" action="/admin/audit" role="search" aria-label="<%= t('auditLog.filterHeading') %>">
+  <div class="field">
+    <label class="field__label" for="audit-event"><%= t('auditLog.filterEvent') %></label>
+    <select class="field__input" id="audit-event" name="event">
+      <option value=""><%= t('auditLog.allEvents') %></option>
+      <% for (const event of events) { -%>
+      <option value="<%= event.id %>"<% if (event.id === filter.eventId) { %> selected<% } %>><%= eventName(event) %></option>
+      <% } -%>
+    </select>
+  </div>
+  <div class="field">
+    <label class="field__label" for="audit-student"><%= t('auditLog.filterStudent') %></label>
+    <input class="field__input" id="audit-student" type="search" name="student" maxlength="100" value="<%= filter.student %>">
+  </div>
+  <div class="button-row">
+    <button type="submit" class="button"><%= t('auditLog.apply') %></button>
+    <% if (filtered) { -%>
+    <a class="button button--secondary" href="/admin/audit"><%= t('auditLog.clear') %></a>
+    <% } -%>
+  </div>
+</form>
+
+<% if (log.total === 0) { -%>
+<p class="empty"><%= t(filtered ? 'auditLog.noMatches' : 'auditLog.none') %></p>
+<% } else { -%>
+<p><%= t('auditLog.showing', { from: log.from, to: log.to, total: log.total }) %></p>
+<div class="table-wrap">
+  <table class="table">
+    <thead>
+      <tr>
+        <th scope="col"><%= t('auditLog.when') %></th>
+        <th scope="col"><%= t('auditLog.who') %></th>
+        <th scope="col"><%= t('auditLog.what') %></th>
+        <th scope="col"><%= t('auditLog.event') %></th>
+        <th scope="col"><%= t('auditLog.student') %></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% for (const entry of log.entries) { -%>
+      <tr>
+        <td class="table__nowrap"><time datetime="<%= entry.at %>"><%= formatDateTime(entry.at) %></time></td>
+        <td><%= entry.actor ?? t('auditLog.unknownPerson') %></td>
+        <td>
+          <%= actionText(entry.action) %>
+          <% for (const line of detailLines(entry)) { -%>
+          <p class="field__hint"><%= line %></p>
+          <% } -%>
+        </td>
+        <td><% if (entry.event) { %><a href="/teacher/events/<%= entry.eventId %>"><%= eventText(entry.event, 'title') %></a><% } else if (entry.eventId !== null) { %><%= t('auditLog.deletedEvent', { id: entry.eventId }) %><% } %></td>
+        <td><% if (entry.studentId !== null) { %><%= entry.student ?? t('auditLog.unknownPerson') %><% } %></td>
+      </tr>
+      <% } -%>
+    </tbody>
+  </table>
+</div>
+<% if (log.pages > 1) { -%>
+<div class="button-row">
+  <% if (log.page > 1) { -%>
+  <a class="button button--secondary" href="<%= pageUrl(log.page - 1) %>"><%= t('auditLog.newer') %></a>
+  <% } -%>
+  <% if (log.page < log.pages) { -%>
+  <a class="button button--secondary" href="<%= pageUrl(log.page + 1) %>"><%= t('auditLog.older') %></a>
+  <% } -%>
+</div>
+<% } -%>
+<% } -%>
 <%- include('../partials/footer') %>
