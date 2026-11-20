@@ -198,10 +198,10 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 
 ### Admin settings and data lifecycle
 - **BR-54** The admin sets the Sæludagar days, the sign-up opening and closing times, and the course-choice deadline.
-- **BR-55** An admin can purge the data after the export. If nobody has purged 30 days after the course-choice deadline, the system purges automatically.
+- **BR-55** An admin can purge the data after the export. The site does not refuse a purge earlier than that (decided 20 November 2026; open question 24): the admin types a confirmation word, and while the course-choice deadline has not passed the page warns that the export is not final (BR-49). If nobody has purged 30 days after the course-choice deadline, the system purges automatically.
   - A purge deletes all student data: students, course lists, codes, sign-ups, attendance, course choices, student sessions, queued emails to students, and the audit log.
   - It sets every event back to draft.
-  - Teacher accounts and events are kept. An event owned by a student who is an event manager (BR-67) is kept too: it moves to the admin who runs the purge (decided 17 November 2026), and the student's co-teacher links are removed with the student. The automatic purge, which no admin runs, gives such an event to the active admin whose account is oldest.
+  - Teacher accounts and events are kept. An event owned by a student who is an event manager (BR-67) is kept too: it moves to the admin who runs the purge (decided 17 November 2026), and the student's co-teacher links are removed with the student. The automatic purge, which no admin runs, gives such an event to the active admin whose account is oldest, or to the oldest admin account when none is active. With no admin account at all it cannot keep such an event, so it changes nothing, logs why, and tries again at the next check.
 - **BR-56** The system keeps an audit log of who changed attendance, sign-ups and course choices, and of who gave or took away the event-manager role (BR-67), and when. Admins can view it. The purge deletes it.
 
 ### Privacy and language
@@ -337,7 +337,7 @@ Pages that belong to a milestone that is not built yet (see `README.md`, Status)
 | `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away from a student (BR-67). |
 | `GET /admin/events` | All events | Every event with its owner, date and time, status and "n / max", linking to the management page. |
 | `GET /admin/export` + `GET /admin/export.csv` | Office export | A download button, a "provisional" label before the deadline and a "final" label after it, the number of rows, the number of rows without a course, and a reminder that the file holds kennitölur. |
-| `GET/POST /admin/purge` | Purge | A description of what will be deleted, a typed confirmation, and the date of the automatic purge. |
+| `GET/POST /admin/purge` | Purge | A description of what will be deleted and what is kept, and a reminder to download the office export first, with a link to it. A warning while the course-choice deadline has not passed, or is not set, because the export is not final then (BR-55). A typed confirmation: the admin types the word the page shows, "EYÐA" in Icelandic and "DELETE" in English; either word is accepted, in capitals or not, and anything else deletes nothing and shows an error on the field. The date of the automatic purge, 30 days after the deadline, or why none is due: no deadline is set, or the data was already purged after this deadline. The date of the last purge, once there has been one. |
 | `GET /admin/audit` | Audit log | Newest first, 100 entries a page, filterable by event and by student name, showing who, what and when. An event or a person that no longer exists is shown as such. |
 
 ### Errors
@@ -1087,6 +1087,7 @@ Each item names the section or milestone it blocks and what to do until it is an
 | 21 | **Student event managers and privacy:** #52 lets an admin make a student an event manager (BR-67). That student then sees the names, brauts and emails of the participants of their events and can email them, and can search every active student by name and braut, although §9 and BR-23 say students never see other participants' names and only an event's teachers see emails. They can also sign up for their own event and mark their own or a friend's attendance, which removes absence points. Is that acceptable? Separately: an admin can take the role from a teacher too, and that teacher then cannot be given it back without editing the database. Should the role be removable only from students? An account that loses the role also leaves the "Viðburðastjórar" page, admins and the admin's own account included, so it can no longer be sent a code, deactivated or have its admin rights changed there (BR-11). | §9, BR-11, BR-23, BR-38, BR-67 | Answered on 13 November 2026: students can still be given the role, and they see their own events' participants as #52 built it. But nobody marks their own attendance (BR-38), and the role can be taken away only from a student, so a teacher account always has it and stays on the "Viðburðastjórar" page (BR-67). Built in M6c. |
 | 22 | **The purge and student event managers:** BR-55 deletes every student and keeps the events. A student with the event-manager role (BR-67) can own or co-teach events, and the database refuses to delete a user who does. What should the purge do with those events and that student? Answered on 17 November 2026: the events move to the admin who runs the purge, and the student's co-teacher links are removed with the student (BR-55). The automatic purge has no admin running it, so there the events go to the active admin whose account is oldest; that part is the builder's choice, for the project owner to change. | BR-55, M8 | Build as answered, in M8. |
 | 23 | **Moving an event onto a full day:** when a published event is moved to another day, a student signed up for it can end up with more than 2 events that day (BR-65). Is that acceptable, as it is for overlaps (BR-28), or should the move be refused? | BR-28, BR-65 | Not checked again, as for overlaps; the students get the change email. |
+| 24 | **Purging before the deadline:** BR-55 says the admin purges "after the export". Should the site refuse a purge until the course-choice deadline has passed? Answered on 20 November 2026: no. A purge is allowed at any time, so test data can be cleared before Sæludagar; the typed confirmation and a warning before the deadline guard against a mistake (BR-55). | BR-55, M8 | Built in M8. |
 
 ---
 
@@ -1161,7 +1162,7 @@ Older drafts on the `kari` and `Andri` git branches mentioned the roles "Gestur"
 | BR-52 | INT |
 | BR-53 | INT |
 | BR-54 | INT |
-| BR-55 | INT |
+| BR-55 | INT; the project owner's decisions of 17 and 20 November 2026 (open questions 22 and 24) |
 | BR-56 | INT; #52 (the event-manager role) |
 | BR-57 | INT |
 | BR-58 | INT |
