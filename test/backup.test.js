@@ -131,6 +131,26 @@ describe('npm run backup (§10, §9)', () => {
     assert.ok(fs.statSync(path.join(backupDir, created[0], 'uploads')).isDirectory(), 'an empty uploads folder when there is no upload folder');
   });
 
+  test('§9: a backup made at the same time 7 days ago is deleted', async () => {
+    const database = tempDatabase();
+    dirs.push(database.dir);
+    database.db.close();
+    const root = temp();
+    const backupDir = path.join(root, 'backups');
+    fs.mkdirSync(backupDir);
+    const gone = stamp(new Date(Date.now() - (7 * 24 * 60 * 60 * 1000 - 60 * 1000)));
+    const kept = stamp(new Date(Date.now() - (6 * 24 + 22) * 60 * 60 * 1000));
+    for (const name of [gone, kept]) {
+      fs.mkdirSync(path.join(backupDir, name));
+      fs.writeFileSync(path.join(backupDir, name, 'saeludagar.db'), 'x');
+    }
+    const { code, stderr } = await runBackup({ DATABASE_PATH: database.file, UPLOAD_DIR: path.join(root, 'none'), BACKUP_DIR: backupDir });
+    assert.equal(code, 0, stderr);
+    const left = fs.readdirSync(backupDir);
+    assert.ok(!left.includes(gone), 'the backup aged 7 days minus one minute is gone');
+    assert.ok(left.includes(kept), 'the backup aged 6 days and 22 hours is kept');
+  });
+
   test('§10: a missing database fails without leaving a backup or a database file', async () => {
     const root = temp();
     const databaseFile = path.join(root, 'data', 'missing.db');
