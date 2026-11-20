@@ -637,6 +637,40 @@
     "download": "Download the file (CSV)",
     "privacy": "The file contains kennitölur. Keep it somewhere safe, and delete it once the office has entered the points."
   },
+  "purge": {
+    "intro": "Here you delete all student data once the office has the export file. This cannot be undone.",
+    "confirmWord": "DELETE",
+    "deletesHeading": "What is deleted",
+    "deletes": {
+      "students": "Students, their course lists and their login codes",
+      "signups": "Sign-ups for events, attendance and course choices",
+      "sessions": "Students' logins",
+      "emails": "Emails waiting to be sent to students",
+      "audit": "The audit log"
+    },
+    "eventsHeading": "Events",
+    "eventsDraft": "Every event becomes a draft.",
+    "eventsOwner": "An event owned by a student event manager moves to you.",
+    "keptHeading": "What is kept",
+    "kept": "Teacher accounts, events and the Sæludagar dates.",
+    "exportFirst": "Download the export file first. The office needs it to enter the absence points.",
+    "exportLink": "Go to the export for the office",
+    "warningNoDeadline": "The course-choice deadline has not been set. The export is not final yet, so points could be lost if the data is deleted now.",
+    "warningBeforeDeadline": "The course-choice deadline is {deadline}. The export is not final yet, so points could be lost if the data is deleted now.",
+    "autoHeading": "Automatic purge",
+    "autoAt": "The data is deleted automatically on {date}, 30 days after the course-choice deadline.",
+    "autoNoDeadline": "No automatic purge is due, because the course-choice deadline has not been set.",
+    "autoDone": "No automatic purge is due, because the data was already purged after the deadline.",
+    "lastPurged": "The data was last purged on {date}.",
+    "formHeading": "Delete the data",
+    "confirmLabel": "Type the word {word} to confirm",
+    "submit": "Delete all student data",
+    "done": "The student data was deleted. Students deleted: {count}.",
+    "errors": {
+      "confirm": "Type the confirmation word exactly as shown. Nothing was deleted.",
+      "notAdmin": "Only an admin can purge the data. Nothing was deleted."
+    }
+  },
   "auditLog": {
     "intro": "This shows who changed sign-ups, attendance, course choices and Event Manager roles, and when. The newest entries are first.",
     "filterHeading": "Filter the entries",

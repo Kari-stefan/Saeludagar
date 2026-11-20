@@ -11,6 +11,7 @@ import { exportCsv, exportFileName, exportRows, exportSummary } from '../service
 import {
   activeStudentCount, applyImport, brautList, holdImport, MAX_FILE_BYTES, previewImport, readStudentCsv, takeImport,
 } from '../services/import.js';
+import { purgeConfirmed, purgeData, purgeStatus } from '../services/purge.js';
 import { addDay, getSettings, removeDay, saveTimes, timeFields } from '../services/settings.js';
 
 function httpError(status) {
@@ -29,7 +30,7 @@ function readUpload(req, res, next) {
   });
 }
 
-// Mounted at /admin. The purge is a stub until milestone 8.
+// Mounted at /admin.
 export function adminRouter({ config, db, kt, accounts }) {
   const router = express.Router();
   router.use(requireAdmin);
@@ -188,7 +189,20 @@ export function adminRouter({ config, db, kt, accounts }) {
     res.send(exportCsv(exportRows(db, kt)));
   });
 
-  router.get('/purge', (req, res) => res.render('admin/purge'));
+  // BR-55: the manual purge, after a typed confirmation word. Allowed at any time (open question 24).
+  const renderPurge = (res, status = 200, form = {}) =>
+    res.status(status).render('admin/purge', { status: purgeStatus(db), errors: {}, ...form });
+
+  router.get('/purge', (req, res) => renderPurge(res));
+
+  router.post('/purge', (req, res) => {
+    const body = req.body ?? {};
+    if (!purgeConfirmed(body.confirm)) return renderPurge(res, 400, { errors: { confirm: 'purge.errors.confirm' } });
+    const result = purgeData(db, req.user.id);
+    if (result.error) setFlash(req, 'error', result.error);
+    else setFlash(req, 'success', 'purge.done', { count: result.students });
+    res.redirect(303, '/admin/purge');
+  });
 
   // BR-56: the audit log, newest first, filtered by event and by a student's name.
   router.get('/audit', (req, res) => {

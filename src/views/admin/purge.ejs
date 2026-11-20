@@ -1,3 +1,48 @@
+<%# BR-55: the manual purge. Describes what is deleted and kept, warns while the export is not final, and asks for a typed confirmation word. -%>
 <%- include('../partials/header', { pageTitle: t('pages.purge') }) %>
 <h1><%= t('pages.purge') %></h1>
+<%- include('../partials/flash') %>
+<p><%= t('purge.intro') %></p>
+
+<h2><%= t('purge.deletesHeading') %></h2>
+<ul>
+  <% for (const item of ['students', 'signups', 'sessions', 'emails', 'audit']) { -%>
+  <li><%= t(`purge.deletes.${item}`) %></li>
+  <% } -%>
+</ul>
+
+<h2><%= t('purge.eventsHeading') %></h2>
+<ul>
+  <li><%= t('purge.eventsDraft') %></li>
+  <li><%= t('purge.eventsOwner') %></li>
+</ul>
+
+<h2><%= t('purge.keptHeading') %></h2>
+<p><%= t('purge.kept') %></p>
+
+<p><%= t('purge.exportFirst') %> <a href="/admin/export"><%= t('purge.exportLink') %></a></p>
+
+<% if (!status.deadlinePassed) { -%>
+<div class="alert">
+  <p><%= status.deadline ? t('purge.warningBeforeDeadline', { deadline: formatDateTime(status.deadline) }) : t('purge.warningNoDeadline') %></p>
+</div>
+<% } -%>
+
+<h2><%= t('purge.autoHeading') %></h2>
+<% if (status.autoPurgeAt) { -%>
+<p><%= t('purge.autoAt', { date: formatDateTime(status.autoPurgeAt) }) %></p>
+<% } else { -%>
+<p><%= status.deadline ? t('purge.autoDone') : t('purge.autoNoDeadline') %></p>
+<% } -%>
+<% if (status.lastPurgedAt) { -%>
+<p><%= t('purge.lastPurged', { date: formatDateTime(status.lastPurgedAt) }) %></p>
+<% } -%>
+
+<h2><%= t('purge.formHeading') %></h2>
+<%- include('../partials/form-errors', { errors }) %>
+<form class="form" method="post" action="/admin/purge">
+  <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
+  <%- include('../partials/field', { name: 'confirm', label: t('purge.confirmLabel', { word: t('purge.confirmWord') }), value: '', error: errors.confirm, required: true, short: true }) %>
+  <button type="submit" class="button"><%= t('purge.submit') %></button>
+</form>
 <%- include('../partials/footer') %>
