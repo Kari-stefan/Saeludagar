@@ -815,6 +815,7 @@ These were decided in the interview; the items marked "assumed" still need confi
   - in the event form and the dialog, a preview of each chosen image with its own remove button (without JavaScript the file field still takes several images, and saved ones have a remove checkbox)
   - on the event page, the arrows and the "Mynd n af m" count for the images (without JavaScript the images scroll sideways)
   - on "Fjarvistastig", the steppers without reloading the page (they are plain forms without JavaScript)
+  - when a page loads with an error message (a form that came back with errors, a failed login, a refused action), moving keyboard focus to that message, so that a screen reader reads it out (without JavaScript the message is in the same place, and the errors are still linked to their fields)
 - **Fonts:** system font stack only, with no external requests.
 - **Formats:**
 
