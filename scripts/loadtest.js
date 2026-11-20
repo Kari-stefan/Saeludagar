@@ -411,6 +411,10 @@ async function main() {
   console.log(`Phase 2, sign-up minute: requests sent over ${(minute.sendSpanMs / 1000).toFixed(1)} s (limit 60 s), last response after ${(minute.totalMs / 1000).toFixed(1)} s, peak in flight ${minute.peak} (cap ${MAX_IN_FLIGHT})`);
 
   const stopped = await stopServer();
+  // Windows has no SIGTERM: kill() ends the process at once, so it cannot exit with code 0. There the stop is
+  // clean when the server ended because of our own kill('SIGTERM') (reported as { code: null, signal: 'SIGTERM' }).
+  // A crash or an early exit reports an exit code instead, so it still fails.
+  const stoppedCleanly = process.platform === 'win32' ? stopped?.signal === 'SIGTERM' : stopped?.code === 0;
   if (interrupted) return;
   const db = checkDatabase();
 
@@ -426,7 +430,7 @@ async function main() {
     ['BR-35: no event over its maximum', db.overCapacity === 0],
     [`BR-32: no student over ${MAX_SIGNUPS_PER_STUDENT} sign-ups`, db.overTotal === 0],
     [`BR-65: no student over ${MAX_SIGNUPS_PER_DAY} sign-ups on one day`, db.overDay === 0],
-    ['the server stopped cleanly', stopped?.code === 0],
+    ['the server stopped cleanly', stoppedCleanly],
   ];
   const passed = checks.every(([, ok]) => ok);
 
