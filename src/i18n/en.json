@@ -153,6 +153,7 @@
         "both": "Enter both a date and a time, or neither",
         "dateTime": "Enter a valid date and time",
         "closesBeforeOpens": "Sign-up must close after it opens",
+        "deadlinePurges": "This deadline passed 30 days ago or more, so the automatic purge would delete all student data within the hour. Choose another date. To delete the data, use \"Purge data\".",
         "dayHasEvents": "{day} cannot be removed because it has events: {events}. Move them to another day or delete them first."
       }
     },

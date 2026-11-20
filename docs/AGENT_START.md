@@ -202,6 +202,7 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
   - A purge deletes all student data: students, course lists, codes, sign-ups, attendance, course choices, student sessions, queued emails to students, and the audit log.
   - It sets every event back to draft.
   - Teacher accounts and events are kept. An event owned by a student who is an event manager (BR-67) is kept too: it moves to the admin who runs the purge (decided 17 November 2026), and the student's co-teacher links are removed with the student. The automatic purge, which no admin runs, gives such an event to the active admin whose account is oldest, or to the oldest admin account when none is active. With no admin account at all it cannot keep such an event, so it changes nothing, logs why, and tries again at the next check.
+  - The settings page refuses a course-choice deadline that would make the automatic purge run at once: one that passed 30 days ago or more with no purge since. A mistyped date therefore cannot delete the student data; an admin who wants the data gone uses the purge page (decided 20 November 2026).
 - **BR-56** The system keeps an audit log of who changed attendance, sign-ups and course choices, and of who gave or took away the event-manager role (BR-67), and when. Admins can view it. The purge deletes it.
 
 ### Privacy and language
@@ -326,12 +327,10 @@ Each rule has an ID that tests and section 16 refer to. In these rules, "teacher
 | `GET/POST /teacher/events/:id/message` | Message to participants | Subject and body (free text, written in any language) and a Send button. Shows the number of recipients. A deactivated student, kept on the event because their attendance is marked (BR-17), gets no email (BR-03) and is left out of the count and the copied email list. |
 
 ### Admin
-Pages that belong to a milestone that is not built yet (see `README.md`, Status) are placeholders that show only their title.
-
 | Path | Purpose | Key elements |
 |---|---|---|
 | `GET /admin` | Admin home | The current dates and windows, the email outbox status (queued / failed), and links to every admin page. No statistics; those are a Later item. |
-| `GET/POST /admin/settings` | Dates | Sæludagar days (add or remove dates), sign-up opens and closes (date + time), course-choice deadline (date + time). |
+| `GET/POST /admin/settings` | Dates | Sæludagar days (add or remove dates), sign-up opens and closes (date + time), course-choice deadline (date + time). A course-choice deadline that would start the automatic purge at once is refused (BR-55). |
 | `GET/POST /admin/import` | Student CSV import | Upload, then either the list of errors with line numbers, or a summary of changes (added, updated, deactivated, sign-ups to be removed, course choices to be cleared) with a Confirm button. |
 | `GET/POST /admin/codes` | Send codes | The number of active students, a warning that previous codes stop working, a Confirm button, and progress (queued / sent / failed). |
 | `GET/POST /admin/teachers` | Event managers ("Viðburðastjórar") | A list of everyone who can manage events (name, email, account type, admin, active). Create a teacher (name, email, kennitala). Send a new code. Deactivate or reactivate. Grant or revoke admin. Make an active student an event manager, or take the role away from a student (BR-67). |
