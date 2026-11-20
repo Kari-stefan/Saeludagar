@@ -11,6 +11,8 @@ import { toIso } from '../src/db/index.js';
 // (AGENT_START §9, Retention; §10, Backups).
 const KEEP_DAYS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
+// A nightly run meets last week's backup a few seconds either side of 7 days, and it must go that night.
+const ROTATION_MARGIN_MS = 60 * 60 * 1000;
 
 function fail(message) {
   console.error(message);
@@ -68,7 +70,7 @@ try {
 let removed = 0;
 for (const entry of fs.readdirSync(config.backupDir)) {
   const time = stampTime(entry);
-  if (time !== null && now.getTime() - time > KEEP_DAYS * DAY_MS) {
+  if (time !== null && now.getTime() - time >= KEEP_DAYS * DAY_MS - ROTATION_MARGIN_MS) {
     fs.rmSync(path.join(config.backupDir, entry), { recursive: true, force: true });
     removed += 1;
   }

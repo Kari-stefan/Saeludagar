@@ -130,6 +130,14 @@ describe('the purge service (BR-55, BR-56)', () => {
     assert.equal(count('event_coteachers', 'teacher_id = ' + people.teacher.id), 1);
   });
 
+  test('BR-55: the admin who receives a student\'s event is not left as its co-teacher', () => {
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(events.owned, people.admin.id);
+    assert.equal(count('event_coteachers', `event_id = ${events.owned} AND teacher_id = ${people.admin.id}`), 1);
+    purgeData(site.db, people.admin.id);
+    assert.equal(ownerOf(events.owned), people.admin.id);
+    assert.equal(count('event_coteachers', `event_id = ${events.owned} AND teacher_id = ${people.admin.id}`), 0);
+  });
+
   test('BR-55: the service refuses an account that is not an active admin and changes nothing', () => {
     for (const id of [people.teacher.id, people.inactiveAdmin.id, people.jona.id, 99999]) {
       assert.deepEqual(purgeData(site.db, id), { error: 'purge.errors.notAdmin' }, String(id));

@@ -2,7 +2,7 @@
 
 A bilingual (ÍS/EN) school website. Students sign up for Sæludagar events (viðburðir), and after attending they choose which of their courses gets absence points removed. Stack: Node.js 24, Express 5, EJS, SCSS, SQLite (better-sqlite3), plain browser JavaScript.
 
-`README.md` (Status) says which milestones are built and which is next. Read it before you start.
+`README.md` (Status) says what is built and what still remains. Read it before you start.
 
 ## If you are not Claude Code
 
@@ -168,7 +168,7 @@ Two more rules settle the rest:
 
 | Read | When |
 |---|---|
-| `README.md` (Status) | Before you start: what is built and what is next. |
+| `README.md` (Status) | Before you start: what is built and what still remains. |
 | `docs/AGENT_START.md` | The specification. Read the sections your task touches before you write code: §4 business rules (each has an ID such as BR-31), §6 pages, §7 data model, §8 login, import, email, export and uploads, §9 security requirements, §10 allowed packages, §11 design, §13 build plan, §15 open questions. |
 | `docs/architecture.md` | Before changing code you have not seen: what runs, how a request is handled, the layers, where each kind of new code goes, and why things are built the way they are. |
 | `docs/conventions.md` | Before writing code or tests: the patterns, a file to copy from for each kind of change, how to write and run tests, and the traps. |

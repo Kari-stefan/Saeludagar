@@ -1,4 +1,5 @@
 import { toIso } from '../db/index.js';
+import { autoPurgeDue } from './purge.js';
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -53,7 +54,7 @@ export function removeDay(db, day) {
 
 // BR-54: the sign-up window (BR-31) and the course-choice deadline (BR-44), each a date and a time.
 // Both empty means "not set". Returns { values, errors }, with errors as i18n keys by field prefix.
-export function saveTimes(db, input) {
+export function saveTimes(db, input, now = new Date()) {
   const values = {};
   const errors = {};
   const stored = {};
@@ -70,6 +71,11 @@ export function saveTimes(db, input) {
   if (!errors.signupOpens && !errors.signupCloses && stored.signupOpens && stored.signupCloses
     && stored.signupCloses <= stored.signupOpens) {
     errors.signupCloses = 'admin.settings.errors.closesBeforeOpens';
+  }
+  // BR-55: a deadline that would start the automatic purge at once is refused, so a typo cannot delete the data.
+  if (!errors.choiceDeadline && stored.choiceDeadline) {
+    const lastPurgedAt = db.prepare('SELECT last_purged_at FROM settings WHERE id = 1').pluck().get();
+    if (autoPurgeDue(stored.choiceDeadline, lastPurgedAt, now)) errors.choiceDeadline = 'admin.settings.errors.deadlinePurges';
   }
   if (Object.keys(errors).length === 0) {
     db.prepare(`UPDATE settings SET signup_opens_at = ?, signup_closes_at = ?, choice_deadline_at = ?, updated_at = ?

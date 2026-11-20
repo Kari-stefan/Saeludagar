@@ -15,12 +15,21 @@ function notPurgedSince(deadline, lastPurgedAt) {
   return lastPurgedAt === null || lastPurgedAt < deadline;
 }
 
+// BR-55, §8: true when the course-choice deadline is set, `now` is at or after the deadline plus 30
+// days, and nobody has purged since the deadline. The automatic purge and the settings page share it.
+export function autoPurgeDue(deadline, lastPurgedAt, now = new Date()) {
+  return Boolean(deadline) && now.getTime() >= Date.parse(deadline) + AUTO_PURGE_MS && notPurgedSince(deadline, lastPurgedAt);
+}
+
 // BR-55, BR-56: deletes all student data and sets every event back to draft, in one transaction.
 // An event owned by a student event manager (BR-67) moves to `newOwnerId`. Teacher accounts, events,
 // the Sæludagar days and the three times in settings stay. Call it inside a transaction.
 function deleteStudentData(db, newOwnerId, now) {
   const at = toIso(now);
   const students = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student'").pluck().get();
+  // An event's owner is never also its co-teacher.
+  db.prepare("DELETE FROM event_coteachers WHERE teacher_id = ? AND event_id IN (SELECT id FROM events WHERE owner_id IN (SELECT id FROM users WHERE role = 'student'))")
+    .run(newOwnerId);
   db.prepare("UPDATE events SET owner_id = ?, updated_at = ? WHERE owner_id IN (SELECT id FROM users WHERE role = 'student')")
     .run(newOwnerId, at);
   // This foreign key does not cascade, so a student's co-teacher links go first.
@@ -56,7 +65,7 @@ export function autoPurge(db, now = new Date()) {
     const { choice_deadline_at: deadline, last_purged_at: lastPurgedAt } = db.prepare(
       'SELECT choice_deadline_at, last_purged_at FROM settings WHERE id = 1',
     ).get();
-    if (!deadline || now.getTime() < Date.parse(deadline) + AUTO_PURGE_MS || !notPurgedSince(deadline, lastPurgedAt)) {
+    if (!autoPurgeDue(deadline, lastPurgedAt, now)) {
       return { purged: false };
     }
     const admin = db.prepare(`SELECT id FROM users WHERE role = 'teacher' AND is_admin = 1

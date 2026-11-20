@@ -153,6 +153,7 @@
         "both": "Fylltu inn bæði dagsetningu og tíma, eða hvorugt",
         "dateTime": "Sláðu inn gilda dagsetningu og tíma",
         "closesBeforeOpens": "Skráningu verður að ljúka eftir að hún opnar",
+        "deadlinePurges": "Þessi frestur rann út fyrir 30 dögum eða meira, svo sjálfvirka hreinsunin myndi eyða öllum nemendagögnum innan klukkustundar. Veldu aðra dagsetningu. Ef þú vilt eyða gögnunum skaltu nota „Hreinsun gagna“.",
         "dayHasEvents": "Ekki er hægt að fjarlægja {day} því viðburðir eru á deginum: {events}. Færðu þá á annan dag eða eyddu þeim fyrst."
       }
     },

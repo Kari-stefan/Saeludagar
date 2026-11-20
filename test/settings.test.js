@@ -1,5 +1,6 @@
 import { after, before, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { saveTimes } from '../src/services/settings.js';
 import { startSite } from './helpers.js';
 
 const TIMES = {
@@ -99,6 +100,43 @@ describe('admin settings (BR-54)', () => {
     await admin.post('/admin/settings', { action: 'save-times', ...TIMES, choiceDeadlineDate: '', choiceDeadlineTime: '' });
     assert.equal(stored().choice_deadline_at, null);
     assert.match((await admin.get('/admin')).html, /<dt>Frestur til að velja áfanga<\/dt>\s*<dd>Ekki skráð<\/dd>/);
+  });
+
+  test('BR-55: the page refuses a deadline that would make the automatic purge run at once', async () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    site.db.prepare('UPDATE settings SET choice_deadline_at = ?, last_purged_at = NULL').run('2027-03-20T16:00:00Z');
+    const before = stored();
+    const past = new Date(Date.now() - 31 * DAY).toISOString();
+    const res = await admin.post('/admin/settings', {
+      action: 'save-times', ...TIMES, choiceDeadlineDate: past.slice(0, 10), choiceDeadlineTime: '12:00',
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.html, /rann út fyrir 30 dögum eða meira/);
+    assert.deepEqual(stored(), before, 'nothing is saved');
+  });
+
+  test('BR-55: saveTimes refuses a deadline that is 30 days past and allows the other cases', () => {
+    const save = (date, time, now, lastPurged = null) => {
+      site.db.prepare('UPDATE settings SET choice_deadline_at = NULL, last_purged_at = ?').run(lastPurged);
+      const { errors } = saveTimes(site.db, { ...TIMES, choiceDeadlineDate: date, choiceDeadlineTime: time }, new Date(now));
+      return { errors, saved: stored().choice_deadline_at };
+    };
+    const exact = save('2027-05-02', '12:00', '2027-06-01T12:00:00Z');
+    assert.equal(exact.errors.choiceDeadline, 'admin.settings.errors.deadlinePurges');
+    assert.equal(exact.saved, null, 'nothing is saved');
+    const almost = save('2027-05-02', '12:00', '2027-06-01T11:59:59Z');
+    assert.deepEqual(almost.errors, {});
+    assert.equal(almost.saved, '2027-05-02T12:00:00Z');
+    const old = save('2027-03-01', '12:00', '2027-06-01T12:00:00Z', '2027-04-01T00:00:00Z');
+    assert.deepEqual(old.errors, {}, 'a purge since the old deadline allows it');
+    assert.equal(old.saved, '2027-03-01T12:00:00Z');
+    const future = save('2027-07-01', '12:00', '2027-06-01T12:00:00Z');
+    assert.deepEqual(future.errors, {});
+    assert.equal(future.saved, '2027-07-01T12:00:00Z');
+    const empty = save('', '', '2027-06-01T12:00:00Z');
+    assert.deepEqual(empty.errors, {});
+    assert.equal(empty.saved, null);
+    site.db.prepare('UPDATE settings SET last_purged_at = NULL').run();
   });
 
   test('BR-54: only admins can change the settings', async () => {
