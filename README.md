@@ -43,7 +43,7 @@ The branch and pull-request rules are in [CLAUDE.md](CLAUDE.md) under Hard rules
 ### Building with Claude Code
 The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_START.md):
 
-1. Run `/milestone` with the next milestone that the Status section above names. Claude builds that milestone only, then stops.
+1. Run `/milestone` with the next milestone that the Status section above names, if one is left. Claude builds that milestone only, then stops.
 2. Run `/review` to have the `spec-reviewer` agent check the changes against the business rules, the security requirements and the milestone's scope.
 3. Check the result yourself using the "how to verify" steps Claude gives.
 4. Commit, push your branch and open a pull request into `main`.
@@ -223,17 +223,16 @@ MAIL_FROM=<the noreply address, from the kerfisstjóri>
 SMTP_MAX_PER_MINUTE=30
 ```
 
-Leave `DATABASE_PATH`, `UPLOAD_DIR` and `BACKUP_DIR` as they are in `.env.example`: this guide, the unit files and the backup all assume the three folders inside `/opt/saeludagar`. Leave `NEW_CODE_LIMIT` empty. It is for development only and has no effect in production.
+Leave `DATABASE_PATH`, `UPLOAD_DIR` and `BACKUP_DIR` as they are in `.env.example`: this guide, the unit files and the backup all assume the three folders inside `/opt/saeludagar`. Leave `NEW_CODE_LIMIT` empty.
 
 What the important ones mean:
 
-- **`BASE_URL`** is the address in the links in emails.
 - **`TRUST_PROXY=1`** goes with nginx. The session cookie is marked Secure in production, so the site must know that a request came in over HTTPS even though nginx passes it on over plain HTTP. nginx tells it with the `X-Forwarded-Proto` header, and `TRUST_PROXY=1` makes the site believe that header. Never set it without a proxy that sets the header.
-- **The SMTP values** come from the school's kerfisstjóri (open question 4). Port 587 goes with `SMTP_SECURE=false`, and port 465 goes with `SMTP_SECURE=true`. The site refuses to start if they do not match. `SMTP_MAX_PER_MINUTE` must not be above the school's mail limit.
+- **The SMTP values** come from the school's kerfisstjóri (open question 4). `SMTP_MAX_PER_MINUTE` must not be above the school's mail limit.
 - **Without SMTP, nobody gets a login code.** In production the site never prints emails in the terminal. With `SMTP_HOST` empty, emails stay queued and are not sent. Set the SMTP values before you send codes to students.
-- **If the two kennitala keys are lost, the stored kennitölur cannot be read.** The student CSV then has to be imported again and every teacher account, the admin's included, created again. Keep a copy of the three secrets somewhere other than this server and its backups, for example in the school's password manager. Where that copy goes is not decided (open question 8). Never put them in the repository or in an email.
+- **Keep a copy of the three secrets** somewhere other than this server and its backups, for example in the school's password manager. Where that copy goes is not decided (open question 8). Never put them in the repository or in an email.
 
-[docs/run.md](docs/run.md), section 12, lists every variable.
+[docs/run.md](docs/run.md), section 12, explains every variable, including `BASE_URL`, the SMTP port and `SMTP_SECURE` pairing, what losing the kennitala keys means and what `NEW_CODE_LIMIT` does.
 
 ### 4. Install and set up the site
 
@@ -374,9 +373,9 @@ The dry run should end with `Congratulations, all simulated renewals succeeded`.
 
 ### 9. Backups
 
-`npm run backup` writes a folder `backups/backup-<UTC time>/` that holds `saeludagar.db` (a consistent copy, made while the site keeps running) and `uploads/` (the event images). It then deletes backups older than 7 days. It never creates an empty database.
+`npm run backup` gives you a copy of the database and the event images in a new folder in `backups/`, and keeps backups for 7 days; [docs/run.md](docs/run.md) describes it in full.
 
-Run it every night with a systemd timer. Create `/etc/systemd/system/saeludagar-backup.service`:
+Run it every night with a systemd timer. The unit runs `scripts/backup.js` directly, which is the same script that `npm run backup` runs. Create `/etc/systemd/system/saeludagar-backup.service`:
 
 ```ini
 [Unit]
@@ -448,11 +447,12 @@ sudo cp backups/backup-<time>/saeludagar.db data/saeludagar.db
 sudo mv uploads /var/lib/saeludagar/before-restore/uploads
 sudo cp -a backups/backup-<time>/uploads uploads
 sudo chown -R saeludagar:saeludagar data uploads
+sudo chmod 700 data uploads
 sudo systemctl start saeludagar
 sudo systemctl status saeludagar
 ```
 
-Remove the `-wal` and `-shm` files **before** you copy: SQLite would apply a leftover `-wal` file to the restored database and mix the old data into it. The old database and images are kept in `/var/lib/saeludagar/before-restore/` until you are sure; they hold personal data, so delete them afterwards. Then log in and check the front page and an event with images. If the backup was made by an older version of the code, run `sudo -H -u saeludagar npm run migrate` before `systemctl start`.
+The `chmod` keeps `data` and `uploads` closed to other users, as section 2 set them. Remove the `-wal` and `-shm` files **before** you copy: SQLite would apply a leftover `-wal` file to the restored database and mix the old data into it. The old database and images are kept in `/var/lib/saeludagar/before-restore/` until you are sure; they hold personal data, so delete them afterwards. Then log in and check the front page and an event with images. If the backup was made by an older version of the code, run `sudo -H -u saeludagar npm run migrate` before `systemctl start`.
 
 ### 11. Update to a new version
 

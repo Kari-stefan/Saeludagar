@@ -333,6 +333,7 @@ Find the message you see in the left column.
 | "Ekki er hægt að afskrá sig eftir að mæting hefur verið skráð." | The student's attendance is already marked, so the sign-up is kept for the course choice and the office export | Nothing to fix. |
 | No **Nýr viðburður** button or no **Þínir viðburðir** on the front page, or "Stjórnandi hefur ekki skráð Sæludaga enn, svo ekki er hægt að stofna viðburð" on `/teacher/events/new` | No Sæludagar days exist yet, and every event must be on one | As admin, add the days on Dagsetningar og frestir. |
 | "Ekki er hægt að fjarlægja … því viðburðir eru á deginum" on Dagsetningar og frestir | Events are on that day, and every event must stay on a Sæludagar day | Move the listed events to another day (Breyta) or delete them, then remove the day. |
+| "Þessi frestur rann út fyrir 30 dögum eða meira …" on Dagsetningar og frestir | The course-choice deadline you entered is 30 days or more in the past and nobody has purged since it. Saving it would make the automatic purge delete all student data within the hour, so the site refuses it | Check the date, especially the year. To delete the student data on purpose, use Stjórnendasvæði → **Hreinsun gagna**. |
 | "Myndin verður að vera JPG, PNG eða WebP." | The file isn't one of those image types (an iPhone photo is often HEIC), whatever its name says | Save or export the picture as JPG or PNG and choose it again. |
 | "Myndin er of stór. Hámarkið er 2 MB." | The image is over 2 MB | Make it smaller (for example 1600 pixels wide) and choose it again. |
 | "Hámarkið má ekki vera lægra en fjöldi skráðra" | The new maximum is below the number of students already signed up | Keep the maximum at or above the number signed up. |
@@ -376,7 +377,7 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 | `npm test` | Runs the tests | Built |
 | `npm run create-admin` | Creates the first admin account | Built |
 | `npm run seed:dev` | Creates fake students (with new codes) for trying student login. Development only | Built |
-| `npm run backup` | Copies the database and the uploaded images into a new folder in `backups/`, and deletes backups older than 7 days | Built |
+| `npm run backup` | Copies the database and the uploaded images into a new folder in `backups/`, and deletes the backup from the same time a week before | Built |
 | `npm run loadtest` | Sign-up load test with fake students (1,000 by default), on its own temporary database | Built |
 
 ### Backup
@@ -385,7 +386,7 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 npm run backup
 ```
 
-It reads the database at `DATABASE_PATH` and the images in `UPLOAD_DIR`, and writes a new folder `backup-<UTC time>` in `BACKUP_DIR` (default `backups/`). The folder holds `saeludagar.db`, a consistent copy made while the site keeps running, and `uploads/`. It then deletes backup folders older than 7 days. It stops with an error if there is no database, and never creates an empty one. You should see:
+It reads the database at `DATABASE_PATH` and the images in `UPLOAD_DIR`, and writes a new folder `backup-<UTC time>` in `BACKUP_DIR` (default `backups/`). The folder holds `saeludagar.db`, a consistent copy made while the site keeps running, and `uploads/`. Backups are kept for 7 days: the nightly run deletes the one from the same time a week before. It stops with an error if there is no database, and never creates an empty one. You should see:
 
 ```
 Backup written to …/backups/backup-2026-11-20T14-05-00Z (0 image files copied).
@@ -437,7 +438,7 @@ Result: PASS
 | `SCHOOL_NAME` | Shown in the header and the title: "Sæludagar – {SCHOOL_NAME}". Set it to `Fjölbrautaskólinn í Breiðholti` | empty |
 | `DATABASE_PATH` | SQLite database file | `./data/saeludagar.db` |
 | `UPLOAD_DIR` | Event images | `./uploads` |
-| `BACKUP_DIR` | Database backups | `./backups` |
+| `BACKUP_DIR` | Backups of the database and the images | `./backups` |
 | `SESSION_SECRET` | **Required.** Signs the session cookie | none |
 | `KENNITALA_ENC_KEY` | **Required.** Encrypts kennitölur. If the two kennitala keys are lost, stored kennitölur cannot be read or matched: the student CSV has to be imported again, and every teacher account, the admin's included, created again. On the server, keep a copy of the keys somewhere other than the database backups. | none |
 | `KENNITALA_HMAC_KEY` | **Required.** A separate key for kennitala lookups | none |
