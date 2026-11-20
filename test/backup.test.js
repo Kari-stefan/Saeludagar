@@ -68,6 +68,8 @@ describe('npm run backup (§10, §9)', () => {
     assert.match(stdout, /1 image files copied/);
 
     const backup = path.join(backupDir, folders[0]);
+    // Windows has no such file modes.
+    if (process.platform !== 'win32') assert.equal(fs.statSync(backup).mode & 0o077, 0, 'the folder is closed to other users');
     assert.deepEqual(fs.readFileSync(path.join(backup, 'uploads', 'mynd.png')), imageBytes);
 
     // Restore: copy the database file to a new place and open it.

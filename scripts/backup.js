@@ -43,7 +43,8 @@ try {
 let images = 0;
 try {
   fs.rmSync(partial, { recursive: true, force: true });
-  fs.mkdirSync(partial, { recursive: true });
+  // Backups hold personal data, so only the user who runs the backup may open the folder.
+  fs.mkdirSync(partial, { recursive: true, mode: 0o700 });
   // The online backup API gives a consistent copy while the site keeps running (the database is in WAL mode).
   await db.backup(path.join(partial, 'saeludagar.db'));
   const uploads = path.join(partial, 'uploads');
