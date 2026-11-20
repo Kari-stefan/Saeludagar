@@ -740,7 +740,7 @@ Versions were checked on the npm registry on 2 October 2026. Install these major
 **Not allowed without asking first:** any package not in the table above. That includes i18n, rate-limit, session-store, ORM or query-builder, test-framework, CSS or JS framework, EJS layout, and "concurrently"-style packages.
 
 ### npm scripts
-`package.json` defines the npm scripts. `docs/run.md` (section 11) says what each one does and which are not built yet.
+`package.json` defines the npm scripts. `docs/run.md` (section 11) says what each one does.
 
 ### Project structure
 `docs/architecture.md` has the directory map: what each folder holds, where new code of each kind goes, and which planned files do not exist yet.
