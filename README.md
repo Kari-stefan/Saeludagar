@@ -55,6 +55,79 @@ The site is built one milestone at a time from [docs/AGENT_START.md](docs/AGENT_
 
 Follow **[docs/run.md](docs/run.md)**. It covers what you need, the first-time setup, starting the site, running the tests, every npm script and environment variable, and troubleshooting. To put the site on a server, see [Deployment](#deployment) below.
 
+## Accessibility and browser checks
+
+AGENT_START.md section 13 (milestone 8) asks for a keyboard-only walkthrough of the student, teacher and admin flows, and for checks in Chrome, Firefox and Safari. Only the Chromium part is done. **Firefox and Safari have not been checked yet.** The checklist at the end of this section is for a person to run.
+
+### What was done
+
+On 20 November 2026, in Chromium 157.0.8103.78 (through Playwright), driven by scripts. Every page of every role was loaded in light and dark mode, in Icelandic and English, at 1280, 768, 360 and 320 px and on a phone (Pixel 7 emulation with touch). The scripts ran against a throwaway copy of the data, never the real database.
+
+### What was checked (AGENT_START.md section 11)
+
+- Keyboard access everywhere, with a visible focus indicator.
+- A label on every input, and a name on every link and button.
+- Errors linked to their fields, and announced: a message that a page loads with takes keyboard focus.
+- Alt text on images, the skip-to-content link, one `h1` per page and no skipped heading levels.
+- Text contrast of at least 4.5:1 in both modes, and no information carried by colour alone.
+- No sideways scrolling from 320 px wide.
+- Tap targets of at least 44 px on the attendance list.
+- The core flows with JavaScript turned off.
+- No console errors and no Content-Security-Policy violations.
+
+### Keyboard-only walkthroughs
+
+- **Student:** log in; search, "Sía", "Raða", clearing a choice and "Hreinsa allt"; "Skrá" and "Afskrá" on a card and on the event page; stepping through an event's images; "Fjarvistastig" give and take back; ÍS/EN and light/dark; the mobile menu at 360 px (opens with Enter, focus stays inside, Escape closes it and returns focus); log out. Result: every step works.
+- **Teacher:** the "Nýr viðburður" dialog (focus on the first field and inside the dialog, Escape returns focus to the button, a server error focuses the field); save a draft, preview, publish; add and remove a student; add and remove a co-teacher; edit with an error and then save; attendance with Space; the message form; the printable list. Result: every step works.
+- **Admin:** add a day; times with an error and then saved; import the example CSV (upload, summary, confirm) and a bad file; send codes; create an event manager with an error and then correctly; all events; the export page; the audit log's filter and paging; the purge page (a wrong word gives an error that takes focus and is linked to the field, then the right word deletes the data). Result: every step works.
+- The scripts also print a few FAIL lines. They are not faults in the site: the date and time fields show no focus ring on their date-picker parts (listed below), and the rest are expected 400 and 401 answers or checks in the script that were wrong and were verified by hand.
+
+### Fixed in this pass
+
+1. Sideways scrolling at 320 px on the event page and the teacher's event page (long values in the label and value list).
+2. Sideways scrolling at 320 px on the on-screen participant list for printing. The printed list is unchanged.
+3. The search field's placeholder had a contrast of 3.99:1 in dark mode. It uses the muted text colour now.
+4. A disabled button changed colour on hover and looked clickable. It no longer does.
+5. After a form came back with an error, a failed login or a refused action, focus stayed at the top of the page and the message was not reliably announced. The message now takes focus (`public/js/focus-message.js`).
+
+The purge page (`/admin/purge`) needed no fix. It passed every check above with no deadline set, with a future deadline and with a past deadline.
+
+### Known and not fixed
+
+For the team to decide:
+
+- Image files chosen in the event form are lost after a validation error when JavaScript is off.
+- The date and time fields show no focus ring on their date-picker parts.
+- On event cards, a long word can break in the middle.
+- In the front page's tab order, "Nýr viðburður" comes in an unexpected place.
+- After a post without JavaScript, the page does not jump to the section that changed.
+- Without JavaScript the attendance page's help text still describes the autosave.
+
+### Not checked
+
+Firefox. Safari on macOS. Safari on iOS. Chrome on a real Android phone. Real screen-reader output (focus moves to the message, but nobody has listened to it). Print preview on paper. The 500 page.
+
+### Checklist for Firefox and Safari
+
+Run it in Firefox and in Safari, on a desktop and in each browser's responsive or phone mode. Tick each item that works.
+
+- [ ] Student flow by keyboard only (the list above).
+- [ ] Teacher flow by keyboard only.
+- [ ] Admin flow by keyboard only.
+- [ ] The `<details>` menus: the mobile menu, "Sía" and "Raða" open, close with Escape and close when you click outside.
+- [ ] Focus stays inside the open mobile menu, and Escape returns it to the menu button.
+- [ ] The "Nýr viðburður" dialog (`<dialog>`) opens, keeps focus inside and closes with Escape.
+- [ ] The date and time fields can be used with the keyboard and show where focus is.
+- [ ] The image gallery's arrows, and its sideways scrolling.
+- [ ] The file field with several images, with a preview of each and a working remove button.
+- [ ] Copying the participants' emails to the clipboard.
+- [ ] The attendance checklist on a phone: ticking and the tap targets.
+- [ ] Printing the participant list (print preview).
+- [ ] Light and dark mode, including the placeholder text in the search field.
+- [ ] After a failed login and after a form error, focus is on the message and it has a visible outline.
+
+Write the result under this line: browser, version, date and name.
+
 ## Deployment
 
 This is a guide for putting the site on a Linux server and keeping it running: Node.js under systemd, nginx in front of it, HTTPS from Let's Encrypt, a nightly backup, and how to restore and update. It is written for someone new to the project.

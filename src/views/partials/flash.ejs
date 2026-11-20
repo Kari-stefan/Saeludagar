@@ -1,6 +1,7 @@
 <% const message = locals.takeFlash ? takeFlash() : undefined; -%>
 <% if (message) { -%>
-<div class="alert alert--<%= message.type %>" role="<%= message.type === 'error' ? 'alert' : 'status' %>">
+<%# An error message takes keyboard focus on load (public/js/focus-message.js, §11); success and info do not. -%>
+<div class="alert alert--<%= message.type %>" role="<%= message.type === 'error' ? 'alert' : 'status' %>"<% if (message.type === 'error') { %> tabindex="-1" data-focus-on-load<% } %>>
   <p><%= t(message.key, message.params) %></p>
 </div>
 <% } -%>

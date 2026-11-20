@@ -61,14 +61,18 @@
 // Label and value pairs, such as the dates on the admin home.
 .facts {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  // Both columns can shrink, and a long word breaks, so a long value or label never makes the page
+  // scroll sideways at 320px (§11). Where there is room the label column is as wide as its text.
+  grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
   gap: var(--space-1) var(--space-3);
 
   dt {
     font-weight: 600;
+    overflow-wrap: anywhere;
   }
 
   dd {
     margin: 0;
+    overflow-wrap: anywhere;
   }
 }

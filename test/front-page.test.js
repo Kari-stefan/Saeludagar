@@ -244,7 +244,7 @@ describe('the front page', () => {
       const id = event({ title_is: 'Lokaður', braut_restricted: 1, brautir: ['Starfsbraut'] });
       site.db.prepare('UPDATE users SET braut = NULL WHERE id = ?').run(students.pall.id);
       await as.pall.post(`/events/${id}`, { action: 'signup', returnTo: '/' });
-      assert.match((await as.pall.get('/')).html, /role="alert">\s*<p>Þessi viðburður er aðeins fyrir nemendur þessara brauta: Starfsbraut\./);
+      assert.match((await as.pall.get('/')).html, /role="alert"[^>]*>\s*<p>Þessi viðburður er aðeins fyrir nemendur þessara brauta: Starfsbraut\./);
       assert.deepEqual(signupsOf(id), []);
     });
 
@@ -291,7 +291,7 @@ describe('the front page', () => {
       await as.jona.get('/'); // reads the confirmation
       await as.jona.post(`/events/${third}`, { action: 'signup', returnTo: '/' });
       const html = (await as.jona.get('/')).html;
-      assert.match(html, /role="alert">\s*<p>Þú hefur þegar skráð þig á 2 viðburði þennan dag, sem er hámarkið á einum degi\./);
+      assert.match(html, /role="alert"[^>]*>\s*<p>Þú hefur þegar skráð þig á 2 viðburði þennan dag, sem er hámarkið á einum degi\./);
       assert.match(html, /<span class="home-counter">2\/4/);
       assert.deepEqual(signupsOf(third), []);
 

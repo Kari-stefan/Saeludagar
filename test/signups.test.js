@@ -6,7 +6,7 @@ import { overlaps, signUp } from '../src/services/signups.js';
 import { insertEvent, startSite } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
-const FAILED = (text) => new RegExp(`role="alert">\\s*<p>${text}`);
+const FAILED = (text) => new RegExp(`role="alert"[^>]*>\\s*<p>${text}`);
 
 let site;
 let teacher;

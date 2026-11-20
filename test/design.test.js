@@ -319,3 +319,64 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     }
   });
 });
+
+describe('error messages take focus on load (§11)', () => {
+  let site;
+  let admin;
+  const as = {};
+
+  before(async () => {
+    site = await startSite();
+    admin = await site.addUser({ name: 'Stjórnandi', isAdmin: true });
+    as.admin = site.browser();
+    await as.admin.login(admin.kennitala, admin.code);
+    as.guest = site.browser();
+  });
+
+  after(() => site.close());
+
+  test('§11: a failed login has the message in a box that takes focus', async () => {
+    const res = await as.guest.post('/login', { kennitala: '0000000099', code: '123456' });
+    assert.equal(res.status, 401);
+    assert.match(res.html, /<div class="alert alert--error" role="alert" tabindex="-1" data-focus-on-load>/);
+  });
+
+  test('§11: a form that comes back with errors has the error summary in a box that takes focus', async () => {
+    const res = await as.admin.post('/admin/settings', {
+      action: 'save-times', signupOpensDate: '2027-03-01', signupOpensTime: '',
+    });
+    assert.equal(res.status, 400);
+    assert.match(res.html, /<div class="alert alert--error" role="alert" tabindex="-1" data-focus-on-load>/);
+    assert.equal(res.html.match(/data-focus-on-load/g).length, 1, 'one message takes focus');
+  });
+
+  test('§11: an error flash takes focus and a success flash does not', async () => {
+    insertEvent(site.db, admin.id, { event_date: '2027-03-11' });
+    const refused = await as.admin.post('/admin/settings', { action: 'remove-day', day: '2027-03-11' });
+    assert.equal(refused.status, 303);
+    const error = (await as.admin.get(refused.location)).html;
+    assert.match(error, /<div class="alert alert--error" role="alert" tabindex="-1" data-focus-on-load>/);
+
+    const added = await as.admin.post('/admin/settings', { action: 'add-day', day: '2027-03-12' });
+    assert.equal(added.status, 303);
+    const success = (await as.admin.get(added.location)).html;
+    assert.match(success, /<div class="alert alert--success" role="status">/);
+    assert.doesNotMatch(success, /data-focus-on-load/);
+    assert.doesNotMatch(success, /tabindex="-1" data-focus/);
+  });
+
+  test('§11: a page with no error message has nothing that takes focus', async () => {
+    for (const [browser, url] of [[as.guest, '/'], [as.guest, '/login'], [as.admin, '/admin/settings']]) {
+      assert.doesNotMatch((await browser.get(url)).html, /data-focus-on-load/, url);
+    }
+  });
+
+  test('§11: every page loads the script that moves focus to the message', async () => {
+    for (const [browser, url] of [[as.guest, '/'], [as.guest, '/info'], [as.guest, '/login'], [as.guest, '/nope'], [as.admin, '/admin'], [as.admin, '/admin/settings']]) {
+      assert.match((await browser.get(url)).html, /<script src="\/js\/focus-message\.js" defer><\/script>/, url);
+    }
+    const script = await fetch(`${site.baseUrl}/js/focus-message.js`);
+    assert.equal(script.status, 200);
+    assert.match(await script.text(), /data-focus-on-load/);
+  });
+});

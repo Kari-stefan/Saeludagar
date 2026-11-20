@@ -145,7 +145,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
       const res = await act(action, admin.id);
       assert.equal(res.location, '/admin/teachers');
       assert.match((await adminBrowser.get('/admin/teachers')).html,
-        /role="alert">\s*<p>Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin\.<\/p>/);
+        /role="alert"[^>]*>\s*<p>Þú getur ekki gert þinn eigin aðgang óvirkan eða tekið af þér stjórnandaréttindin\.<\/p>/);
     }
     assert.deepEqual(site.db.prepare('SELECT active, is_admin FROM users WHERE id = ?').get(admin.id), { active: 1, is_admin: 1 });
 
