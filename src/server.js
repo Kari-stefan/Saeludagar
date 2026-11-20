@@ -4,6 +4,7 @@ import { SCHEMA_VERSION } from './db/migrate.js';
 import { SqliteSessionStore } from './db/sessionStore.js';
 import { createApp } from './app.js';
 import { createOutboxWorker } from './jobs/outbox.js';
+import { startAutoPurge } from './jobs/autoPurge.js';
 import { startSessionCleanup } from './jobs/sessionCleanup.js';
 import { createMailer } from './services/email.js';
 
@@ -29,6 +30,7 @@ try {
 // Scheduled jobs run inside this process (AGENT_START §8).
 const outbox = createOutboxWorker({ db, mailer, config });
 let stopSessionCleanup = () => {};
+let stopAutoPurge = () => {};
 
 // Express 5 passes listen errors (such as a busy port) to this callback.
 const server = app.listen(config.port, (err) => {
@@ -45,6 +47,7 @@ const server = app.listen(config.port, (err) => {
   }
   outbox.start();
   stopSessionCleanup = startSessionCleanup(sessionStore);
+  stopAutoPurge = startAutoPurge(db);
 });
 
 // Ctrl+C (or systemd's stop) waits a few seconds for an email being sent and for open requests.
@@ -54,6 +57,7 @@ async function shutdown() {
   if (stopping) process.exit(1);
   stopping = true;
   stopSessionCleanup();
+  stopAutoPurge();
   setTimeout(() => server.closeAllConnections(), 5000).unref();
   await Promise.all([outbox.stop(), new Promise((resolve) => server.close(resolve))]);
   db.close();

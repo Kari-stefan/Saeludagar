@@ -2,7 +2,7 @@
 
 This guide gets the site running locally for development, and covers what to do when something goes wrong. Commands are shown for **PowerShell** (the default terminal in VS Code on Windows), **Command Prompt**, and **Git Bash / macOS / Linux** wherever they differ.
 
-What is built so far is listed in the [README](../README.md) under Status. Pages from milestones that are not built yet show only their title. Emails, such as login codes, are printed in the terminal instead of being sent.
+What is built so far is listed in the [README](../README.md) under Status. Emails, such as login codes, are printed in the terminal instead of being sent.
 
 ## Contents
 1. [What you need](#1-what-you-need)
@@ -198,6 +198,7 @@ To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 secon
 - **Give away absence points.** Log in as a student whose attendance has been ticked and click **Fjarvistastig** in the header. The counter at the top shows the points left and the points earned, such as "4/12": 4 for each ticked attendance. Each of the student's courses has **−** and **+**: **+** puts 4 points on the course and **−** takes them back. A course takes at most 4, and the buttons that can't be used are greyed out. After **Frestur til að velja áfanga** on Dagsetningar og frestir, the page is read-only. Of the `seed:dev` students, Jóna and Sara have courses and Páll has none, so he sees a message instead of a list. A student you import needs at least one course in the CSV to have a row here.
 - **Download the office export.** Stjórnendasvæði → **Útflutningur fyrir skrifstofu**. The page shows how many rows the file has, how many of them have no course yet, and whether it is still a **Bráðabirgðaútgáfa** (before **Frestur til að velja áfanga**, or when none is set) or the **Lokaútgáfa**. **Sækja skrána (CSV)** downloads `saeludagar-fjarvistir-YYYY-MM-DD.csv`, with one row for each ticked attendance. It opens in Excel with Icelandic letters and the kennitölur intact. On your own computer the kennitölur in it are the fake ones you created.
 - **Read the audit log.** Stjórnendasvæði → **Aðgerðaskrá** lists who changed sign-ups, attendance, course choices and event-manager rights, and when, newest first. Filter it by event or by part of a student's name.
+- **Purge the student data.** Stjórnendasvæði → **Hreinsun gagna**. The page lists what is deleted (the students, their courses and login codes; sign-ups, attendance and course choices; student sessions; emails waiting for students; the audit log) and what is kept (teacher accounts, events and the Sæludagar days). It also says that an event owned by a student who is an event manager moves to you, and that every event becomes a draft. It links to the office export, because the office needs that file first. Before **Frestur til að velja áfanga** (or when none is set) a warning says the export is not final and points may be lost. The page also shows the date of the automatic purge and, once there has been one, the date of the last purge. To purge, type **EYÐA** (in English, **DELETE**) in the box and click **Eyða öllum nemendagögnum**. A message says how many students were deleted. A wrong word gives the page again and deletes nothing. The site also purges by itself 30 days after **Frestur til að velja áfanga**; while it runs, it checks once an hour. On your own computer this deletes your fake students: `npm run seed:dev` or a new import brings some back. How it works is in [architecture.md](architecture.md) (How data flows, g).
 - **Print the list.** **Prenta lista** shows the participants with an empty box each. Your browser's print command (`Ctrl+P`) prints only the list.
 
 Who can open which page:
@@ -217,6 +218,7 @@ Who can open which page:
 | Audit log | http://localhost:3000/admin/audit | Admins |
 | Student import | http://localhost:3000/admin/import | Admins |
 | Send codes | http://localhost:3000/admin/codes | Admins |
+| Purge the student data | http://localhost:3000/admin/purge | Admins |
 
 If you aren't logged in, these pages send you to the login page; if you are logged in without the right role, you get "Aðgangur ekki leyfður" (access denied). The full list of pages is in section 6 of [AGENT_START.md](AGENT_START.md).
 
@@ -347,7 +349,6 @@ Find the message you see in the left column.
 | Changed text in `is.json` / `en.json` doesn't appear | Translation files are read when the server starts | Restart `npm run dev`. |
 | `Error [ERR_MODULE_NOT_FOUND]: Cannot find package '…'` | Packages are missing or out of date | Stop `npm run dev`, then run `npm install`. |
 | `'sass' is not recognized as an internal or external command` (macOS/Linux: `sass: command not found` or `sass: not found`) | The packages aren't installed | Run `npm install`. |
-| `Error: Cannot find module '…scripts\backup.js'` (or `loadtest.js`) | That script isn't written yet | See [Not covered yet](#not-covered-yet). |
 | `gyp ERR!` or `node-gyp` during `npm install` | Your npm is older than 11.16, so it ignores the `allowScripts` setting in `package.json` and tries to compile better-sqlite3 | Install the current Node.js 24 LTS (check `npm -v`), then run `npm install` again. Quick workaround: `npm install --ignore-scripts`. On a platform with no prebuilt binary (rare), compile it yourself, which needs Python and a C++ compiler: delete the `"better-sqlite3": false` line from `allowScripts` in your local `package.json` (don't commit that change), then run `npm install-scripts approve better-sqlite3` and `npm rebuild better-sqlite3`. |
 | `npm error code EPERM`, `being used by another process` or `Device or resource busy` | A running server (maybe in another terminal) is using the files you're installing or deleting | Stop it with `Ctrl+C`, then run the command again. If `npm install` stopped halfway, just run it again. |
 | `node: bad option: --env-file-if-exists=.env`, or `EBADENGINE` warnings | Your Node.js is too old | Install the current Node.js 24 LTS, then run `npm install` again. |
@@ -358,13 +359,10 @@ If you're still stuck, copy the whole error from the terminal into a message to 
 
 [architecture.md](architecture.md) has the directory map: what each folder holds, which paths git ignores, and where new code goes.
 
-### Not covered yet
+### Not covered here
 
-- **Scripts not written yet:** `npm run backup` and `npm run loadtest` (see [section 11](#11-npm-scripts)). Running one of them now gives `Error: Cannot find module`.
 - **Real email** needs the school's SMTP details (open question 4 in [AGENT_START.md](AGENT_START.md)). Until then, keep `SMTP_HOST` empty; emails are printed in the `npm run dev` terminal.
-- **Deployment notes** for the school's server (a Linux guide in the README) arrive in milestone 8. The deployment itself happens separately, once it is approved.
-
-This guide will be updated as those milestones land.
+- **Deployment** to the school's server: the guide is in the [README](../README.md#deployment). The deployment itself happens separately, once it is approved.
 
 ## 11. npm scripts
 
@@ -378,8 +376,54 @@ This guide will be updated as those milestones land.
 | `npm test` | Runs the tests | Built |
 | `npm run create-admin` | Creates the first admin account | Built |
 | `npm run seed:dev` | Creates fake students (with new codes) for trying student login. Development only | Built |
-| `npm run backup` | Backs up the database and uploads | Not built yet (milestone 8) |
-| `npm run loadtest` | 1,000-student sign-up load test | Not built yet (milestone 8) |
+| `npm run backup` | Copies the database and the uploaded images into a new folder in `backups/`, and deletes backups older than 7 days | Built |
+| `npm run loadtest` | Sign-up load test with fake students (1,000 by default), on its own temporary database | Built |
+
+### Backup
+
+```
+npm run backup
+```
+
+It reads the database at `DATABASE_PATH` and the images in `UPLOAD_DIR`, and writes a new folder `backup-<UTC time>` in `BACKUP_DIR` (default `backups/`). The folder holds `saeludagar.db`, a consistent copy made while the site keeps running, and `uploads/`. It then deletes backup folders older than 7 days. It stops with an error if there is no database, and never creates an empty one. You should see:
+
+```
+Backup written to …/backups/backup-2026-11-20T14-05-00Z (0 image files copied).
+Removed 0 backups older than 7 days.
+```
+
+The backups hold personal data, so never commit or share them. On the server a systemd timer runs it every night: see [README, Deployment, Backups](../README.md#9-backups).
+
+### Load test
+
+```
+npm run loadtest
+npm run loadtest -- --students 50 --events 8 --window 2
+```
+
+The options are `--students` (default 1000), `--events` (default 40) and `--window`, the seconds over which the students start (default 20, under 60). It makes its own temporary folder with a fresh database and random keys, starts the site (`src/server.js`) in production mode on a free port, logs in the fake students, and lets each one try 6 sign-ups, more than the limit of 4. It ignores the database, folders, keys and SMTP values in your `.env`, so it never touches your data, and it removes its folder when it ends. The full test takes about half a minute. Run it only on your own computer, never against the live site. A short run prints this (times will differ):
+
+```
+Sæludagar load test (fake data, temporary database)
+Students: 50, events: 8 on 3 days, places: 75, sign-up window: 2 s
+Phase 1, login: 50 of 50 students logged in, in 0.6 s
+…
+Response times:
+  login       count     50   p50   123 ms   p95   277 ms   max   292 ms
+  front page  count     50   p50     5 ms   p95    11 ms   max    13 ms
+  sign-up     count    300   p50     3 ms   p95     6 ms   max    13 ms
+…
+Checks:
+  OK     no 5xx responses
+  OK     BR-35: no event over its maximum
+  OK     BR-32: no student over 4 sign-ups
+  OK     BR-65: no student over 2 sign-ups on one day
+  …
+
+Result: PASS
+```
+
+`Result: PASS` means every check is OK: among others, no 5xx response, no event over its maximum, no student over 4 sign-ups and none over 2 on one day. Otherwise it prints `Result: FAIL`, the checks that failed and the end of the server's output, and exits with code 1. See also [README, Deployment, The load test](../README.md#13-the-load-test).
 
 ## 12. Environment variables
 

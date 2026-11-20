@@ -9,11 +9,11 @@ One Node process, started by `src/server.js`, and nothing else. It runs these pa
 - **The Express app**, built by `createApp` in `src/app.js` and listening on `PORT`.
 - **The outbox worker** (`src/jobs/outbox.js`). A timer ticks every 5 seconds and sends the emails that are due, at most `SMTP_MAX_PER_MINUTE` per minute.
 - **Session cleanup** (`src/jobs/sessionCleanup.js`). It deletes expired session rows every 15 minutes.
-- **The auto-purge check** is not built yet (milestone 8). There is no purge service and no purge job.
+- **The auto-purge check** (`src/jobs/autoPurge.js`). Every hour it calls `autoPurge` (`src/services/purge.js`), which deletes all student data when the purge is due (see flow g). It logs one line when it purges, and an error line if it fails or has no admin to take over an event.
 
-Both jobs start only after the port is bound. The SQLite file is `DATABASE_PATH` (default `data/saeludagar.db`), opened by `src/db/index.js` with `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000` and `synchronous = NORMAL`. Event images are files in `UPLOAD_DIR` (default `uploads/`). Sessions are rows in the `sessions` table, kept by `src/db/sessionStore.js`.
+All three jobs start only after the port is bound. The SQLite file is `DATABASE_PATH` (default `data/saeludagar.db`), opened by `src/db/index.js` with `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000` and `synchronous = NORMAL`. Event images are files in `UPLOAD_DIR` (default `uploads/`). Sessions are rows in the `sessions` table, kept by `src/db/sessionStore.js`.
 
-At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
+At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup and the auto-purge check, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
 
 ## How a request is handled
 
@@ -43,14 +43,14 @@ Routers and their guards (guards are in `src/middleware/auth.js`; a guest is red
 | `src/routes/teacher.js` | `/teacher` | `requireTeacher` on the whole router (event manager or admin), plus `requireEventAccess(db, 'editor' or 'owner')` on `/events/:id/...`. |
 | `src/routes/admin.js` | `/admin` | `requireAdmin` on the whole router. |
 
-Inside `/admin`, only `/purge` is still a placeholder page: `src/views/admin/purge.ejs` shows just the page title. It is not built yet (milestone 8).
+Inside `/admin`, `/purge` (`src/views/admin/purge.ejs`) shows what a purge deletes and keeps, and the manual purge is a post to it (flow g).
 
 The error path: a route that throws, or calls `next(err)`, reaches `errorHandler` in `src/middleware/errors.js`. It uses `err.status` when it is 400 to 599, otherwise 500, and logs only the stack of server errors. Routes create such errors with `Object.assign(new Error('HTTP 400'), { status: 400 })`. A failed CSRF check renders the 403 page directly.
 
 ## Layers
 
 - **Routes** (`src/routes/`) read the request, call services, and choose a redirect, a flash message or a view. They do not hold business rules. They hold almost no SQL: the only query in a route is a count in `src/routes/teacher.js` (the attendance save), and `src/middleware/auth.js` reads the user row.
-- **Services** (`src/services/`) hold the rules and nearly all SQL. Each takes `db` (and `kt`, the kennitala crypto, where needed) as its first argument or in a factory. Rules that must not race (sign-up, attendance, giving points, event save and delete, import) run in a single transaction inside the service, so a route cannot skip a check. Services render no views and read no request objects. `src/services/accounts.js` is a factory, `createAccounts({ db, kt, newCodeLimit })`.
+- **Services** (`src/services/`) hold the rules and nearly all SQL. Each takes `db` (and `kt`, the kennitala crypto, where needed) as its first argument or in a factory. Rules that must not race (sign-up, attendance, giving points, event save and delete, import, purge) run in a single transaction inside the service, so a route cannot skip a check. Services render no views and read no request objects. `src/services/accounts.js` is a factory, `createAccounts({ db, kt, newCodeLimit })`.
 - **DB** (`src/db/`) opens the connection, defines the schema (`schema.sql`), runs migrations (`migrate.js`) and holds the session store. `SCHEMA_VERSION` is 3 and `STEPS` in `migrate.js` upgrade version 1 and 2 data.
 - **Views** (`src/views/`) are EJS files assembled from partials in `src/views/partials/`. There is no layout engine and no database access in views. `src/views/emails/` holds the plain-text email templates, rendered by `renderEmail` in `src/services/email.js`.
 - **i18n** (`src/i18n/index.js`) loads `is.json` and `en.json`, and provides `t()`, the date, time and fee formatters, and `eventText`. A missing English string falls back to Icelandic, then to the key.
@@ -98,7 +98,18 @@ Dependencies are passed in, not imported as globals. `createApp({ config, db, se
 3. `exportRows` selects one row for each `registrations` row with `attended = 1`, joined to `users` (`student_id`) and `events` (`event_id`). It does not filter on `users.active`. It reads `users.kennitala_enc`, `users.name`, `users.braut`, `registrations.course_code`, `events.title_is` and `events.event_date`. It is the only place in `src/` that calls `decrypt` on a kennitala.
 4. The route sets `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment` with the file name from `exportFileName`, and `Cache-Control: no-store`.
 
-The audit log (`src/services/audit.js`, table `audit_log`) is written by `signups.js`, `attendance.js`, `choices.js`, `import.js` and `accounts.js` (event-manager grant and revoke), and directly by SQL in `deleteEvent` and `applyImport`. The page that shows it is `/admin/audit`, which reads the log with `auditEntries` (one filtered page of entries, newest first) and `auditEvents` (the events for the filter list) from the same file.
+**g) The purge of student data** (`src/services/purge.js`, BR-55, BR-56).
+1. By hand: `POST /admin/purge` (`src/routes/admin.js`) checks the typed word with `purgeConfirmed`. It accepts the word of either language, in any case. A wrong word renders the page again with status 400 and deletes nothing. The right word calls `purgeData(db, adminId)`, which refuses anyone who is not an active admin, and then redirects back with a flash message that gives the number of students deleted. There is no check on the course-choice deadline; the page only warns (`purgeStatus`).
+2. By the site: `startAutoPurge` (`src/jobs/autoPurge.js`) calls `autoPurge(db)` every hour. It purges only when all three hold: `settings.choice_deadline_at` is set, now is at or after that time plus `AUTO_PURGE_DAYS` (30) days, and `settings.last_purged_at` is empty or earlier than the deadline. Otherwise it changes nothing.
+3. Both end in `deleteStudentData`, inside one `BEGIN IMMEDIATE` transaction. In this order it:
+   - moves the events owned by a student event manager to the new owner (the admin who ran the purge; for the automatic purge the oldest active admin, else the oldest admin account);
+   - deletes the students' `event_coteachers` rows, then all `registrations`, the students' `sessions` and `email_outbox` rows, and all of `audit_log`;
+   - deletes the students from `users` (their `student_courses` go with them, `ON DELETE CASCADE`);
+   - sets every event to `draft` and writes `settings.last_purged_at`.
+4. Teacher accounts, events, `saeludagar_days` and the three times in `settings` stay. If the automatic purge finds an event owned by a student and there is no admin account, it changes nothing and the job logs that it is waiting.
+5. `purgeStatus` gives the page the deadline, whether it has passed, the time of the next automatic purge (none once a purge has happened since the deadline) and the time of the last purge.
+
+The audit log (`src/services/audit.js`, table `audit_log`) is written by `signups.js`, `attendance.js`, `choices.js`, `import.js` and `accounts.js` (event-manager grant and revoke), and directly by SQL in `deleteEvent` and `applyImport`. The page that shows it is `/admin/audit`, which reads the log with `auditEntries` (one filtered page of entries, newest first) and `auditEvents` (the events for the filter list) from the same file. The purge empties the whole table.
 
 ## Directory map
 
@@ -110,14 +121,14 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | `src/services/` | Rules, queries, email, images, CSV | New business logic and SQL |
 | `src/middleware/` | Auth guards, CSRF, flash, language, errors | New cross-request behaviour |
 | `src/db/` | Connection, `schema.sql`, `migrate.js`, `sessionStore.js` | Schema changes: edit `schema.sql` and add a `STEPS` entry, raise `SCHEMA_VERSION` |
-| `src/jobs/` | `outbox.js`, `sessionCleanup.js` | A new timed job, started in `src/server.js` |
+| `src/jobs/` | `outbox.js`, `sessionCleanup.js`, `autoPurge.js` | A new timed job, started in `src/server.js` |
 | `src/i18n/` | `index.js`, `is.json`, `en.json` | New text, in both JSON files |
 | `src/views/` | EJS: `public/`, `student/`, `teacher/`, `admin/`, `partials/`, `emails/`, `errors/` | A new page in the folder for its audience; shared pieces in `partials/` |
 | `public/js/` | One script per enhanced page | A new enhancement script |
 | `public/img/` | `logo.svg`, `default-event.svg` | Static images |
 | `public/css/` | `main.css`, built from `scss/` (git-ignored, generated by `npm run build:css`) | Nothing; edit `scss/` |
 | `scss/` | `main.scss` and partials `_tokens`, `_base`, `_layout`, `_forms`, `_tables`, `_events`, `_pages`, `_teacher` | Styles, in the matching partial, then add a `@use` in `main.scss` for a new file |
-| `scripts/` | `create-admin.js`, `seed-dev.js`; `backup.js` and `loadtest.js` are not built yet (milestone 8), though `package.json` has scripts for them | Command-line tools |
+| `scripts/` | `create-admin.js`, `seed-dev.js`, `backup.js` (the nightly backup) and `loadtest.js` (the sign-up load test) | Command-line tools |
 | `test/` | `*.test.js` and `helpers.js`, run by `node --test` | Tests, see [conventions.md](conventions.md) |
 | `docs/` | `AGENT_START.md` (the specification), `run.md`, this file, `conventions.md`, the five reference files (the original notes and the project owner's briefs) and `example-students.csv` | Documentation. [../CLAUDE.md](../CLAUDE.md) says which file is the home of which topic |
 | `data/`, `uploads/`, `backups/` | Runtime files: database, event images, backups. Only `.gitkeep` is tracked; contents are git-ignored | Nothing; runtime only |
@@ -130,7 +141,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | Decision | Reason | Source |
 |---|---|---|
 | One Node process, no cluster mode | SQLite is written from a single process; WAL mode with `busy_timeout` handles concurrent reads | `AGENT_START.md` §10 (hosting) |
-| Scheduled jobs run inside the app process | The spec places the outbox worker and session cleanup there; backups are the exception and run outside | `AGENT_START.md` §8, `src/server.js` |
+| Scheduled jobs run inside the app process | The spec places the outbox worker, session cleanup and the auto-purge check there; backups are the exception and run outside | `AGENT_START.md` §8, `src/server.js` |
 | Locked stack, and Node built-ins instead of extra packages | The spec fixes the packages and lists the built-in that replaces each missing one (dotenv, nodemon, test framework, i18n library); no further reason is given | `AGENT_START.md` §10 |
 | A custom SQLite session store | Expiry is checked on the server so an old cookie cannot revive a session; `sessions.user_id` lets deactivation delete a user's sessions | `src/db/sessionStore.js` |
 | Login codes stored as scrypt hashes, generated when the email is sent | The plaintext code is never stored; an unknown, locked or inactive account still costs one scrypt check, so every failure looks the same | `AGENT_START.md` §8, `src/services/accounts.js` |
@@ -141,4 +152,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | Images stored outside `public/` under random names | Only names matching `IMAGE_NAME` are served, so nothing else can be asked for under `/uploads`; the file type comes from the first bytes, never the name or browser | `src/services/images.js`, `src/app.js` |
 | Multipart routes verify CSRF after multer | Only multer can read a multipart body, so the token cannot be checked earlier | `src/middleware/csrf.js` |
 | Scripts only enhance pages that work without JavaScript | The server stays the only source of truth | `public/js/card-signup.js`, `public/js/points.js` |
+| The backup uses SQLite's online backup API, not a file copy | The database is in WAL mode and the site keeps running, so copying `saeludagar.db` could miss data that is still in the `-wal` file; the API gives a consistent copy | `scripts/backup.js` |
+| The load test starts its own server, in production mode, on a temporary database | It tests the same settings as the school's server, and it ignores the database, keys and SMTP values in `.env`, so it can never touch real data | `scripts/loadtest.js` |
+| The purge, and the check whether it is due, run in one `BEGIN IMMEDIATE` transaction | Nothing can change between the check and the deletes, and a failure leaves all the data as it was | `src/services/purge.js` |
 | `audit_log.event_id` has no foreign key | Entries survive event deletion until the purge | `src/db/schema.sql` |

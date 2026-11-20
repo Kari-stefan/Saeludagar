@@ -62,7 +62,7 @@ function read(html) {
   return { left: Number(counter[1]), earned: Number(counter[2]), courses };
 }
 const show = async (browser = as.jona) => read((await browser.get('/points')).html);
-const failed = (text) => new RegExp(`role="alert">\\s*<p>${text}`);
+const failed = (text) => new RegExp(`role="alert"[^>]*>\\s*<p>${text}`);
 
 describe('the "Fjarvistastig" page (BR-69, §6)', () => {
   test('BR-69, §6: the header links to it for students only, and only a student can open it', async () => {

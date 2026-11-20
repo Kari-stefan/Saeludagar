@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createAccounts, LOCKOUT_MS } from '../src/services/accounts.js';
 import { startSite } from './helpers.js';
 
-const FAILED = /<div class="alert alert--error" role="alert">\s*<p>Kennitala eða kóði er rangur<\/p>/;
+const FAILED = /<div class="alert alert--error" role="alert"[^>]*>\s*<p>Kennitala eða kóði er rangur<\/p>/;
 
 describe('login (BR-01 to BR-06, BR-09)', () => {
   let site;
@@ -217,7 +217,7 @@ describe('login (BR-01 to BR-06, BR-09)', () => {
 
   test('§11: a form with field errors announces them to screen readers', async () => {
     const res = await site.browser().login('123', '1');
-    assert.match(res.html, /<div class="alert alert--error" role="alert">\s*<p>Lagaðu villurnar hér fyrir neðan\.<\/p>/);
+    assert.match(res.html, /<div class="alert alert--error" role="alert"[^>]*>\s*<p>Lagaðu villurnar hér fyrir neðan\.<\/p>/);
     const ok = await site.browser().get('/login');
     assert.doesNotMatch(ok.html, /Lagaðu villurnar/);
   });

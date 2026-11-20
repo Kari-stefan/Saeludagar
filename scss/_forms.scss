@@ -48,6 +48,12 @@
   }
 }
 
+// The browser's default placeholder grey is too pale on the dark background (§11, 4.5:1).
+::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
 .field__input--short {
   max-width: 12rem;
 }
@@ -72,7 +78,8 @@
   cursor: pointer;
   transition: color 0.15s, background-color 0.15s, border-color 0.15s;
 
-  &:hover {
+  // A disabled button does not react to the pointer, so it does not look clickable.
+  &:hover:not(:disabled) {
     background: var(--color-primary-hover);
     border-color: var(--color-primary-hover);
   }
@@ -88,7 +95,7 @@
   background: transparent;
   border-color: var(--color-link);
 
-  &:hover {
+  &:hover:not(:disabled) {
     color: var(--color-on-primary);
     background: var(--color-primary);
     border-color: var(--color-primary);

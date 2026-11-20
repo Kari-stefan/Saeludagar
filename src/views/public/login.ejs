@@ -7,7 +7,7 @@
     <h1><%= t('pages.login') %></h1>
     <%- include('../partials/flash') %>
     <% if (locals.failed) { -%>
-    <div class="alert alert--error" role="alert">
+    <div class="alert alert--error" role="alert" tabindex="-1" data-focus-on-load>
       <p><%= t('login.failed') %></p>
     </div>
     <% } -%>

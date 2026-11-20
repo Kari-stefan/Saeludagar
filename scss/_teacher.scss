@@ -160,6 +160,17 @@
   max-width: 48rem;
 }
 
+// On screen a long word in a cell may break, so the table fits a 320px screen (§11). The print
+// rules below do not change.
+@media screen {
+  .print-table {
+    th,
+    td {
+      overflow-wrap: anywhere;
+    }
+  }
+}
+
 .print-table__box {
   width: 5rem;
   text-align: center;
