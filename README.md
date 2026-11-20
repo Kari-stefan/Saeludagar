@@ -498,7 +498,7 @@ The run of 20 November 2026 (a 4-core cloud machine, Node.js 24.20.0) passed: 1,
 | Front page | 1,000 | 6 ms | 15 ms | 33 ms |
 | Sign-up | 6,000 | 3 ms | 9 ms | 32 ms |
 
-A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took 1.3 s (p50) and 2.6 s (p95), and a sign-up 0.9 s (p50) and 2.3 s (p95). The school's server will give other numbers; run the test again there before sign-up opens, on a copy of the site and never on the live one.
+A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took 1.3 s (p50) and 2.6 s (p95), and a sign-up 0.9 s (p50) and 2.3 s (p95). The school's server will give other numbers.
 
 ## Data protection
 
