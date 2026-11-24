@@ -429,8 +429,8 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ title_en: 'Hike', event_date: '2027-03-12', location: 'Fjallið' }));
     const queued = site.db.prepare('SELECT kind, priority, user_id FROM email_outbox ORDER BY user_id').all();
     assert.deepEqual(queued, [
-      { kind: 'event_changed', priority: 0, user_id: people.student.id },
-      { kind: 'event_changed', priority: 0, user_id: people.student2.id },
+      { kind: 'event_changed', priority: 1, user_id: people.student.id },
+      { kind: 'event_changed', priority: 1, user_id: people.student2.id },
     ]);
     const [email] = await site.sendEmails();
     assert.equal(email.subject, 'Breyting á viðburði: Gönguferð / Event changed: Hike');

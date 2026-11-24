@@ -11,6 +11,8 @@ const EMAIL_VIEWS = path.join(ROOT_DIR, 'src', 'views', 'emails');
 // password (EAUTH) or a refused address is not one of them, so trying again would not help.
 const NETWORK_ERRORS = new Set(['ETIMEDOUT', 'ESOCKET', 'ECONNECTION', 'EDNS']);
 
+export const MESSAGE_INTERVAL_MS = 5 * 60 * 1000; // BR-50: one message per event every 5 minutes
+
 // AGENT_START §8: SMTP when SMTP_HOST is set. Without it, development prints each email to the
 // console instead; production never does, because emails contain login codes (§9, item 10).
 export function createMailer(config, { log = console.log, retryDelayMs = 3000, timeoutMs = 15_000 } = {}) {
@@ -73,12 +75,47 @@ export function createMailer(config, { log = console.log, retryDelayMs = 3000, t
   };
 }
 
-// Every email goes through the outbox (BR-53). Priority 0 is sent first; 1 is bulk. The payload
-// holds what the template needs, such as an event's details; never a login code.
-export function queueEmail(db, { kind, userId, priority = 0, payload = null }) {
+// BR-53: the worker sends the lowest priority number first. A login code is wanted by a person
+// who is waiting (0), so no message can hold it back; event messages and notices go next (1);
+// the bulk "Senda kóða" goes last (2). The priority belongs to the kind, so no caller picks it.
+export const EMAIL_PRIORITY = {
+  new_code: 0,
+  teacher_code: 0,
+  teacher_message: 1,
+  event_changed: 1,
+  event_deleted: 1,
+  student_code: 2,
+};
+
+export function priorityOf(kind) {
+  if (!(kind in EMAIL_PRIORITY)) throw new Error(`Unknown email kind: ${kind}`);
+  return EMAIL_PRIORITY[kind];
+}
+
+// Every email goes through the outbox (BR-53). The payload holds what the template needs, such
+// as an event's details; never a login code.
+export function queueEmail(db, { kind, userId, payload = null }) {
   const now = toIso();
   db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, payload, created_at, next_try_at)
-    VALUES (?, ?, ?, ?, ?, ?)`).run(kind, priority, userId, payload && JSON.stringify(payload), now, now);
+    VALUES (?, ?, ?, ?, ?, ?)`).run(kind, priorityOf(kind), userId, payload && JSON.stringify(payload), now, now);
+}
+
+// BR-50: when an event's last message was queued, kept in this process's memory only (the site
+// runs as one process; a restart clears it). minutesLeft returns 0 when a message may be sent,
+// else the whole minutes to wait, rounded up.
+export function createMessageCooldown() {
+  const lastSent = new Map();
+  return {
+    minutesLeft(eventId, now = new Date()) {
+      const last = lastSent.get(eventId);
+      if (last === undefined) return 0;
+      const left = MESSAGE_INTERVAL_MS - (now.getTime() - last);
+      return left > 0 ? Math.max(1, Math.ceil(left / 60_000)) : 0;
+    },
+    start(eventId, now = new Date()) {
+      lastSent.set(eventId, now.getTime());
+    },
+  };
 }
 
 // BR-50: a teacher's message to an event's participants. One subject line of at most 150

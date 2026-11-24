@@ -111,7 +111,7 @@ describe('email outbox worker (AGENT_START §8)', () => {
     assert.equal(attempts, 6);
     assert.equal(codeHash(users[0].id), hashBefore, 'a failed send changes no code');
     for (const call of errors.mock.calls) {
-      assert.match(call.arguments[0], /^Email \d+ \(teacher_code\) could not be sent: Connection refused$/);
+      assert.match(call.arguments[0], /^Email \d+ \(teacher_code\) could not be sent$/);
     }
   });
 
@@ -127,6 +127,38 @@ describe('email outbox worker (AGENT_START §8)', () => {
     const logged = errors.mock.calls.map((call) => call.arguments.join(' ')).join('\n');
     assert.doesNotMatch(logged, new RegExp(codeFrom({ text })));
     assert.doesNotMatch(logged, /kennari2@example\.is/);
+  });
+
+  test('BR-53: a login code goes before messages, and messages before bulk codes', async () => {
+    const order = [];
+    clock = Date.now() + 1000;
+    const outbox = createOutboxWorker({ db, config: testConfig({ SMTP_MAX_PER_MINUTE: '10' }), now, mailer: { send: async (message) => order.push(message.to.address) } });
+    const payload = { event: { id: 1, title_is: 'Gönguferð', event_date: '2027-03-11', start_time: '10:00', end_time: '12:00' }, teacher: 'Kennari', subject: 'Efni', body: 'Texti.',
+      before: { event_date: '2027-03-11', start_time: '10:00', end_time: '12:00', location: 'A' }, after: { event_date: '2027-03-11', start_time: '11:00', end_time: '12:00', location: 'B' } };
+    queueEmail(db, { kind: 'student_code', userId: users[0].id });
+    queueEmail(db, { kind: 'teacher_message', userId: users[1].id, payload });
+    queueEmail(db, { kind: 'new_code', userId: users[2].id });
+    queueEmail(db, { kind: 'event_changed', userId: users[3].id, payload });
+    queueEmail(db, { kind: 'teacher_code', userId: users[4].id });
+    assert.deepEqual(db.prepare('SELECT kind, priority FROM email_outbox ORDER BY id').all().map((r) => `${r.kind}:${r.priority}`),
+      ['student_code:2', 'teacher_message:1', 'new_code:0', 'event_changed:1', 'teacher_code:0']);
+    await outbox.runOnce();
+    assert.deepEqual(order, ['kennari3@example.is', 'kennari5@example.is', 'kennari2@example.is', 'kennari4@example.is', 'kennari1@example.is']);
+  });
+
+  test('§9 item 10: the log line has the row id and kind, but not the mail server\'s message or the address', async (t) => {
+    const errors = t.mock.method(console, 'error', () => {});
+    const outbox = worker(async () => {
+      throw Object.assign(new Error('550 5.1.1 <kennari3@example.is>: Recipient address rejected'), { code: 'EENVELOPE', responseCode: 550 });
+    });
+    queueEmail(db, { kind: 'new_code', userId: users[2].id });
+    const id = rows()[0].id;
+    await outbox.runOnce();
+    const logged = errors.mock.calls.map((call) => call.arguments.join(' ')).join('\n');
+    assert.match(logged, new RegExp(`Email ${id} \\(new_code\\)`));
+    assert.match(logged, /EENVELOPE 550/);
+    assert.doesNotMatch(logged, /@|kennari3|rejected/);
+    assert.match(rows()[0].last_error, /kennari3@example\.is/, 'the full message is kept in the database');
   });
 
   test('BR-03: a code is not sent to an account that is no longer active', async () => {

@@ -2,6 +2,7 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toIso } from '../src/db/index.js';
 import { attendanceWindow } from '../src/services/attendance.js';
+import { createMessageCooldown, MESSAGE_INTERVAL_MS } from '../src/services/email.js';
 import { insertEvent, startSite } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -232,6 +233,14 @@ describe('attendance (BR-38, BR-39, BR-41, BR-56)', () => {
 });
 
 describe('emails and messages (BR-50)', () => {
+  // The cooldown (BR-50) is kept by event id, and the tests above delete all events, so ids would
+  // start at 1 again. A placeholder with a high id makes every test in this block get fresh ids.
+  let lastId = 1000;
+  beforeEach(() => {
+    lastId += 100;
+    site.db.prepare('UPDATE events SET id = ? WHERE id = ?').run(lastId, event());
+  });
+
   test('BR-50: the event page lists every participant\'s email, ready to paste into BCC', async () => {
     const id = event();
     assert.doesNotMatch((await as.teacher.get(`/teacher/events/${id}`)).html, /id="emails-list"/, 'no list without participants');
@@ -294,6 +303,47 @@ describe('emails and messages (BR-50)', () => {
     } finally {
       site.db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(students.bjarni.id);
     }
+  });
+
+  test('BR-50: the check allows one message per event every 5 minutes, and rounds the wait up', () => {
+    assert.equal(MESSAGE_INTERVAL_MS, 5 * 60 * 1000);
+    const cooldown = createMessageCooldown();
+    const start = new Date('2027-03-01T10:00:00Z');
+    const at = (ms) => new Date(start.getTime() + ms);
+    assert.equal(cooldown.minutesLeft(1, start), 0, 'nothing sent yet');
+    cooldown.start(1, start);
+    assert.equal(cooldown.minutesLeft(1, start), 5);
+    assert.equal(cooldown.minutesLeft(1, at(60_000)), 4);
+    assert.equal(cooldown.minutesLeft(1, at(4 * 60_000 + 1000)), 1, 'at least 1');
+    assert.equal(cooldown.minutesLeft(1, at(MESSAGE_INTERVAL_MS - 1)), 1);
+    assert.equal(cooldown.minutesLeft(1, at(MESSAGE_INTERVAL_MS)), 0);
+    assert.equal(cooldown.minutesLeft(2, start), 0, 'another event is not affected');
+  });
+
+  test('BR-50: a second message for the same event within 5 minutes is refused and queues nothing', async () => {
+    const id = event();
+    const other = event();
+    register(id, 'asta');
+    register(other, 'asta');
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, coteacher.id);
+    const url = (eventId) => `/teacher/events/${eventId}/message`;
+
+    // A message that fails validation does not start the cooldown.
+    assert.equal((await as.teacher.post(url(id), { subject: '', body: 'Texti.' })).status, 400);
+    assert.equal((await as.teacher.post(url(id), { subject: 'Fyrst', body: 'Fyrsti textinn.' })).status, 303);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 1);
+
+    // Whoever of the managers sends it, the same event is held back.
+    const again = await as.coteacher.post(url(id), { subject: 'Aftur', body: 'Annar texti.' });
+    assert.equal(again.status, 400);
+    assert.match(again.html, /Aðeins má senda einn póst á hvern viðburð á 5 mínútna fresti\. Reyndu aftur eftir 5 mín\./);
+    assert.match(again.html, /value="Aftur"/, 'the typed subject comes back');
+    assert.match(again.html, />Annar texti\.<\/textarea>/, 'the typed text comes back');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 1, 'nothing more was queued');
+
+    // Another event is not affected.
+    assert.equal((await as.teacher.post(url(other), { subject: 'Annað', body: 'Texti.' })).status, 303);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 2);
   });
 
   test('BR-50: with nobody signed up, there is nobody to send to', async () => {

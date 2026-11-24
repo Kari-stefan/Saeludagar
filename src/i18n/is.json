@@ -598,7 +598,8 @@
       "subjectLong": "Efnið má vera að hámarki 150 stafir.",
       "bodyLong": "Textinn má vera að hámarki 5.000 stafir.",
       "characters": "Textinn inniheldur ógild tákn.",
-      "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn."
+      "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn.",
+      "cooldown": "Aðeins má senda einn póst á hvern viðburð á 5 mínútna fresti. Reyndu aftur eftir {minutes} mín."
     }
   },
   "points": {

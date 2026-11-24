@@ -7,7 +7,7 @@ const FIRST_RETRY_MS = 60_000; // 1, 2, 4, 8 and 16 minutes later.
 const MINUTE_MS = 60_000;
 const CODE_KINDS = new Set(['student_code', 'new_code', 'teacher_code']);
 
-// The outbox worker (AGENT_START §8): sends due emails, priority 0 first, at most
+// The outbox worker (AGENT_START §8): sends due emails, lowest priority number first, at most
 // SMTP_MAX_PER_MINUTE a minute (BR-53). A login code is generated here at send time: generate
 // the code, send the email, then store the hash. Other emails take their details from the payload.
 export function createOutboxWorker({ db, mailer, config, now = () => new Date() }) {
@@ -63,12 +63,15 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
         : toIso(new Date(now().getTime() + FIRST_RETRY_MS * 2 ** (attempts - 1)));
       const message = String(err?.message ?? err).slice(0, 500);
       recordFailure.run(attempts, message, retryAt, row.id);
-      console.error(`Email ${row.id} (${row.kind}) could not be sent: ${message}`);
+      // The mail server's message can hold the recipient's address (§9, item 10), so the log gets
+      // only the error codes; the full message is in email_outbox.last_error.
+      const codes = [err?.code, err?.responseCode].filter((code) => code !== undefined && code !== null);
+      console.error(`Email ${row.id} (${row.kind}) could not be sent${codes.length ? `: ${codes.join(' ')}` : ''}`);
     }
   }
 
   // Sends every due email the per-minute limit allows. Re-reads the queue after each one,
-  // so a priority-0 email queued meanwhile goes next.
+  // so an email with a lower priority number queued meanwhile goes next.
   async function runOnce() {
     while (!stopping && underLimit()) {
       const row = nextDue.get(toIso(now()));
@@ -80,7 +83,7 @@ export function createOutboxWorker({ db, mailer, config, now = () => new Date() 
   function tick() {
     if (running) return;
     running = runOnce()
-      .catch((err) => console.error(`Outbox worker failed: ${err?.message ?? err}`))
+      .catch((err) => console.error(`Outbox worker failed: ${err?.name ?? 'Error'}${err?.code ? ` ${err.code}` : ''}`))
       .finally(() => {
         running = null;
       });

@@ -4,7 +4,7 @@ import { requireEventAccess, requireTeacher } from '../middleware/auth.js';
 import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
 import { attendanceWindow, setAttendance } from '../services/attendance.js';
-import { queueTeacherMessage, validateMessage } from '../services/email.js';
+import { createMessageCooldown, queueTeacherMessage, validateMessage } from '../services/email.js';
 import {
   addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, updateEvent, validateEvent,
 } from '../services/events.js';
@@ -223,8 +223,10 @@ export function teacherRouter({ config, db }) {
 
   // BR-50: a message to everyone signed up, sent from the noreply address with the teacher as Reply-To.
   const recipientsOf = (event) => eventParticipants(db, event.id).filter((student) => student.active);
-  const renderMessage = (req, res, status, { values = {}, errors = {} } = {}) => res.status(status).render('teacher/message', {
+  const messageCooldown = createMessageCooldown(); // BR-50: one message per event every 5 minutes
+  const renderMessage = (req, res, status, { values = {}, errors = {}, minutes = 0 } = {}) => res.status(status).render('teacher/message', {
     event: req.event,
+    minutes,
     recipients: recipientsOf(req.event).length,
     values,
     errors,
@@ -239,9 +241,12 @@ export function teacherRouter({ config, db }) {
     const recipients = recipientsOf(event);
     if (recipients.length === 0) errors.recipients = 'message.errors.noRecipients';
     if (Object.keys(errors).length > 0) return renderMessage(req, res, 400, { values, errors });
+    const minutes = messageCooldown.minutesLeft(event.id);
+    if (minutes > 0) return renderMessage(req, res, 400, { values, errors: { cooldown: 'message.errors.cooldown' }, minutes });
     const count = queueTeacherMessage(db, {
       event, teacherId: req.user.id, studentIds: recipients.map((student) => student.id), ...values,
     });
+    messageCooldown.start(event.id);
     setFlash(req, 'success', 'message.sent', { count });
     res.redirect(303, `/teacher/events/${event.id}`);
   });

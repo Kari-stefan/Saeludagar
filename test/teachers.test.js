@@ -259,6 +259,17 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.equal((await dualBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(student.id) })).status, 403);
   });
 
+  test('BR-11: sending a teacher a new code twice leaves one waiting email', async () => {
+    site.db.exec('DELETE FROM email_outbox');
+    const row = site.db.prepare("SELECT id FROM users WHERE name = 'Jón Kennari'").get();
+    for (let i = 0; i < 2; i += 1) {
+      const res = await adminBrowser.post('/admin/teachers', { action: 'new-code', id: String(row.id) });
+      assert.equal(res.status, 303);
+    }
+    assert.deepEqual(site.db.prepare('SELECT kind, priority FROM email_outbox WHERE user_id = ?').all(row.id), [{ kind: 'teacher_code', priority: 0 }]);
+    site.db.exec('DELETE FROM email_outbox');
+  });
+
   test('the teacher list shows name, email, admin and active, sorted by name', async () => {
     const page = await adminBrowser.get('/admin/teachers');
     const names = [...page.html.matchAll(/<tr>\s*<td>([^<]+?)(?: \(þú\))?<\/td>/g)].map((m) => m[1]);

@@ -598,7 +598,8 @@
       "subjectLong": "The subject can be at most 150 characters.",
       "bodyLong": "The message can be at most 5,000 characters.",
       "characters": "The text contains characters that aren't allowed.",
-      "noRecipients": "Nobody is signed up for the event, so nobody would get the email."
+      "noRecipients": "Nobody is signed up for the event, so nobody would get the email.",
+      "cooldown": "Only one message can be sent per event every 5 minutes. Try again in {minutes} min."
     }
   },
   "points": {

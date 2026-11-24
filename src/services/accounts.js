@@ -1,7 +1,7 @@
 import { toIso } from '../db/index.js';
 import { normalizeKennitala } from './crypto.js';
 import { generateCode, hashCode, verifyCode } from './codes.js';
-import { queueEmail } from './email.js';
+import { priorityOf, queueEmail } from './email.js';
 import { audit } from './audit.js';
 
 export const MAX_FAILED_LOGINS = 5; // BR-05
@@ -98,12 +98,17 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     };
   }
 
-  // The outbox worker generates the code when it sends the email (AGENT_START §8).
-  function queueCode(userId, kind) {
+  // The outbox worker generates the code when it sends the email (AGENT_START §8). A person never
+  // has more than one code email waiting (BR-07, BR-08): an older one would overwrite the newer
+  // code when it was sent. Rows that used up their retries (next_try_at NULL) stay for the failed count.
+  const dropWaitingCodes = db.prepare(`DELETE FROM email_outbox WHERE user_id = ? AND next_try_at IS NOT NULL
+    AND kind IN ('student_code', 'new_code', 'teacher_code')`);
+  const queueCode = db.transaction((userId, kind) => {
     const now = toIso();
     setCodeRequested.run(now, now, userId);
+    dropWaitingCodes.run(userId);
     queueEmail(db, { kind, userId });
-  }
+  });
 
   // BR-08: at most one new code per kennitala every 10 minutes, for active accounts only
   // (newCodeLimit is false only for testing in development; see src/config.js).
@@ -208,13 +213,14 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
   });
 
   // BR-07: "Senda kóða" queues a student_code email for every active student; the worker generates
-  // each code when it sends it, so a student's previous code works until then. Priority 1 lets
-  // other emails go first, and the worker keeps to SMTP_MAX_PER_MINUTE (BR-53). A student who
-  // already has one waiting is not queued twice.
+  // each code when it sends it, so a student's previous code works until then. The bulk kind has
+  // the lowest priority, so other emails go first, and the worker keeps to SMTP_MAX_PER_MINUTE
+  // (BR-53). A student who already has any code email waiting is left out: they are already
+  // getting a fresh code.
   const queueStudentCodes = db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, created_at, next_try_at)
-    SELECT 'student_code', 1, id, ?, ? FROM users
+    SELECT 'student_code', ?, id, ?, ? FROM users
     WHERE role = 'student' AND active = 1 AND NOT EXISTS (SELECT 1 FROM email_outbox
-      WHERE kind = 'student_code' AND user_id = users.id AND next_try_at IS NOT NULL)`);
+      WHERE kind IN ('student_code', 'new_code', 'teacher_code') AND user_id = users.id AND next_try_at IS NOT NULL)`);
   const markStudentCodesRequested = db.prepare(`UPDATE users SET code_requested_at = ?, updated_at = ?
     WHERE role = 'student' AND active = 1`);
   const studentCodeRows = db.prepare(`SELECT COUNT(*) FILTER (WHERE next_try_at IS NOT NULL) AS queued,
@@ -232,7 +238,7 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
 
   const sendStudentCodes = db.transaction(() => {
     const now = toIso();
-    const count = queueStudentCodes.run(now, now).changes;
+    const count = queueStudentCodes.run(priorityOf('student_code'), now, now).changes;
     markStudentCodesRequested.run(now, now);
     if (count > 0) lastSend = { at: now, ids: JSON.stringify(activeStudentIds.all()) };
     return count;
