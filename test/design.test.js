@@ -286,7 +286,7 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     assert.match(html, /<dd>15\. febrúar 2027, kl\. 12:00<\/dd>/);
     assert.match(html, /allt að 4 viðburði/);
     assert.match(html, /gildir sem 4 stig í einum áfanga\. Hægt er að fá að hámarki 4 stig dregin frá í hverjum áfanga, í allt að 4 áföngum \(samtals 16 stig\)\./);
-    assert.match(html, /<p class="placeholder">/, 'contact details are a marked placeholder');
+    assert.match(html, /href="mailto:sambandi@example\.is"/, 'the contact address is the setting (BR-58)');
     assert.doesNotMatch(html, /atburð/i);
     const english = site.browser();
     await english.post('/language', { lang: 'en', returnTo: '/info' });

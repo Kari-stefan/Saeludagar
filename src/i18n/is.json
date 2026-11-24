@@ -50,7 +50,8 @@
     "export": "Útflutningur fyrir skrifstofu",
     "purge": "Hreinsun gagna",
     "audit": "Aðgerðaskrá",
-    "info": "Upplýsingar"
+    "info": "Upplýsingar",
+    "privacy": "Persónuvernd"
   },
   "validation": {
     "kennitala": "Kennitala verður að vera 10 tölustafir"
@@ -579,8 +580,51 @@
     "points": "Hver mæting á viðburð gildir sem {points} stig í einum áfanga. Hægt er að fá að hámarki {perCourse} stig dregin frá í hverjum áfanga, í allt að {max} áföngum (samtals {total} stig).",
     "pointsOffice": "Vefurinn heldur ekki utan um fjarvistastigin sjálf. Skrifstofa skólans færir frádráttinn inn í Innu eftir að fresturinn rennur út.",
     "contactHeading": "Spurningar",
-    "contactPlaceholder": "Upplýsingar um hvert á að leita með spurningar koma hér þegar skólinn hefur sent þær.",
+    "contact": "Sendu spurningar um Sæludaga og vefinn á {email}.",
+    "privacyLink": "Svona fer vefurinn með persónuupplýsingar",
     "toEvents": "Skoða viðburði"
+  },
+  "privacy": {
+    "lead": "Hér er útskýrt hvaða upplýsingar Sæludagavefurinn geymir um þig, til hvers þær eru notaðar og hvaða rétt þú átt.",
+    "responsibleHeading": "Ábyrgðaraðili",
+    "responsible": "{school} ber ábyrgð á meðferð persónuupplýsinga á þessum vef.",
+    "schoolFallback": "Skólinn",
+    "storedHeading": "Hvaða upplýsingar eru geymdar",
+    "storedStudents": "Um nemendur:",
+    "stored": {
+      "kennitala": "Kennitala, dulkóðuð. Hún er notuð til að skrá þig inn og til að skrifstofan geti fært fjarvistastig á réttan nemanda.",
+      "profile": "Nafn, skólanetfang, braut og áfangar þínir.",
+      "signups": "Skráningar þínar á viðburði, hvort merkt var við mætingu og á hvaða áfanga þú setur fjarvistastigin.",
+      "code": "Innskráningarkóðinn þinn, aðeins sem tætigildi sem ekki er hægt að lesa kóðann úr.",
+      "log": "Skrá yfir breytingar á skráningum, mætingu og áfangavali: hver breytti og hvenær."
+    },
+    "storedTeachers": "Um kennara og aðra viðburðastjóra eru geymd kennitala (dulkóðuð), nafn og netfang.",
+    "storedNoBalance": "Vefurinn geymir ekki fjarvistastöðu þína og sækir engar aðrar upplýsingar um þig.",
+    "sourceHeading": "Hvaðan koma upplýsingarnar",
+    "source": "Skólinn flytur kennitölu, nafn, netfang, braut og áfanga nemenda inn úr nemendaskrá sinni. Annað verður til þegar þú notar vefinn.",
+    "useHeading": "Til hvers eru þær notaðar",
+    "use": "Til þess að þú getir skráð þig á viðburði Sæludaga, að þeir sem sjá um viðburð viti hverjir eru skráðir og geti merkt við mætingu, að hægt sé að senda þér innskráningarkóða og tilkynningar um viðburði sem þú ert á skrá hjá, og að skrifstofa skólans geti fellt niður fjarvistastig fyrir mætingu.",
+    "seesHeading": "Hverjir sjá upplýsingarnar",
+    "sees": {
+      "self": "Þú sérð þínar eigin skráningar, mætingu og áfangaval.",
+      "others": "Aðrir nemendur sjá hvorki nafn þitt né á hvaða viðburði þú ert á skrá. Þeir sjá aðeins hve margir eru skráðir.",
+      "managers": "Þeir sem sjá um viðburð sjá nafn, braut og netfang þeirra sem eru skráðir á hann, og mætingu þeirra. Það eru kennarar, og nemendur sem skólinn hefur falið umsjón viðburðar.",
+      "search": "Þegar bætt er á viðburð er leitað eftir nafni. Þá sjást nafn og braut, og netfang aðeins ef tveir nemendur á sömu braut heita sama nafni.",
+      "admins": "Stjórnendur vefsins hjá skólanum sjá allar upplýsingar nema kennitölur.",
+      "kennitala": "Kennitalan þín er hvergi sýnd á vefnum. Hún er aðeins í skránni sem skrifstofa skólans fær til að færa fjarvistastig inn í Innu."
+    },
+    "seesNoOthers": "Upplýsingarnar eru ekki afhentar öðrum.",
+    "keptHeading": "Hve lengi eru þær geymdar",
+    "kept": "Öllum upplýsingum um nemendur er eytt eftir Sæludaga, þegar skrifstofan hefur fengið skrána, og í síðasta lagi sjálfkrafa 30 dögum eftir að fresti til að velja áfanga lýkur. Öryggisafrit eru geymd í 7 daga og eyðast eftir það. Reikningar kennara eru geymdir á milli ára.",
+    "cookiesHeading": "Vafrakökur",
+    "cookies": "Vefurinn notar eina vafraköku. Hún heldur utan um innskráningu þína og val á tungumáli og útliti, og er fyrst sett þegar þú opnar innskráningarsíðuna eða velur tungumál eða útlit. Vefurinn mælir ekki notkun, rekur ekki ferðir þínar og sækir ekkert efni frá öðrum.",
+    "rightsHeading": "Réttur þinn",
+    "rights": "Þú átt rétt á að fá að vita hvaða upplýsingar skólinn geymir um þig og að fá rangar upplýsingar leiðréttar. Þú getur líka beðið um að upplýsingum sé eytt eða andmælt notkun þeirra. Hafðu samband við persónuverndarfulltrúa skólans til þess. Ef þú ert yngri en 18 ára geta forsjáraðilar þínir líka haft samband fyrir þína hönd.",
+    "complaint": "Ef þér finnst skólinn ekki fara rétt með upplýsingarnar geturðu kvartað til Persónuverndar, {site}.",
+    "complaintSite": "personuvernd.is",
+    "contactHeading": "Hafa samband",
+    "contactSite": "Spurningar um Sæludaga og vefinn: {email}",
+    "contactOfficer": "Persónuverndarfulltrúi skólans: {email}"
   },
   "attendance": {
     "open": "Hakaðu við þau sem mættu. Hvert hak vistast strax.",

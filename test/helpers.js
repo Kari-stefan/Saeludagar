@@ -21,6 +21,8 @@ export function testConfig(env = {}) {
     NODE_ENV: 'test',
     SESSION_SECRET: 'test-secret',
     SCHOOL_NAME: 'Prófunarskóli',
+    CONTACT_EMAIL: 'sambandi@example.is',
+    PRIVACY_EMAIL: 'personuvernd@example.is',
     KENNITALA_ENC_KEY: randomKey(),
     KENNITALA_HMAC_KEY: randomKey(),
     ...env,

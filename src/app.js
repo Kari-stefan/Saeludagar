@@ -23,6 +23,11 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   if (!config.sessionSecret) {
     throw new Error('SESSION_SECRET is not set. Copy .env.example to .env and fill it in (see docs/run.md, "First-time setup").');
   }
+  // BR-58: no placeholder address can go live.
+  const looksLikeEmail = (value) => /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(value);
+  if (config.isProduction && !(looksLikeEmail(config.contactEmail) && looksLikeEmail(config.privacyEmail))) {
+    throw new Error('CONTACT_EMAIL and PRIVACY_EMAIL must be set to the school\'s addresses in production (see docs/run.md, "Environment variables").');
+  }
   const kt = kennitalaCrypto(config);
   const accounts = createAccounts({ db, kt, newCodeLimit: config.newCodeLimit });
 
@@ -32,6 +37,8 @@ export function createApp({ config, db, sessionStore = new SqliteSessionStore(db
   if (config.trustProxy) app.set('trust proxy', 1);
 
   app.locals.schoolName = config.schoolName;
+  app.locals.contactEmail = config.contactEmail;
+  app.locals.privacyEmail = config.privacyEmail;
   app.locals.excerpt = excerpt;
 
   app.use(helmet({

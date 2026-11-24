@@ -116,6 +116,11 @@ export function publicRouter({ db }) {
     });
   });
 
+  // BR-58: the privacy notice. Public, and it needs nothing but the settings every view has.
+  router.get('/privacy', (req, res) => {
+    res.render('public/privacy');
+  });
+
   // §6 event page: published events, and drafts for those who may preview them (BR-22, BR-23).
   // Students see "Skrá mig" or "Afskrá mig"; guests a link to log in that comes back here. Who
   // runs the event and who is in it follow BR-68.

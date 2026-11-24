@@ -24,6 +24,9 @@ export function loadConfig(env = process.env) {
     host: (env.HOST || '').trim() || (nodeEnv === 'production' ? '127.0.0.1' : undefined),
     baseUrl: env.BASE_URL || 'http://localhost:3000',
     schoolName: (env.SCHOOL_NAME || '').trim(),
+    // BR-58: the addresses on the privacy page and /info. Required in production (createApp).
+    contactEmail: (env.CONTACT_EMAIL || '').trim(),
+    privacyEmail: (env.PRIVACY_EMAIL || '').trim(),
     databasePath: resolvePath(env.DATABASE_PATH, './data/saeludagar.db'),
     uploadDir: resolvePath(env.UPLOAD_DIR, './uploads'),
     backupDir: resolvePath(env.BACKUP_DIR, './backups'),

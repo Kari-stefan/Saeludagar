@@ -210,6 +210,8 @@ NODE_ENV=production
 PORT=3000
 BASE_URL=https://saeludagar.is
 SCHOOL_NAME=Fjölbrautaskólinn í Breiðholti
+CONTACT_EMAIL=<the school's contact for Sæludagar>
+PRIVACY_EMAIL=<the school's data protection officer>
 TRUST_PROXY=1
 SESSION_SECRET=<the first printed value>
 KENNITALA_ENC_KEY=<the second printed value>
@@ -228,6 +230,7 @@ Leave `DATABASE_PATH`, `UPLOAD_DIR` and `BACKUP_DIR` as they are in `.env.exampl
 What the important ones mean:
 
 - **`TRUST_PROXY=1`** goes with nginx. The session cookie is marked Secure in production, so the site must know that a request came in over HTTPS even though nginx passes it on over plain HTTP. nginx tells it with the `X-Forwarded-Proto` header, and `TRUST_PROXY=1` makes the site believe that header. Never set it without a proxy that sets the header.
+- **`CONTACT_EMAIL` and `PRIVACY_EMAIL`** are shown on the privacy page and on "Upplýsingar". The site refuses to start in production without both.
 - **`HOST`** is not in the list above on purpose. Left empty, the site listens only on `127.0.0.1` in production, which is what nginx needs. Do not set it unless you know why.
 - **The SMTP values** come from the school's kerfisstjóri (open question 4). `SMTP_MAX_PER_MINUTE` must not be above the school's mail limit.
 - **Without SMTP, nobody gets a login code.** In production the site never prints emails in the terminal. With `SMTP_HOST` empty, emails stay queued and are not sent. Set the SMTP values before you send codes to students.

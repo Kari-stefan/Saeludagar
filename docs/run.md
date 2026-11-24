@@ -128,6 +128,8 @@ npm run dev
 
 When you see `Sæludagar is running at http://localhost:3000`, open **http://localhost:3000** in your browser.
 
+In production, the site also refuses to start with `CONTACT_EMAIL and PRIVACY_EMAIL must be set to the school's addresses in production`: set both in `.env` to real email addresses ([section 12](#12-environment-variables)).
+
 To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 seconds for an email it is sending; press `Ctrl+C` again to stop at once. If you started it with `npm.cmd` or from Command Prompt, Windows then asks `Terminate batch job (Y/N)?`. The server has already stopped; type `Y` and press Enter.
 
 **What you should see:**
@@ -142,6 +144,7 @@ To stop the server, press `Ctrl+C` in its terminal. It waits up to about 5 secon
 - **Logged in as a student,** you see **Þínir viðburðir** with a counter such as "2/4" (your sign-ups) above **Aðrir viðburðir** (the rest). While sign-up is open, the cards have **Skrá** and **Afskrá** buttons, and the event moves between the two lists without the page reloading.
 - **Logged in as a teacher or admin,** you see **Viðburðir sem þú sérð um** and a floating **Nýr viðburður** button at the bottom right, which opens the event form over the page.
 - **Upplýsingar:** how the site works, with the current dates.
+- **Persónuvernd** (link in the footer of every page): the privacy notice. In development its contact addresses are left out unless `CONTACT_EMAIL` and `PRIVACY_EMAIL` are set in `.env`.
 - **Log in as a student.** In a second terminal (the server can keep running), create three fake students:
   ```
   npm run seed:dev
@@ -437,6 +440,8 @@ Result: PASS
 | `PORT` | Port the site listens on | `3000` |
 | `BASE_URL` | Public address of the site, used in emails | `http://localhost:3000` |
 | `SCHOOL_NAME` | Shown in the header and the title: "Sæludagar – {SCHOOL_NAME}". Set it to `Fjölbrautaskólinn í Breiðholti` | empty |
+| `CONTACT_EMAIL` | The school's contact address for Sæludagar, shown on "Upplýsingar" and "Persónuvernd" (BR-58). **Required in production**: the site refuses to start without a valid address. May be empty in development | empty |
+| `PRIVACY_EMAIL` | The school's data protection officer, shown on "Persónuvernd" (BR-58). **Required in production**, like `CONTACT_EMAIL` | empty |
 | `DATABASE_PATH` | SQLite database file | `./data/saeludagar.db` |
 | `UPLOAD_DIR` | Event images | `./uploads` |
 | `BACKUP_DIR` | Backups of the database and the images | `./backups` |

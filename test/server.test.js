@@ -128,7 +128,11 @@ describe('starting the server (src/server.js)', () => {
   });
 
   test('§10: a production start listens on 127.0.0.1 only', async () => {
-    const server = startServer({ ...base(), NODE_ENV: 'production', BASE_URL: 'https://saeludagar.example.is', SMTP_HOST: '' });
+    // A production start needs the two contact addresses (BR-58).
+    const server = startServer({
+      ...base(), NODE_ENV: 'production', BASE_URL: 'https://saeludagar.example.is', SMTP_HOST: '',
+      CONTACT_EMAIL: 'sambandi@example.is', PRIVACY_EMAIL: 'personuvernd@example.is',
+    });
     try {
       await waitFor(() => /is running at/.test(server.output()) || server.child.exitCode !== null);
       assert.match(server.output(), /is running at/);

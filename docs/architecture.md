@@ -13,7 +13,7 @@ One Node process, started by `src/server.js`, and nothing else. It runs these pa
 
 All three jobs start only after the port is bound. The SQLite file is `DATABASE_PATH` (default `data/saeludagar.db`), opened by `src/db/index.js` with `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000` and `synchronous = NORMAL`. Event images are files in `UPLOAD_DIR` (default `uploads/`). Sessions are rows in the `sessions` table, kept by `src/db/sessionStore.js`.
 
-At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup and the auto-purge check, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
+At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, in production a missing or malformed `CONTACT_EMAIL` or `PRIVACY_EMAIL` (BR-58), a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup and the auto-purge check, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
 
 ## How a request is handled
 
@@ -37,7 +37,7 @@ Routers and their guards (guards are in `src/middleware/auth.js`; a guest is red
 
 | Router | Mounted at | Guard |
 |---|---|---|
-| `src/routes/public.js` | `/` | none. Front page, `/info`, `/events/:id`, sign-up and cancel, `/language`, `/theme`. Sign-up checks `req.user` inside the route. |
+| `src/routes/public.js` | `/` | none. Front page, `/info`, `/privacy`, `/events/:id`, sign-up and cancel, `/language`, `/theme`. Sign-up checks `req.user` inside the route. |
 | `src/routes/auth.js` | `/` | none. `/login`, `/login/new-code`, `/logout`. |
 | `src/routes/student.js` | `/` | `requireStudent` on each route: `/points`, `/my-events` (a redirect). |
 | `src/routes/teacher.js` | `/teacher` | `requireTeacher` on the whole router (event manager or admin), plus `requireEventAccess(db, 'editor' or 'owner')` on `/events/:id/...`. |
