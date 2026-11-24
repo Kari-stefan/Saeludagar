@@ -133,7 +133,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | `docs/` | `AGENT_START.md` (the specification), `run.md`, this file, `conventions.md`, the five reference files (the original notes and the project owner's briefs) and `example-students.csv` | Documentation. [../CLAUDE.md](../CLAUDE.md) says which file is the home of which topic |
 | `data/`, `uploads/`, `backups/` | Runtime files: database, event images, backups. Only `.gitkeep` is tracked; contents are git-ignored | Nothing; runtime only |
 | `.claude/` | Claude Code settings, the `/milestone` and `/review` commands, the `spec-reviewer` agent and the model-routing hook | Nothing, unless the project owner asks (see [../CLAUDE.md](../CLAUDE.md)) |
-| `.github/workflows/` | `copilot-setup-steps.yml`, which prepares a GitHub Copilot agent's machine (Node.js 24, `npm ci`). It is not a CI check: nothing here tests a change | Nothing else, unless you are asked. The repository has no CI |
+| `.github/workflows/` | `ci.yml`, which runs `npm test` and `npm audit` on every pull request and on pushes to main, and `copilot-setup-steps.yml`, which prepares a GitHub Copilot agent's machine (Node.js 24, `npm ci`) and tests nothing | Nothing else, unless you are asked. Keep the Node.js version the same in both files and in `.claude/hooks/cloud-setup.sh` |
 | Root | `package.json`, `.env.example`, `.gitignore`, `README.md`, `CLAUDE.md` (the `.env` file is git-ignored) | See [../README.md](../README.md) and [../CLAUDE.md](../CLAUDE.md) |
 
 ## Decisions and their reasons

@@ -2,7 +2,7 @@
 
 How code and tests are written in this repository, so that a first change looks like the code around it. Business rules and the data model are in [AGENT_START.md](AGENT_START.md), setup and npm scripts in [run.md](run.md), the architecture in [architecture.md](architecture.md), and the rules about asking first and the definition of done in [../CLAUDE.md](../CLAUDE.md).
 
-There is no linter, formatter, type checker, coverage tool or CI in this repository. The only automatic check is `npm test`. Where the code is inconsistent, this file says "most files do X": match the file you are editing.
+There is no linter, formatter, type checker or coverage tool in this repository. The only automatic check of the code is `npm test`, which `.github/workflows/ci.yml` also runs on every pull request, together with `npm audit`. Where the code is inconsistent, this file says "most files do X": match the file you are editing.
 
 ## Copy from these files
 
