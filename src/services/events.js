@@ -343,7 +343,10 @@ export function publishEvent(db, event) {
 // Returns { error } or { images } (the files to delete).
 export function deleteEvent(db, event, actorId) {
   return db.transaction(() => {
-    if (getEvent(db, event.id).attended > 0) return { error: 'events.errors.attendanceMarked' };
+    // Another request may have deleted the event a moment ago: it counts as deleted.
+    const current = getEvent(db, event.id);
+    if (!current) return { images: [] };
+    if (current.attended > 0) return { error: 'events.errors.attendanceMarked' };
     const payload = { event: { ...pick(event, ['title_is', 'title_en']), ...pick(event, WHEN_AND_WHERE) } };
     for (const studentId of studentsOf(db, event.id)) queueEmail(db, { kind: 'event_deleted', userId: studentId, payload });
     db.prepare(`INSERT INTO audit_log (at, actor_id, action, event_id, student_id, details)

@@ -228,6 +228,7 @@ Leave `DATABASE_PATH`, `UPLOAD_DIR` and `BACKUP_DIR` as they are in `.env.exampl
 What the important ones mean:
 
 - **`TRUST_PROXY=1`** goes with nginx. The session cookie is marked Secure in production, so the site must know that a request came in over HTTPS even though nginx passes it on over plain HTTP. nginx tells it with the `X-Forwarded-Proto` header, and `TRUST_PROXY=1` makes the site believe that header. Never set it without a proxy that sets the header.
+- **`HOST`** is not in the list above on purpose. Left empty, the site listens only on `127.0.0.1` in production, which is what nginx needs. Do not set it unless you know why.
 - **The SMTP values** come from the school's kerfisstjóri (open question 4). `SMTP_MAX_PER_MINUTE` must not be above the school's mail limit.
 - **Without SMTP, nobody gets a login code.** In production the site never prints emails in the terminal. With `SMTP_HOST` empty, emails stay queued and are not sent. Set the SMTP values before you send codes to students.
 - **Keep a copy of the three secrets** somewhere other than this server and its backups, for example in the school's password manager. Where that copy goes is not decided (open question 8). Never put them in the repository or in an email.
@@ -299,7 +300,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
 
 ### 6. Close port 3000 to the outside
 
-The site listens on port 3000 on **every network interface**; there is no setting for the address. Anyone who can reach the server could open `http://<server address>:3000` and bypass nginx and HTTPS. So the firewall must block everything except SSH, HTTP and HTTPS. Allow SSH **first**, or you lock yourself out:
+In production the site listens on port 3000 only on `127.0.0.1`, so only nginx on the same machine can reach it (the `HOST` setting changes this; leave it empty). The firewall is a second layer: if `HOST` were ever set to another address, anyone who can reach the server could open `http://<server address>:3000` and bypass nginx and HTTPS. So the firewall must block everything except SSH, HTTP and HTTPS. Allow SSH **first**, or you lock yourself out:
 
 ```
 sudo ufw default deny incoming

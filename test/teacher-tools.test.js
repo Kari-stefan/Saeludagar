@@ -221,6 +221,13 @@ describe('attendance (BR-38, BR-39, BR-41, BR-56)', () => {
     assert.match(page, /data-autosave/);
     assert.match(page, /<script src="\/js\/attendance.js" defer><\/script>/);
     assert.match(page, /<button type="submit" class="button" data-save-all>Vista<\/button>/);
+    assert.match(page, /data-error="Ekki tókst að vista\./);
+    assert.match(page, /data-logged-out="Innskráningin er útrunnin og merkingin var ekki vistuð\. Skráðu þig inn aftur\."/);
+    const english = site.browser();
+    await english.login(teacher.kennitala, teacher.code);
+    await english.post('/language', { lang: 'en', returnTo: '/' });
+    assert.match((await english.get(`/teacher/events/${id}/attendance`)).html,
+      /data-logged-out="Your login has ended, so the tick was not saved\. Log in again\."/);
 
     const res = await tick(as.teacher, id, 'asta', true);
     assert.deepEqual([res.status, res.body], [200, { ok: true, message: 'Vistað.', summary: '1 af 2 mættu' }]);

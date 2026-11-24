@@ -33,7 +33,7 @@ let stopSessionCleanup = () => {};
 let stopAutoPurge = () => {};
 
 // Express 5 passes listen errors (such as a busy port) to this callback.
-const server = app.listen(config.port, (err) => {
+const onListening = (err) => {
   if (err) {
     console.error(err.code === 'EADDRINUSE'
       ? `Port ${config.port} is already in use. Stop the other server, or set PORT in .env to a free port.`
@@ -48,7 +48,8 @@ const server = app.listen(config.port, (err) => {
   outbox.start();
   stopSessionCleanup = startSessionCleanup(sessionStore);
   stopAutoPurge = startAutoPurge(db);
-});
+};
+const server = config.host ? app.listen(config.port, config.host, onListening) : app.listen(config.port, onListening);
 
 // Ctrl+C (or systemd's stop) waits a few seconds for an email being sent and for open requests.
 // A second Ctrl+C stops at once.

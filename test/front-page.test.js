@@ -165,6 +165,22 @@ describe('the front page', () => {
       assert.doesNotMatch(swapped, /value="20[23]0-01-01"/);
     });
 
+    test('BR-63: with no Sæludagar days set, a from and to date in the address are ignored', async () => {
+      const kept = site.db.prepare('SELECT day FROM saeludagar_days').pluck().all();
+      site.db.prepare('DELETE FROM saeludagar_days').run();
+      try {
+        // With no days the page shows only the "dates not set" text, so nothing of the filters can
+        // show: no chip, no date field with the value from the address.
+        const html = (await as.guest.get('/?from=2030-01-01&to=2020-01-01')).html;
+        assert.match(html, /Dagsetningar Sæludaga hafa ekki verið ákveðnar enn\./);
+        assert.deepEqual(chips(html), []);
+        assert.deepEqual(titles(html), []);
+        assert.doesNotMatch(html, /value="20[23]0-01-01"/);
+      } finally {
+        for (const day of kept) site.db.prepare('INSERT INTO saeludagar_days (day) VALUES (?)').run(day);
+      }
+    });
+
     test('BR-63: a date is only grouped by day when sorted by date, and no match says so', async () => {
       assert.match((await as.guest.get('/')).html, /id="day-2027-03-12"/);
       const byTime = (await as.guest.get('/?sort=time')).html;

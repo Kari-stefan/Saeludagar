@@ -85,6 +85,9 @@ export function adminRouter({ config, db, kt, accounts }) {
       if (!req.file) return renderImport(res, 400, { uploadError: 'import.errors.noFile' });
       const { students, errors } = readStudentCsv(req.file.buffer, { db, kt });
       if (errors.length > 0) return renderImport(res, 400, { errors });
+      // A new upload replaces the file held from the last one (BR-15), so its kennitölur do not
+      // stay in memory until the hold runs out.
+      if (req.session.importToken) takeImport(req.session.importToken);
       const token = holdImport(students);
       req.session.importToken = token;
       return renderImport(res, 200, { preview: previewImport(db, kt, students), token });

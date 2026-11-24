@@ -249,7 +249,7 @@
     "confirm": "Confirm import",
     "cancel": "Cancel",
     "cancelled": "The import was cancelled. Nothing was saved.",
-    "done": "Import complete: {added} new, {updated} updated, {deactivated} made inactive and {signupsRemoved} sign-ups removed.",
+    "done": "Import complete: {added} new, {updated} updated, {deactivated} made inactive and {signupsRemoved} sign-ups removed. Course choices cleared: {choicesCleared}.",
     "errorsIntro": "The file was not imported, and nothing was saved. Fix these errors ({count}) and upload the file again:",
     "uploadHeading": "Upload the student list",
     "formatHelp": "A CSV file with this header line, separated by semicolons (or commas):",
@@ -264,6 +264,8 @@
       "kennitala": "Line {line}: kennitala must be 10 digits",
       "name": "Line {line}: the name is missing or invalid",
       "email": "Line {line}: the email address is not valid",
+      "braut": "Line {line}: braut can be at most 100 characters and cannot contain line breaks or other control characters",
+      "course": "Line {line}: afangi can be at most 30 characters and cannot contain line breaks or other control characters",
       "mismatch": "Line {line}: name, email and braut must be the same as on line {first} for the same student",
       "teacher": "Line {line}: this kennitala belongs to an Event Manager",
       "noStudents": "The file contains no students",
@@ -595,6 +597,7 @@
       "closed": "Attendance can't be changed now.",
       "notSignedUp": "The student is no longer signed up for the event. Reload the page.",
       "network": "Couldn't save. Check your connection and try again, or use the Save button.",
+      "loggedOut": "Your login has ended, so the tick was not saved. Log in again.",
       "own": "You cannot mark your own attendance. Another Event Manager of this event or an admin does that."
     },
     "own": "You. Another Event Manager of this event or an admin marks your attendance."

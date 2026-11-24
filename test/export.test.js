@@ -272,6 +272,12 @@ describe('exportCsv (BR-48)', () => {
     assert.equal(eventField('a=b+c-d@e'), 'a=b+c-d@e');
   });
 
+  test('BR-48, §9: a value starting with "|" or a line break gets the apostrophe, and is quoted where needed', () => {
+    assert.equal(eventField('|cmd'), "'|cmd");
+    assert.equal(eventField('a|b'), 'a|b');
+    assert.equal(eventField('\nx'), '"\'\nx"');
+  });
+
   test('BR-48, §9: a value that needs both gets the apostrophe first and is then quoted', () => {
     assert.equal(eventField('=HYPERLINK("http://example.com";"smella")'), '"\'=HYPERLINK(""http://example.com"";""smella"")"');
     assert.equal(eventField('\rx'), '"\'\rx"');

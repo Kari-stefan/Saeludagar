@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import { toIso } from '../src/db/index.js';
 import { hashCode } from '../src/services/codes.js';
 import { brautList, holdImport, HOLD_MS, readStudentCsv, takeImport } from '../src/services/import.js';
-import { startSite } from './helpers.js';
+import { insertEvent, startSite } from './helpers.js';
 
 const HEADER = 'kennitala;nafn;netfang;braut;afangi';
 const csv = (...lines) => Buffer.from([HEADER, ...lines].join('\n'));
@@ -84,6 +84,29 @@ describe('reading the student CSV (BR-14, AGENT_START §8)', () => {
     assert.equal(result.errors.find((e) => e.key === 'import.errors.mismatch').params.first, 2);
   });
 
+  test('BR-14, BR-16: a too long braut or course, or a control character in one, is reported with its line number', () => {
+    const result = read(csv(
+      `0000000301;Jóna Jónsdóttir;jona@example.is;${'b'.repeat(100)};${'a'.repeat(30)}`, // line 2: exactly at the limits
+      `0000000302;Páll Pálsson;pall@example.is;${'b'.repeat(101)};`, // line 3
+      `0000000303;Sara Sigurðardóttir;sara@example.is;Starfsbraut;${'a'.repeat(31)}`, // line 4
+      '0000000304;Óli Ólason;oli@example.is;"Starfs\nbraut";', // lines 5-6: a line break inside a quoted braut
+      '0000000305;Una Unnarsdóttir;una@example.is;Starfsbraut;"AB\tC"', // line 7: a tab
+    ));
+    assert.deepEqual(errorList(result), ['3 braut', '4 course', '5 braut', '7 course']);
+    assert.equal(result.students.length, 1);
+  });
+
+  test('BR-14, BR-16: a file with a too long braut saves nothing', async () => {
+    const res = await admin.upload('/admin/import', csv(
+      '0000000301;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05',
+      `0000000302;Páll Pálsson;pall@example.is;${'b'.repeat(101)};`,
+    ));
+    assert.equal(res.status, 400);
+    assert.match(res.html, /<li>Lína 3: braut má vera í mesta lagi 100 stafir/);
+    assert.doesNotMatch(res.html, /name="token"/);
+    assert.equal(studentCount(), 0);
+  });
+
   test('BR-14: the header must be the agreed columns', () => {
     assert.deepEqual(errorList(read(Buffer.from('kt;nafn;netfang;braut;afangi\n0000000301;J;j@example.is;;\n'))), ['1 header']);
     assert.deepEqual(errorList(read(Buffer.from('nafn;kennitala;netfang;braut;afangi\n'))), ['1 header']);
@@ -119,6 +142,16 @@ describe('the import page (BR-14 to BR-18)', () => {
     return preview;
   }
 
+  test('BR-15: a new upload discards the file held from the earlier one', async () => {
+    const first = await admin.upload('/admin/import', csv('0000000301;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05'));
+    const second = await admin.upload('/admin/import', csv('0000000302;Páll Pálsson;pall@example.is;Starfsbraut;'));
+    assert.equal(first.status, 200);
+    assert.equal(second.status, 200);
+    assert.notEqual(tokenFrom(first.html), tokenFrom(second.html));
+    assert.equal(takeImport(tokenFrom(first.html)), null, 'the first held file is gone');
+    assert.equal(studentCount(), 0);
+  });
+
   test('BR-16: a file with several bad rows lists every error and saves nothing', async () => {
     const res = await admin.upload('/admin/import', csv(
       '0000000301;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05',
@@ -150,12 +183,23 @@ describe('the import page (BR-14 to BR-18)', () => {
 
     const res = await admin.post('/admin/import', { action: 'confirm', token: tokenFrom(preview.html) });
     assert.deepEqual([res.status, res.location], [303, '/admin/import']);
-    assert.match(await page(), /Innflutningi lokið: 2 nýir, 0 uppfærðir, 0 óvirkir og 0 skráningar fjarlægðar\./);
+    assert.match(await page(), /Innflutningi lokið: 2 nýir, 0 uppfærðir, 0 óvirkir og 0 skráningar fjarlægðar\. Áfangaval sem var hreinsað: 0\./);
     const jona = student('0000000301');
     assert.deepEqual([jona.role, jona.active, jona.name, jona.braut, jona.code_hash], ['student', 1, 'Jóna Zxqvbnmsdóttir', 'Rafmagnsbraut', null]);
     assert.equal(site.kt.decrypt(jona.kennitala_enc), '0000000301');
     assert.deepEqual(courses(jona.id), new Set(['STÆR2BH05']));
     assert.equal(student('0000000302').braut, 'Starfsbraut');
+  });
+
+  test('BR-17: the message after an import shows how many course choices were cleared', async () => {
+    await importFile(csv('0000000301;Anna Nemandi;anna@example.is;Rafmagnsbraut;STÆR2BH05'));
+    const anna = student('0000000301');
+    const eventId = insertEvent(site.db, adminAccount.id);
+    site.db.prepare(`INSERT INTO registrations (event_id, student_id, created_at, attended, course_code, course_chosen_at)
+      VALUES (?, ?, ?, 1, 'STÆR2BH05', ?)`).run(eventId, anna.id, toIso(), toIso());
+    await importFile(csv('0000000301;Anna Nemandi;anna@example.is;Rafmagnsbraut;ENSK2LS05'));
+    assert.match(await page(), /Innflutningi lokið: 0 nýir, 1 uppfærðir, 0 óvirkir og 0 skráningar fjarlægðar\. Áfangaval sem var hreinsað: 1\./);
+    assert.equal(site.db.prepare('SELECT course_code FROM registrations WHERE student_id = ?').pluck().get(anna.id), null);
   });
 
   test('BR-17: a re-import updates, reactivates and deactivates; missing students lose their sign-ups without attendance', async () => {

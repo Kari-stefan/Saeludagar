@@ -14,7 +14,7 @@ const MARKED_BY = { teacher: 'kennari', student: 'nemandi' };
 
 // A text value a spreadsheet would run as a formula is shown as text instead (CSV injection), and a
 // value holding the delimiter, a quote or a line break is quoted, with its quotes doubled.
-const FORMULA_START = /^[=+\-@\t\r]/;
+const FORMULA_START = /^[=+\-@|\t\r\n]/;
 const NEEDS_QUOTES = /[;"\r\n]/;
 
 function textField(value) {

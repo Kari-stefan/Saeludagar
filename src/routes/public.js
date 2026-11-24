@@ -59,7 +59,7 @@ export function publicRouter({ db }) {
     // A date outside the Sæludagar days cannot be chosen in "Sía", and would leave its date field
     // invalid and the whole form unsendable, so it is ignored like any other odd value.
     for (const key of ['from', 'to']) {
-      if (filters[key] < days[0] || filters[key] > days.at(-1)) delete filters[key];
+      if (days.length === 0 || filters[key] < days[0] || filters[key] > days.at(-1)) delete filters[key];
     }
     const others = { search: searchTerm(req.query.q), sort: sortOrder(req.query.sort), braut, filters };
     const student = req.user?.role === 'student';

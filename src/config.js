@@ -19,6 +19,9 @@ export function loadConfig(env = process.env) {
     nodeEnv,
     isProduction: nodeEnv === 'production',
     port: Number(env.PORT) || 3000,
+    // The address to listen on. Production listens only on this machine (nginx is in front);
+    // development has no address, so the site is reachable on every interface, as before.
+    host: (env.HOST || '').trim() || (nodeEnv === 'production' ? '127.0.0.1' : undefined),
     baseUrl: env.BASE_URL || 'http://localhost:3000',
     schoolName: (env.SCHOOL_NAME || '').trim(),
     databasePath: resolvePath(env.DATABASE_PATH, './data/saeludagar.db'),

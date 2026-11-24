@@ -444,6 +444,7 @@ Result: PASS
 | `KENNITALA_HMAC_KEY` | **Required.** A separate key for kennitala lookups | none |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM` | The school's mail server. `MAIL_FROM` (the noreply address) is required when `SMTP_HOST` is set. `SMTP_SECURE` is `true` for port 465 and `false` for port 587; the server won't start if they don't match. If `SMTP_HOST` is empty, development prints emails to the console instead of sending them; production never prints them, and they stay queued | empty, `587`, `false` |
 | `SMTP_MAX_PER_MINUTE` | Sending limit for bulk email | `30` |
+| `HOST` | The address the site listens on. Empty means `127.0.0.1` (this machine only) when `NODE_ENV=production`, and every network interface in development. A value overrides both | empty |
 | `TRUST_PROXY` | Set to `1` behind nginx in production | `0` |
 | `NEW_CODE_LIMIT` | `off` removes the 10-minute limit on "Fá nýjan kóða" (BR-08) for testing. Only works when `NODE_ENV=development`; never set it on the server | empty (limit on) |
 

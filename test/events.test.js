@@ -4,7 +4,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { toIso } from '../src/db/index.js';
 import { ROOT_DIR } from '../src/config.js';
-import { createEvent, getEvent, moveEvent, ownerCandidates, updateEvent, validateEvent } from '../src/services/events.js';
+import {
+  createEvent, deleteEvent, getEvent, moveEvent, ownerCandidates, updateEvent, validateEvent,
+} from '../src/services/events.js';
 import { insertEvent, startSite } from './helpers.js';
 
 // The front page's "Viðburðir sem þú sérð um" section.
@@ -466,6 +468,18 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     const [email] = await site.sendEmails();
     assert.equal(email.subject, 'Viðburði aflýst: Gönguferð / Event cancelled: Gönguferð');
     assert.match(email.text, /hefur verið aflýst:\n\n {2}Gönguferð\n {2}11\. mars 2027, kl\. 10:00–12:00/);
+  });
+
+  test('BR-29: deleting an event that is already gone does not throw and returns no images', async () => {
+    const id = await create();
+    const event = getEvent(site.db, id);
+    register(id, people.student.id);
+    assert.deepEqual(deleteEvent(site.db, event, people.owner.id).images, []);
+    const emails = site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get();
+    const audits = site.db.prepare('SELECT COUNT(*) FROM audit_log').pluck().get();
+    assert.deepEqual(deleteEvent(site.db, event, people.owner.id), { images: [] });
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), emails);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM audit_log').pluck().get(), audits);
   });
 
   test('BR-29: a co-teacher cannot delete; nobody can once attendance is marked; an admin can delete any event', async () => {
