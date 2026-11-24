@@ -494,15 +494,15 @@ Regular checks: `systemctl status saeludagar`, that a new folder appears in `bac
 
 `npm run loadtest` tests sign-up with 1,000 students. It starts its own temporary server and database on a developer's computer. Never run it against the live site (open question 19). [docs/run.md](docs/run.md), section 11, has the options and what the report means.
 
-The run of 20 November 2026 (a 4-core cloud machine, Node.js 24.20.0) passed: 1,000 students logged in and sent 6,000 sign-ups over 20 seconds, with no 5xx answer, no event over its maximum and no student over 4 sign-ups or over 2 on one day.
+The run of 24 November 2026, after milestone 9 (a 4-core cloud machine, Node.js 24.20.0), passed: 1,000 students logged in and sent 6,000 sign-ups over 20 seconds, with no 5xx answer, no event over its maximum and no student over 4 sign-ups or over 2 on one day.
 
 | Request | Count | p50 | p95 | Slowest |
 |---|---|---|---|---|
-| Login | 1,000 | 114 ms | 189 ms | 236 ms |
-| Front page | 1,000 | 6 ms | 15 ms | 33 ms |
-| Sign-up | 6,000 | 3 ms | 9 ms | 32 ms |
+| Login | 1,000 | 149 ms | 217 ms | 305 ms |
+| Front page | 1,000 | 8 ms | 23 ms | 57 ms |
+| Sign-up | 6,000 | 3 ms | 14 ms | 69 ms |
 
-A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took 1.3 s (p50) and 2.6 s (p95), and a sign-up 0.9 s (p50) and 2.3 s (p95). The school's server will give other numbers.
+A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took about 2 s (p50) and 4 s (p95), and a sign-up 1 s (p50) and 2.9 s (p95). The code from before milestone 9 gave the same times on the same machine that day, so the milestone did not slow sign-up; the run of 20 November, on another cloud machine, was faster (1.3 s and 2.6 s for the front page). The school's server will give other numbers.
 
 ## Data protection
 
