@@ -496,6 +496,7 @@
       "imageTooLarge": "Myndin er of stór. Hámarkið er 2 MB.",
       "imageUpload": "Ekki tókst að taka við myndinni. Reyndu aftur.",
       "imageType": "Myndin verður að vera JPG, PNG eða WebP.",
+      "imageUnreadable": "Ekki tókst að lesa myndina. Vistaðu hana aftur sem JPG, PNG eða WebP og reyndu á ný.",
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
       "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum.",
       "tooManyImages": "Viðburður má mest hafa {max} myndir. Fjarlægðu mynd til að bæta annarri við."

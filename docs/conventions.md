@@ -109,6 +109,7 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
   - `browser.postForm(url, fields, files)` posts a multipart form such as the event form. `browser.upload(url, bytes, { token, filename })` posts a CSV file.
   - `site.sendEmails()` runs the outbox worker once and returns the emails sent. `codeFrom(email)` reads the 6-digit code from one.
   - `insertEvent(db, ownerId, fields)` inserts an event and its Sæludagar day and returns its id.
+  - `TEST_IMAGES` holds tiny real images without metadata (`jpg`, `progressiveJpg`, `png`, `webp`); use them for event images, since a file that is not a readable image is refused (BR-71). `jpegWithMetadata(jpeg, { orientation, icc })` and `exifTiff({ orientation })` add the metadata a phone writes, every text of it containing `SECRET` and the GPS position containing `GPS_NUMBER`.
   - `tempDatabase()` gives a migrated temporary database (`{ db, remove() }`) for tests without a server. `testConfig(env)` builds a config with test keys.
 - Skeleton, modelled on `test/points.test.js`:
 

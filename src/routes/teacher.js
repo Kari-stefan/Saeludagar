@@ -10,7 +10,7 @@ import {
   updateEvent, validateEvent,
 } from '../services/events.js';
 import {
-  deleteImage, imageType, MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT, saveImage,
+  cleanImage, deleteImage, MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT, saveImage,
 } from '../services/images.js';
 import { brautList } from '../services/import.js';
 import { getSettings } from '../services/settings.js';
@@ -40,11 +40,14 @@ function readImages(req, res, next) {
   });
 }
 
-// The chosen images: { error } or { images: [{ bytes, type }] }. An empty file field counts as none.
+// The chosen images, without their metadata (BR-71): { error } or { images } from cleanImage,
+// ready for saveImage. Nothing is saved yet, so a file of the wrong type or one that cannot be read
+// is a message on the images like any other. An empty file field counts as none.
 function uploadedImages(req) {
   if (req.imageError) return { error: req.imageError };
-  const images = (req.files ?? []).filter((file) => file.size > 0).map((file) => ({ bytes: file.buffer, type: imageType(file.buffer) }));
-  return images.some((image) => !image.type) ? { error: 'events.errors.imageType' } : { images };
+  const images = (req.files ?? []).filter((file) => file.size > 0).map((file) => cleanImage(file.buffer));
+  const failed = images.find((image) => image.error);
+  return failed ? { error: failed.error } : { images };
 }
 
 // A form value that may be sent once or several times, as a list of whole numbers.
@@ -92,7 +95,7 @@ export function teacherRouter({ config, db }) {
   async function saveImages(images) {
     const names = [];
     try {
-      for (const image of images) names.push(await saveImage(config.uploadDir, image.bytes, image.type));
+      for (const image of images) names.push(await saveImage(config.uploadDir, image));
     } catch (err) {
       await deleteImages(names);
       throw err;

@@ -496,6 +496,7 @@
       "imageTooLarge": "The image is too large. The limit is 2 MB.",
       "imageUpload": "The image could not be received. Try again.",
       "imageType": "The image must be JPG, PNG or WebP.",
+      "imageUnreadable": "The image could not be read. Save it again as JPG, PNG or WebP and try once more.",
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
       "confirmDelete": "Tick the box to confirm that you want to delete the event.",
       "tooManyImages": "An event can have at most {max} images. Remove one to add another."

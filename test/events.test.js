@@ -7,14 +7,14 @@ import { ROOT_DIR } from '../src/config.js';
 import {
   createEvent, deleteEvent, getEvent, moveEvent, ownerCandidates, updateEvent, validateEvent,
 } from '../src/services/events.js';
-import { insertEvent, startSite } from './helpers.js';
+import {
+  GPS_NUMBER, insertEvent, jpegWithMetadata, SECRET, startSite, TEST_IMAGES,
+} from './helpers.js';
 
 // The front page's "Viðburðir sem þú sérð um" section.
 const managedPart = (html) => /id="managed-events"[\s\S]*?<\/section>/.exec(html)?.[0] ?? '';
 
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200, 1)]);
-const JPG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 2)]);
-const WEBP = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP'), Buffer.alloc(200, 3)]);
+const { png: PNG, jpg: JPG, webp: WEBP } = TEST_IMAGES;
 
 let site;
 const people = {};
@@ -385,6 +385,66 @@ describe('event images (BR-27)', () => {
     const form = (await as.owner.get(`/teacher/events/${id}/edit`)).html;
     assert.equal([...form.matchAll(/name="remove_images" value="\d+" data-saved-image/g)].length, 3);
     assert.match(form, /name="images" type="file" multiple accept="image\/jpeg,image\/png,image\/webp"/);
+  });
+});
+
+describe('event images without metadata (BR-71)', () => {
+  beforeEach(() => site.db.exec('DELETE FROM events'));
+
+  // Whether a file still holds anything the test put in: a SECRET text or the GPS position.
+  const leaks = (bytes) => {
+    const gps = Buffer.alloc(4);
+    gps.writeUInt32LE(GPS_NUMBER);
+    return bytes.includes(SECRET) || bytes.includes(gps);
+  };
+  const photo = () => jpegWithMetadata(JPG, { orientation: 6 }).bytes;
+  const unreadable = () => JPG.subarray(0, JPG.length - 10); // cut off in the image data
+  const stored = (file) => fs.readFileSync(path.join(site.config.uploadDir, file));
+
+  test('BR-71: an image with GPS metadata is stored and served without it', async () => {
+    assert.ok(leaks(photo()), 'the test photo carries the metadata');
+    const id = await create(as.owner, {}, { bytes: photo(), name: 'IMG_0001.jpg', type: 'image/jpeg' });
+    const [file] = imagesOf(id);
+    assert.ok(!leaks(stored(file)), 'the stored file');
+    assert.deepEqual([...stored(file).subarray(0, 2), ...stored(file).subarray(-2)], [0xff, 0xd8, 0xff, 0xd9]);
+    assert.ok(stored(file).includes(Buffer.from('Exif\0\0', 'latin1')), 'the orientation is kept');
+    const res = await fetch(`${site.baseUrl}/uploads/${file}`);
+    assert.equal(res.status, 200);
+    const served = Buffer.from(await res.arrayBuffer());
+    assert.ok(!leaks(served), 'the served file');
+    assert.deepEqual(served, stored(file));
+  });
+
+  test('BR-71: an image that cannot be read is refused in both languages, and nothing is saved', async () => {
+    const before = uploads().length;
+    const res = await as.owner.postForm('/teacher/events/new', fields(), { bytes: unreadable(), name: 'mynd.jpg', type: 'image/jpeg' });
+    assert.equal(res.status, 400);
+    assert.match(res.html, /<p class="field__error" id="event-images-error">Ekki tókst að lesa myndina\. Vistaðu hana aftur sem JPG, PNG eða WebP og reyndu á ný\.<\/p>/);
+
+    const english = site.browser();
+    await english.login(people.owner.kennitala, people.owner.code);
+    await english.post('/language', { lang: 'en', returnTo: '/' });
+    const inEnglish = await english.postForm('/teacher/events/new', fields(), [{ bytes: PNG }, { bytes: unreadable() }]);
+    assert.equal(inEnglish.status, 400);
+    assert.match(inEnglish.html, /<p class="field__error" id="event-images-error">The image could not be read\. Save it again as JPG, PNG or WebP and try once more\.<\/p>/);
+    assert.equal(uploads().length, before, 'no file is left in the upload folder, not even the good one');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM events').pluck().get(), 0);
+  });
+
+  test('BR-71: the edit form stores added images without metadata and refuses an unreadable one', async () => {
+    const id = await create();
+    const added = await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: photo(), name: 'IMG_0002.jpg' });
+    assert.equal(added.status, 303, added.html);
+    const [file] = imagesOf(id);
+    assert.ok(!leaks(stored(file)));
+
+    const before = uploads().length;
+    const refused = await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ title_is: 'Ekki vistað' }), { bytes: unreadable() });
+    assert.equal(refused.status, 400);
+    assert.match(refused.html, /<p class="field__error" id="event-images-error">Ekki tókst að lesa myndina\./);
+    assert.equal(uploads().length, before);
+    assert.deepEqual(imagesOf(id), [file]);
+    assert.equal(eventRow(id).title_is, 'Gönguferð');
   });
 });
 

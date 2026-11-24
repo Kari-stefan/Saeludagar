@@ -5,7 +5,7 @@ import { toIso } from '../src/db/index.js';
 import {
   browseEvents, eventFilters, filterEvents, sortOrder, validateEvent,
 } from '../src/services/events.js';
-import { insertEvent, startSite } from './helpers.js';
+import { insertEvent, startSite, TEST_IMAGES } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
 const titles = (html) => [...html.matchAll(/<h(\d) class="event-card__title">([^<]+)<\/h\1>/g)].map((m) => m[2]);
@@ -399,7 +399,7 @@ describe('the front page', () => {
   });
 
   describe('the "Nýr viðburður" dialog (§6, BR-22)', () => {
-    const png = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(32)]);
+    const { png } = TEST_IMAGES;
     const fields = (extra = {}) => ({
       title_is: 'Úr glugganum', description_is: 'Lýsing.', host: 'Gestgjafi', event_date: '2027-03-11', start_time: '10:00', end_time: '11:00', location: 'Stofa 1', capacity: '10', fee_isk: '0', ...extra,
     });
@@ -518,7 +518,7 @@ describe('the front page', () => {
       assert.match((await as.jona.get('/')).html, /Leynileg drög/);
     });
 
-    test('§6: errors come back by field, in the page\'s language, and nothing is saved', async () => {
+    test('§6, BR-71: errors come back by field, in the page\'s language, and nothing is saved', async () => {
       event();
       const before = site.db.prepare('SELECT COUNT(*) FROM events').pluck().get();
       const missing = await saveFromDialog(as.teacher, fields({ title_is: '', event_date: '2020-01-01' }));
@@ -530,6 +530,9 @@ describe('the front page', () => {
       const wrongFile = await saveFromDialog(as.teacher, fields(), { bytes: Buffer.from('ekki mynd'), type: 'image/png', name: 'mynd.png' });
       assert.equal(wrongFile.status, 400);
       assert.equal(wrongFile.body.errors.images, 'Myndin verður að vera JPG, PNG eða WebP.');
+      const unreadable = await saveFromDialog(as.teacher, fields(), { bytes: png.subarray(0, png.length - 12), type: 'image/png', name: 'mynd.png' });
+      assert.equal(unreadable.status, 400);
+      assert.equal(unreadable.body.errors.images, 'Ekki tókst að lesa myndina. Vistaðu hana aftur sem JPG, PNG eða WebP og reyndu á ný.');
       const tooLarge = await saveFromDialog(as.teacher, fields(), { bytes: Buffer.concat([png, Buffer.alloc(2 * 1024 * 1024)]), type: 'image/png', name: 'stor.png' });
       assert.equal(tooLarge.status, 400);
       assert.equal(tooLarge.body.errors.images, 'Myndin er of stór. Hámarkið er 2 MB.');

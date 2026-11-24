@@ -75,7 +75,7 @@ Dependencies are passed in, not imported as globals. `createApp({ config, db, se
 
 **c) An event from draft to published, with images** (`src/routes/teacher.js`, `src/services/events.js`, `src/services/images.js`).
 1. `POST /teacher/events/new` runs multer (`images` field, up to 5 files of 2 MB, memory), then `verifyCsrf`, then `validateEvent`.
-2. `imageType` reads each file's first bytes. `saveImage` writes `<uuid>.<ext>` to `UPLOAD_DIR`.
+2. `cleanImage` reads each file's type from its first bytes and removes its metadata with `stripMetadata` (BR-71), before anything is saved; a file of another type or one that cannot be read becomes a message on the images. `saveImage` takes only an image from `cleanImage` and writes `<uuid>.<ext>` to `UPLOAD_DIR`.
 3. `createEvent` inserts `events` (status `draft`), `event_brautir` and `event_images`, in one transaction. If it fails the saved files are deleted.
 4. `POST /teacher/events/:id/edit` can add images and remove saved ones. If date, time or location change, `updateEvent` queues an `event_changed` row in `email_outbox` for each signed-up student.
 5. `POST /teacher/events/:id` with `action=publish` calls `publishEvent`, which sets `events.status = 'published'`. Students then see it through `publishedEvents`.
@@ -149,6 +149,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | Lockout and new-code limit counted per account, not per IP | Most students share the school's public IP | `AGENT_START.md` §9 item 7 |
 | Email goes through the `email_outbox` table, with a per-minute limit | The limit defaults to 30, the usual Microsoft 365 per-mailbox limit | `AGENT_START.md` §8 |
 | Console email only outside production | Emails contain login codes | `src/services/email.js` |
+| Image metadata removed by walking the file's structure, without a library and without re-encoding (BR-71) | Phone photos carry the GPS position, time and device, and `/uploads` needs no login. No new dependency; the image data is copied byte for byte, only orientation and colour profile are kept, and a file whose structure cannot be walked to its end is refused. `saveImage` takes only what `cleanImage` returned, so raw upload bytes cannot reach `UPLOAD_DIR`. Images uploaded before this were not rewritten | `src/services/images.js` |
 | Images stored outside `public/` under random names | Only names matching `IMAGE_NAME` are served, so nothing else can be asked for under `/uploads`; the file type comes from the first bytes, never the name or browser | `src/services/images.js`, `src/app.js` |
 | Multipart routes verify CSRF after multer | Only multer can read a multipart body, so the token cannot be checked earlier | `src/middleware/csrf.js` |
 | Scripts only enhance pages that work without JavaScript | The server stays the only source of truth | `public/js/card-signup.js`, `public/js/points.js` |
