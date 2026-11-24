@@ -81,6 +81,10 @@ export function adminRouter({ config, db, kt, accounts }) {
     const body = req.body ?? {};
 
     if (req.is('multipart/form-data')) {
+      // Any new upload, also one with errors or without a file, discards the file held from the
+      // last one (BR-15), so its kennitölur do not stay in memory until the hold runs out.
+      if (req.session.importToken) takeImport(req.session.importToken);
+      delete req.session.importToken;
       if (req.uploadError) return renderImport(res, 400, { uploadError: req.uploadError });
       if (!req.file) return renderImport(res, 400, { uploadError: 'import.errors.noFile' });
       const { students, errors } = readStudentCsv(req.file.buffer, { db, kt });
@@ -168,7 +172,11 @@ export function adminRouter({ config, db, kt, accounts }) {
 
     const person = result.teacher ?? result.manager;
     const { name, email } = person;
+    // BR-11, BR-67: an account that still owns events is told how many, and how to move them (BR-72).
+    const owned = result.owned ?? result.ownership?.owned ?? 0;
+    const keeps = { deactivate: 'admin.teachers.deactivatedKeepsEvents', 'revoke-event-manager': 'admin.teachers.revokeKeepsEvents' };
     if (result.error) setFlash(req, 'error', result.error);
+    else if (owned > 0 && Object.hasOwn(keeps, action)) setFlash(req, 'success', keeps[action], { name, count: owned });
     else setFlash(req, 'success', done[action], { name, email });
     res.redirect(303, '/admin/teachers');
   });

@@ -2,7 +2,7 @@
 
 How code and tests are written in this repository, so that a first change looks like the code around it. Business rules and the data model are in [AGENT_START.md](AGENT_START.md), setup and npm scripts in [run.md](run.md), the architecture in [architecture.md](architecture.md), and the rules about asking first and the definition of done in [../CLAUDE.md](../CLAUDE.md).
 
-There is no linter, formatter, type checker, coverage tool or CI in this repository. The only automatic check is `npm test`. Where the code is inconsistent, this file says "most files do X": match the file you are editing.
+There is no linter, formatter, type checker or coverage tool in this repository. The only automatic check of the code is `npm test`, which `.github/workflows/ci.yml` also runs on every pull request, together with `npm audit`. Where the code is inconsistent, this file says "most files do X": match the file you are editing.
 
 ## Copy from these files
 
@@ -57,7 +57,7 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 
 - Escape all data with `<%= %>`. Use `<%- %>` only to include your own partials: every use under `src/views/` is an `include(...)`. Reason: AGENT_START §9 item 5.
 - Start a view with `<%- include('../partials/header', { pageTitle: t('pages.points') }) %>` and end it with `<%- include('../partials/footer') %>`. Put a `<%# ... -%>` comment at the top saying what the page is and which rule it serves. Use the field partial `src/views/partials/field.ejs` for labelled inputs and `form-errors.ejs` plus `flash.ejs` for messages.
-- Views get `t`, `lang`, `formatDate`, `formatDateTime`, `formatFee`, `eventText`, `currentUser`, `csrfToken` and `takeFlash` from middleware (`applyLanguage` in `src/middleware/language.js`), not from the route. A route passes only page data: `res.render('student/points', { points })`. The view path has no extension and is relative to `src/views/`.
+- Views get `t`, `lang`, `formatDate`, `formatDateTime`, `formatFee`, `eventText`, `currentUser`, `csrfToken`, `existingCsrfToken` and `takeFlash` from middleware (`applyLanguage` in `src/middleware/language.js`), not from the route. A route passes only page data: `res.render('student/points', { points })`. The view path has no extension and is relative to `src/views/`.
 - Put the CSRF field in every form that changes state:
 
 ```html
@@ -105,10 +105,11 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
   - `site.addUser({ role, name, email, isAdmin, code })` inserts an account with a known code and returns `{ id, kennitala, code }`. Kennitölur count up from `0000000001`.
-  - `site.browser()` returns a `Browser` with a cookie jar. `browser.login(kennitala, code)`, `get(url)`, `post(url, form)` (adds the CSRF token from the session's page), `request(method, url, form)` (adds none, for testing a missing token). Each returns `{ status, location, html }`.
+  - `site.browser()` returns a `Browser` with a cookie jar. `browser.login(kennitala, code)`, `get(url)`, `post(url, form)` (adds the CSRF token from the session's page; a guest's front page has none, so it is read from `/login`), `request(method, url, form)` (adds none, for testing a missing token). Each returns `{ status, location, html }`.
   - `browser.postForm(url, fields, files)` posts a multipart form such as the event form. `browser.upload(url, bytes, { token, filename })` posts a CSV file.
   - `site.sendEmails()` runs the outbox worker once and returns the emails sent. `codeFrom(email)` reads the 6-digit code from one.
   - `insertEvent(db, ownerId, fields)` inserts an event and its Sæludagar day and returns its id.
+  - `TEST_IMAGES` holds tiny real images without metadata (`jpg`, `progressiveJpg`, `png`, `webp`); use them for event images, since a file that is not a readable image is refused (BR-71). `jpegWithMetadata(jpeg, { orientation, icc })` and `exifTiff({ orientation })` add the metadata a phone writes, every text of it containing `SECRET` and the GPS position containing `GPS_NUMBER`.
   - `tempDatabase()` gives a migrated temporary database (`{ db, remove() }`) for tests without a server. `testConfig(env)` builds a config with test keys.
 - Skeleton, modelled on `test/points.test.js`:
 
@@ -162,3 +163,4 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 - Emails never carry a login code in the outbox payload (`src/services/email.js`); codes are made when the email is sent.
 - Names sort in Icelandic order with `new Intl.Collator('is')`, not with SQL `ORDER BY` or `localeCompare` (`src/services/signups.js`).
 - A session cookie named `sid` is the only cookie (BR-57). The language and theme live in the session, so do not add a cookie for a new preference.
+- Calling `csrfToken()` writes the session, which starts one and sets the cookie. A page a guest can open must not call it, except `/login` and `/login/new-code` (BR-70); give guests a link to `/login` instead of a form.

@@ -1,7 +1,7 @@
 import { toIso } from '../db/index.js';
 import { normalizeKennitala } from './crypto.js';
 import { generateCode, hashCode, verifyCode } from './codes.js';
-import { queueEmail } from './email.js';
+import { priorityOf, queueEmail } from './email.js';
 import { audit } from './audit.js';
 
 export const MAX_FAILED_LOGINS = 5; // BR-05
@@ -65,6 +65,7 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     VALUES ('teacher', ?, 1, ?, ?, ?, ?, ?, ?, ?)`);
   const ownedEvents = db.prepare('SELECT COUNT(*) FROM events WHERE owner_id = ?').pluck();
   const coteaching = db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE teacher_id = ?').pluck();
+  const removeAsCoteacher = db.prepare('DELETE FROM event_coteachers WHERE teacher_id = ?');
 
   // Login steps 1, 3 and 5 (AGENT_START §8). The attempt is counted before the slow scrypt check,
   // in one synchronous transaction, so parallel requests cannot get more than 5 guesses in before
@@ -98,12 +99,22 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     };
   }
 
-  // The outbox worker generates the code when it sends the email (AGENT_START §8).
-  function queueCode(userId, kind) {
+  // The outbox worker generates the code when it sends the email (AGENT_START §8). A person never
+  // has more than one code email waiting (BR-07, BR-08): an older one would overwrite the newer
+  // code when it was sent. Rows that used up their retries (next_try_at NULL) stay for the failed count.
+  // The new row goes in before the older ones are deleted: SQLite gives a new row the highest id
+  // plus one, so deleting first could hand it the id of the email the worker is sending right now.
+  // With the same kind, user and second, the worker could not tell the two apart (src/jobs/outbox.js)
+  // and would delete the new one unsent once the old email had gone.
+  const dropOlderCodes = db.prepare(`DELETE FROM email_outbox WHERE user_id = ? AND next_try_at IS NOT NULL
+    AND kind IN ('student_code', 'new_code', 'teacher_code') AND id < ?`);
+  const lastRowId = db.prepare('SELECT last_insert_rowid()').pluck();
+  const queueCode = db.transaction((userId, kind) => {
     const now = toIso();
     setCodeRequested.run(now, now, userId);
     queueEmail(db, { kind, userId });
-  }
+    dropOlderCodes.run(userId, lastRowId.get());
+  });
 
   // BR-08: at most one new code per kennitala every 10 minutes, for active accounts only
   // (newCodeLimit is false only for testing in development; see src/config.js).
@@ -161,15 +172,17 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     return { teacher };
   });
 
-  // BR-11: deactivating deletes the teacher's sessions (AGENT_START §8). Their events stay.
+  // BR-11: deactivating deletes the teacher's sessions (AGENT_START §8). Their events stay theirs
+  // until an admin moves them (BR-72); `owned` says how many, for the message.
   const setTeacherActive = db.transaction((actorId, teacherId, active) => {
     const row = teacherById.get(teacherId);
     if (!row) return null;
     const teacher = toTeacher(row);
     if (!active && teacher.id === actorId) return { teacher, error: 'admin.teachers.errors.self' };
     setActive.run(active ? 1 : 0, toIso(), teacher.id);
-    if (!active) deleteSessions.run(teacher.id);
-    return { teacher };
+    if (active) return { teacher };
+    deleteSessions.run(teacher.id);
+    return { teacher, owned: ownedEvents.get(teacher.id) };
   });
 
   // BR-11: grant or revoke the admin flag. Takes effect on the teacher's next request.
@@ -195,7 +208,9 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
   });
 
   // Admin-only: take the event-manager role from a student again, keeping the account and its
-  // data. A teacher account always has the role (BR-67).
+  // data. A teacher account always has the role (BR-67). The student stops being a co-teacher of
+  // every event; events they own stay theirs until an admin moves them (BR-72). The audit entry
+  // records the counts from before.
   const revokeEventManager = db.transaction((actorId, userId) => {
     const row = userById.get(userId);
     if (!row || row.is_event_manager !== 1) return null;
@@ -204,27 +219,31 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     setEventManager.run(0, toIso(), row.id);
     const ownership = { owned: ownedEvents.get(row.id), coteaching: coteaching.get(row.id) };
     audit(db, 'event-manager.revoke', actorId, null, row.id, ownership);
+    removeAsCoteacher.run(row.id);
     return { manager: { ...manager, isEventManager: false }, ownership };
   });
 
   // BR-07: "Senda kóða" queues a student_code email for every active student; the worker generates
-  // each code when it sends it, so a student's previous code works until then. Priority 1 lets
-  // other emails go first, and the worker keeps to SMTP_MAX_PER_MINUTE (BR-53). A student who
-  // already has one waiting is not queued twice.
+  // each code when it sends it, so a student's previous code works until then. The bulk kind has
+  // the lowest priority, so other emails go first, and the worker keeps to SMTP_MAX_PER_MINUTE
+  // (BR-53). A student who already has any code email waiting is left out: they are already
+  // getting a fresh code.
   const queueStudentCodes = db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, created_at, next_try_at)
-    SELECT 'student_code', 1, id, ?, ? FROM users
+    SELECT 'student_code', ?, id, ?, ? FROM users
     WHERE role = 'student' AND active = 1 AND NOT EXISTS (SELECT 1 FROM email_outbox
-      WHERE kind = 'student_code' AND user_id = users.id AND next_try_at IS NOT NULL)`);
+      WHERE kind IN ('student_code', 'new_code', 'teacher_code') AND user_id = users.id AND next_try_at IS NOT NULL)`);
   const markStudentCodesRequested = db.prepare(`UPDATE users SET code_requested_at = ?, updated_at = ?
     WHERE role = 'student' AND active = 1`);
   const studentCodeRows = db.prepare(`SELECT COUNT(*) FILTER (WHERE next_try_at IS NOT NULL) AS queued,
     COUNT(*) FILTER (WHERE next_try_at IS NULL) AS failed FROM email_outbox WHERE kind = 'student_code'`);
   const activeStudents = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").pluck();
   const activeStudentIds = db.prepare("SELECT id FROM users WHERE role = 'student' AND active = 1").pluck();
-  // Students of the latest send whose email has gone: still active (the worker drops emails to
-  // inactive accounts unsent) and with no student_code row left, waiting or failed.
+  // Students of the latest send whose code has gone: still active (the worker drops emails to
+  // inactive accounts unsent) and with no code email left, waiting or failed. A new_code that
+  // replaced the bulk email, or that was waiting when the send was made, counts as left too.
   const sentOf = db.prepare(`SELECT COUNT(*) FROM users WHERE id IN (SELECT value FROM json_each(?)) AND active = 1
-    AND NOT EXISTS (SELECT 1 FROM email_outbox WHERE kind = 'student_code' AND user_id = users.id)`).pluck();
+    AND NOT EXISTS (SELECT 1 FROM email_outbox WHERE kind IN ('student_code', 'new_code', 'teacher_code')
+      AND user_id = users.id)`).pluck();
 
   // The students of the latest send, for the "sent" count on the page. Only this process knows
   // them, so the count is gone after a restart; queued and failed always come from the outbox.
@@ -232,7 +251,7 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
 
   const sendStudentCodes = db.transaction(() => {
     const now = toIso();
-    const count = queueStudentCodes.run(now, now).changes;
+    const count = queueStudentCodes.run(priorityOf('student_code'), now, now).changes;
     markStudentCodesRequested.run(now, now);
     if (count > 0) lastSend = { at: now, ids: JSON.stringify(activeStudentIds.all()) };
     return count;

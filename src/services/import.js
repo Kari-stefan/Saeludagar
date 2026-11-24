@@ -21,6 +21,11 @@ export function decodeCsv(bytes) {
   }
 }
 
+// §8: a braut or afangi value. Empty is allowed. Control characters are U+0000 to U+001F and U+007F.
+function isValidCsvText(value, maxLength) {
+  return [...value].length <= maxLength && !/[\u0000-\u001f\u007f]/.test(value);
+}
+
 // BR-14, BR-16 and §8: reads and checks the whole file in memory, collecting every error.
 // Returns { students, errors }. Errors are { key, params } for t(), with params.line when the
 // error belongs to a line of the file. Never shows a kennitala.
@@ -57,7 +62,13 @@ export function readStudentCsv(bytes, { db, kt }) {
     if (!kennitala) fail(line, 'import.errors.kennitala');
     if (!isValidName(name)) fail(line, 'import.errors.name');
     if (!isValidEmail(email)) fail(line, 'import.errors.email');
-    if (!kennitala || !isValidName(name) || !isValidEmail(email)) continue;
+    // BR-14: braut is at most 100 characters and afangi at most 30; neither holds a control
+    // character (a quoted field can contain a line break or a tab).
+    const brautOk = isValidCsvText(braut, 100);
+    const courseOk = isValidCsvText(course, 30);
+    if (!brautOk) fail(line, 'import.errors.braut');
+    if (!courseOk) fail(line, 'import.errors.course');
+    if (!kennitala || !isValidName(name) || !isValidEmail(email) || !brautOk || !courseOk) continue;
 
     let student = students.get(kennitala);
     if (!student) {

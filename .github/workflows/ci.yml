@@ -1,0 +1,51 @@
+name: CI
+
+# Runs the tests and the package audit on every pull request and on every push to main, so a
+# teammate sees the result next to the pull request. It can also be started by hand from the
+# Actions tab. The two jobs are separate, so each result shows on its own.
+#
+# Keep the Node.js version here the same as in copilot-setup-steps.yml and as NODE_VERSION in
+# .claude/hooks/cloud-setup.sh.
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Install Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.20.0"
+          cache: npm
+      - name: Install the packages
+        run: npm ci --no-audit --no-fund
+      - name: Build the CSS
+        run: npm run build:css
+      - name: Run the tests
+        run: npm test
+
+  audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+      - name: Install Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: "24.20.0"
+          cache: npm
+      - name: Install the packages
+        run: npm ci --no-audit --no-fund
+      - name: Check the packages for known vulnerabilities
+        run: npm audit --audit-level=moderate

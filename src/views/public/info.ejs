@@ -1,7 +1,7 @@
 <%#
   §6 "Upplýsingar". The text comes from AGENT_START §2 and the business rules, and the dates from
-  the settings. Nothing about contacts or school rules is made up: the contact section is a marked
-  placeholder until the school supplies it.
+  the settings. Nothing about contacts or school rules is made up: the contact address is
+  CONTACT_EMAIL (BR-58), which production cannot start without, and the section links to /privacy.
 -%>
 <%- include('../partials/header', { pageTitle: t('pages.info') }) %>
 <article class="prose">
@@ -30,7 +30,10 @@
   <p><%= t('info.pointsOffice') %></p>
 
   <h2><%= t('info.contactHeading') %></h2>
-  <p class="placeholder"><%= t('info.contactPlaceholder') %></p>
+  <% if (contactEmail) { const [before, after] = t('info.contact').split('{email}'); -%>
+  <p><%= before %><a href="mailto:<%= contactEmail %>"><%= contactEmail %></a><%= after %></p>
+  <% } -%>
+  <p><a href="/privacy"><%= t('info.privacyLink') %></a></p>
 
   <p><a class="button" href="/"><%= t('info.toEvents') %></a></p>
 </article>

@@ -1,6 +1,7 @@
 import { MAX_SIGNUPS_PER_DAY, MAX_SIGNUPS_PER_STUDENT } from '../config.js';
 import { toIso } from '../db/index.js';
 import { audit } from './audit.js';
+import { queueEmail } from './email.js';
 
 // BR-31: students sign up and cancel only between the opening and closing times. `phase` is
 // 'notSet', 'before', 'open' or 'after', for the messages on the pages.
@@ -103,18 +104,26 @@ export function eventParticipants(db, eventId) {
 const MAX_STUDENT_SEARCH_RESULTS = 20;
 
 // BR-37: the name search ignores case for Icelandic letters too ("þór" finds "Þórunn"), which
-// SQLite's LIKE does only for A–Z, so the matching is done here.
+// SQLite's LIKE does only for A–Z, so the matching is done here. Results show the name and braut,
+// never the kennitala. Students with the same name (ignoring case) and the same braut (no braut
+// counts as one) also carry their school email, so they can be told apart; this is decided over
+// every match, before the list is cut.
 export function searchStudentsForEvent(db, eventId, query) {
   const search = typeof query === 'string' ? query.trim().slice(0, 100) : '';
   if (!search) return { search: '', students: [] };
   const term = search.toLocaleLowerCase('is');
-  const students = db.prepare(`SELECT u.id, u.name, u.braut
+  const matches = db.prepare(`SELECT u.id, u.name, u.braut, u.email
     FROM users u
     WHERE u.role = 'student' AND u.active = 1
       AND NOT EXISTS (
         SELECT 1 FROM registrations r WHERE r.event_id = ? AND r.student_id = u.id
       )`).all(eventId)
-    .filter((student) => student.name.toLocaleLowerCase('is').includes(term))
+    .filter((student) => student.name.toLocaleLowerCase('is').includes(term));
+  const sameAs = (student) => JSON.stringify([student.name.toLocaleLowerCase('is'), student.braut ?? null]);
+  const counts = new Map();
+  for (const student of matches) counts.set(sameAs(student), (counts.get(sameAs(student)) ?? 0) + 1);
+  const students = matches
+    .map(({ email, ...student }) => (counts.get(sameAs(student)) > 1 ? { ...student, email } : student))
     .sort(byName)
     .slice(0, MAX_STUDENT_SEARCH_RESULTS);
   return { search, students };
@@ -138,7 +147,9 @@ function registrationLimits(db, studentId, event, messages) {
 
 // BR-37: teachers may bypass the event's own limits, but not the student's own: 4 events, 2 on
 // one day (BR-65), and no overlaps. As for every sign-up, the event must be published (BR-32): a draft is hidden from
-// students. Returns { ok } or { error } (+ params/event for the message).
+// students. The student gets a signup_added email, queued with the sign-up, which does not say who
+// added them (a student who runs the event is never named to other students, BR-68).
+// Returns { ok } or { error } (+ params/event for the message).
 export function addStudentToEvent(db, teacherId, eventId, studentId, now = new Date()) {
   return db.transaction(() => {
     const event = db.prepare("SELECT * FROM events WHERE id = ? AND status = 'published'").get(eventId);
@@ -154,6 +165,8 @@ export function addStudentToEvent(db, teacherId, eventId, studentId, now = new D
     db.prepare('INSERT INTO registrations (event_id, student_id, added_by, created_at) VALUES (?, ?, ?, ?)')
       .run(eventId, studentId, teacherId, toIso(now));
     audit(db, 'signup.create', teacherId, eventId, studentId, { by: 'event_manager' }); // BR-56
+    const details = ['id', 'title_is', 'title_en', 'event_date', 'start_time', 'end_time', 'location'];
+    queueEmail(db, { kind: 'signup_added', userId: studentId, payload: { event: Object.fromEntries(details.map((key) => [key, event[key]])) } });
     return { ok: true };
   }).immediate();
 }

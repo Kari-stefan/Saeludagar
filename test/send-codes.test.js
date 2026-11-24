@@ -1,6 +1,7 @@
 import { after, before, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createOutboxWorker } from '../src/jobs/outbox.js';
+import { createAccounts } from '../src/services/accounts.js';
 import { queueEmail, renderEmail } from '../src/services/email.js';
 import { codeFrom, startSite, testConfig } from './helpers.js';
 
@@ -41,7 +42,7 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
     const res = await admin.post('/admin/codes');
     assert.deepEqual([res.status, res.location], [303, '/admin/codes']);
     assert.match((await admin.get('/admin/codes')).html, /Kóðar fara í tölvupósti til 5 nemenda\./);
-    assert.deepEqual(queued(), students.map((s) => ({ kind: 'student_code', priority: 1, user_id: s.id, payload: null })));
+    assert.deepEqual(queued(), students.map((s) => ({ kind: 'student_code', priority: 2, user_id: s.id, payload: null })));
     const requested = site.db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1 AND code_requested_at IS NOT NULL").pluck().get();
     assert.equal(requested, 5);
   });
@@ -50,6 +51,14 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
     await admin.post('/admin/codes');
     await admin.post('/admin/codes');
     assert.equal(queued().length, 5);
+  });
+
+  test('BR-07: a student who already has a new_code waiting is left out of the bulk send', async () => {
+    queueEmail(site.db, { kind: 'new_code', userId: students[0].id });
+    await admin.post('/admin/codes');
+    assert.equal(queued().length, 5);
+    assert.deepEqual(queued().filter((row) => row.user_id === students[0].id).map((row) => row.kind), ['new_code']);
+    assert.equal(queued().filter((row) => row.kind === 'student_code').length, 4);
   });
 
   test('BR-07: each previous code works until the new one is sent, then stops working', async () => {
@@ -65,7 +74,7 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
     first.code = newCode;
   });
 
-  test('BR-53: codes go out no faster than SMTP_MAX_PER_MINUTE, and priority-0 emails go first', async () => {
+  test('BR-53: codes go out no faster than SMTP_MAX_PER_MINUTE, and login codes go first', async () => {
     await admin.post('/admin/codes');
     // A teacher asks for a new code after the bulk send has started.
     queueEmail(site.db, { kind: 'new_code', userId: teacher.id });
@@ -131,6 +140,53 @@ describe('"Senda kóða" (BR-07, BR-53)', () => {
     assert.match(after, /<li>Í biðröð: 0<\/li>/);
     assert.match(after, /<li>Sendir síðan [^<]+: 3<\/li>/);
     site.db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(waiting[0]);
+  });
+
+  test('BR-07: a student counts as sent only when no code email is left for them, also one that replaced the bulk email', async () => {
+    queueEmail(site.db, { kind: 'new_code', userId: students[0].id }); // waiting before the send, so left out of it
+    await admin.post('/admin/codes');
+    // students[1] asks for a new code before the bulk email goes: a new_code replaces it.
+    site.db.prepare('UPDATE users SET code_requested_at = NULL WHERE id = ?').run(students[1].id);
+    await site.browser().post('/login/new-code', { kennitala: students[1].kennitala });
+    assert.deepEqual(queued().filter((row) => row.kind === 'new_code').map((row) => row.user_id), [students[0].id, students[1].id]);
+    assert.match((await admin.get('/admin/codes')).html, /<li>Sendir síðan [^<]+: 0<\/li>/, 'nothing has gone yet');
+
+    const emails = await site.sendEmails();
+    assert.equal(emails.length, 5);
+    assert.deepEqual(queued(), []);
+    assert.match((await admin.get('/admin/codes')).html, /<li>Sendir síðan [^<]+: 5<\/li>/);
+  });
+
+  test('BR-07, BR-08: a new code asked for while the bulk code email is being sent comes second, and only its code works', async () => {
+    const student = students[2];
+    queueEmail(site.db, { kind: 'student_code', userId: student.id });
+    const accounts = createAccounts({ db: site.db, kt: site.kt });
+    const sent = [];
+    const worker = createOutboxWorker({
+      db: site.db,
+      config: testConfig(),
+      now: () => new Date(Date.now() + 1000),
+      mailer: {
+        async send(message) {
+          sent.push(message);
+          if (sent.length === 1) {
+            // The 10-minute limit counts from the bulk send; this request comes later.
+            site.db.prepare('UPDATE users SET code_requested_at = NULL WHERE id = ?').run(student.id);
+            accounts.requestNewCode(student.kennitala);
+          }
+        },
+      },
+    });
+    await worker.runOnce();
+    assert.deepEqual(sent.map((message) => message.to.address), ['nemandi3@example.is', 'nemandi3@example.is']);
+    assert.match(sent[0].subject, /^Kóðinn þinn fyrir Sæludaga/, 'the bulk email first');
+    assert.match(sent[1].subject, /^Nýr kóði fyrir Sæludaga/, 'then the new code');
+    const [first, second] = sent.map(codeFrom);
+    assert.notEqual(first, second);
+    assert.equal((await site.browser().login(student.kennitala, first)).status, 401);
+    assert.equal((await site.browser().login(student.kennitala, second)).location, '/');
+    assert.deepEqual(queued(), []);
+    student.code = second;
   });
 
   test('BR-52: the student code email is in Icelandic, then English, with the code, the link and instructions', async () => {

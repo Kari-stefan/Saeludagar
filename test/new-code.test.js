@@ -59,7 +59,7 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
     site.db.prepare('UPDATE users SET code_requested_at = ? WHERE id = ?')
       .run(new Date(Date.now() - NEW_CODE_INTERVAL_MS - 1000).toISOString(), student.id);
     await requestCode(student.kennitala);
-    assert.equal(queued().length, 2, 'allowed again after 10 minutes');
+    assert.equal(queued().length, 1, 'allowed again after 10 minutes; the older waiting email was replaced (BR-08)');
   });
 
   test('BR-08: NEW_CODE_LIMIT=off removes the 10-minute limit for testing, in development only', () => {
@@ -78,7 +78,28 @@ describe('"Fá nýjan kóða" (BR-08)', () => {
     const unlimited = createAccounts({ db: site.db, kt: site.kt, newCodeLimit: false });
     unlimited.requestNewCode(student.kennitala);
     unlimited.requestNewCode(student.kennitala);
-    assert.equal(queued().length, 2, 'every request queues a code');
+    assert.equal(queued().length, 1, 'every request queues a code, and the older waiting one is replaced (BR-08)');
+  });
+
+  test('BR-07, BR-08: a new code asked for while the bulk email waits leaves one code email, and its code works', async () => {
+    site.db.prepare("INSERT INTO email_outbox (kind, priority, user_id, created_at, next_try_at) VALUES ('student_code', 2, ?, ?, ?)")
+      .run(student.id, new Date().toISOString(), new Date().toISOString());
+    await requestCode(student.kennitala);
+    assert.deepEqual(queued(), [{ kind: 'new_code', priority: 0, user_id: student.id, payload: null }]);
+    const emails = await site.sendEmails();
+    assert.equal(emails.length, 1);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0);
+    const newCode = codeFrom(emails[0]);
+    assert.equal((await site.browser().login(student.kennitala, newCode)).location, '/', 'the code from the email still works');
+    student.code = newCode;
+  });
+
+  test('BR-08: a code email that has used up its retries stays when a new one is queued', async () => {
+    site.db.prepare("INSERT INTO email_outbox (kind, priority, user_id, created_at, next_try_at, attempts) VALUES ('new_code', 0, ?, ?, NULL, 6)")
+      .run(student.id, new Date().toISOString());
+    await requestCode(student.kennitala);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox WHERE next_try_at IS NULL').pluck().get(), 1);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox WHERE next_try_at IS NOT NULL').pluck().get(), 1);
   });
 
   test('BR-08: unknown and inactive kennitölur queue nothing', async () => {

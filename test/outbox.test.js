@@ -68,6 +68,46 @@ describe('email outbox worker (AGENT_START §8)', () => {
     assert.deepEqual(order, ['kennari2@example.is', 'kennari1@example.is']);
   });
 
+  // A row deleted while its email is being sent (a purge, a deleted student, a replaced code) can
+  // have its id given to the next email queued, since SQLite reuses the highest id.
+  function replaceDuringSend(onSend) {
+    const sent = [];
+    let ids;
+    const outbox = worker(async (message) => {
+      sent.push({ to: message.to.address, row: db.prepare('SELECT id, attempts, last_error FROM email_outbox').get() ?? null });
+      if (sent.length > 1) return;
+      const [first] = rows();
+      db.prepare('DELETE FROM email_outbox WHERE id = ?').run(first.id);
+      queueEmail(db, { kind: 'new_code', userId: users[1].id });
+      ids = [first.id, rows()[0].id];
+      onSend();
+    });
+    queueEmail(db, { kind: 'teacher_code', userId: users[0].id });
+    return { outbox, sent, ids: () => ids };
+  }
+
+  test('§8: an email queued while the row being sent is deleted, and given its id, is still sent', async () => {
+    const { outbox, sent, ids } = replaceDuringSend(() => {});
+    await outbox.runOnce();
+    const [oldId, newId] = ids();
+    assert.equal(newId, oldId, 'the new row really got the id of the one being sent');
+    assert.deepEqual(sent.map((email) => email.to), ['kennari1@example.is', 'kennari2@example.is'], 'the new email was not deleted unsent');
+    assert.deepEqual(rows(), []);
+  });
+
+  test('§8: a failed send does not mark a new email that was given the id of the deleted row', async (t) => {
+    t.mock.method(console, 'error', () => {});
+    const { outbox, sent, ids } = replaceDuringSend(() => {
+      throw new Error('Connection refused');
+    });
+    await outbox.runOnce();
+    const [oldId, newId] = ids();
+    assert.equal(newId, oldId, 'the new row really got the id of the one being sent');
+    assert.equal(sent.length, 2, 'the new email was still due, so it was sent in the same run');
+    assert.deepEqual(sent[1].row, { id: newId, attempts: 0, last_error: null }, 'not marked with the failure');
+    assert.deepEqual(rows(), []);
+  });
+
   test('BR-53: sends at most SMTP_MAX_PER_MINUTE emails a minute', async () => {
     const sent = [];
     const outbox = worker(async (message) => sent.push(message));
@@ -111,7 +151,7 @@ describe('email outbox worker (AGENT_START §8)', () => {
     assert.equal(attempts, 6);
     assert.equal(codeHash(users[0].id), hashBefore, 'a failed send changes no code');
     for (const call of errors.mock.calls) {
-      assert.match(call.arguments[0], /^Email \d+ \(teacher_code\) could not be sent: Connection refused$/);
+      assert.match(call.arguments[0], /^Email \d+ \(teacher_code\) could not be sent$/);
     }
   });
 
@@ -127,6 +167,38 @@ describe('email outbox worker (AGENT_START §8)', () => {
     const logged = errors.mock.calls.map((call) => call.arguments.join(' ')).join('\n');
     assert.doesNotMatch(logged, new RegExp(codeFrom({ text })));
     assert.doesNotMatch(logged, /kennari2@example\.is/);
+  });
+
+  test('BR-53: a login code goes before messages, and messages before bulk codes', async () => {
+    const order = [];
+    clock = Date.now() + 1000;
+    const outbox = createOutboxWorker({ db, config: testConfig({ SMTP_MAX_PER_MINUTE: '10' }), now, mailer: { send: async (message) => order.push(message.to.address) } });
+    const payload = { event: { id: 1, title_is: 'Gönguferð', event_date: '2027-03-11', start_time: '10:00', end_time: '12:00' }, teacher: 'Kennari', subject: 'Efni', body: 'Texti.',
+      before: { event_date: '2027-03-11', start_time: '10:00', end_time: '12:00', location: 'A' }, after: { event_date: '2027-03-11', start_time: '11:00', end_time: '12:00', location: 'B' } };
+    queueEmail(db, { kind: 'student_code', userId: users[0].id });
+    queueEmail(db, { kind: 'teacher_message', userId: users[1].id, payload });
+    queueEmail(db, { kind: 'new_code', userId: users[2].id });
+    queueEmail(db, { kind: 'event_changed', userId: users[3].id, payload });
+    queueEmail(db, { kind: 'teacher_code', userId: users[4].id });
+    assert.deepEqual(db.prepare('SELECT kind, priority FROM email_outbox ORDER BY id').all().map((r) => `${r.kind}:${r.priority}`),
+      ['student_code:2', 'teacher_message:1', 'new_code:0', 'event_changed:1', 'teacher_code:0']);
+    await outbox.runOnce();
+    assert.deepEqual(order, ['kennari3@example.is', 'kennari5@example.is', 'kennari2@example.is', 'kennari4@example.is', 'kennari1@example.is']);
+  });
+
+  test('§9 item 10: the log line has the row id and kind, but not the mail server\'s message or the address', async (t) => {
+    const errors = t.mock.method(console, 'error', () => {});
+    const outbox = worker(async () => {
+      throw Object.assign(new Error('550 5.1.1 <kennari3@example.is>: Recipient address rejected'), { code: 'EENVELOPE', responseCode: 550 });
+    });
+    queueEmail(db, { kind: 'new_code', userId: users[2].id });
+    const id = rows()[0].id;
+    await outbox.runOnce();
+    const logged = errors.mock.calls.map((call) => call.arguments.join(' ')).join('\n');
+    assert.match(logged, new RegExp(`Email ${id} \\(new_code\\)`));
+    assert.match(logged, /EENVELOPE 550/);
+    assert.doesNotMatch(logged, /@|kennari3|rejected/);
+    assert.match(rows()[0].last_error, /kennari3@example\.is/, 'the full message is kept in the database');
   });
 
   test('BR-03: a code is not sent to an account that is no longer active', async () => {

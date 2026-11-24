@@ -50,7 +50,8 @@
     "export": "Útflutningur fyrir skrifstofu",
     "purge": "Hreinsun gagna",
     "audit": "Aðgerðaskrá",
-    "info": "Upplýsingar"
+    "info": "Upplýsingar",
+    "privacy": "Persónuvernd"
   },
   "validation": {
     "kennitala": "Kennitala verður að vera 10 tölustafir"
@@ -87,7 +88,7 @@
       "studentToPromote": "Virkur nemandi",
       "promote": "Gera að viðburðastjóra",
       "listHeading": "Aðgangar viðburðastjóra",
-      "revokeHelp": "Réttindin er aðeins hægt að taka af nemanda; kennari er alltaf viðburðastjóri. Ef nemandinn á enn viðburði sjá stjórnendur áfram um þá og geta fært umsjón í /admin/events.",
+      "revokeHelp": "Réttindin er aðeins hægt að taka af nemanda; kennari er alltaf viðburðastjóri. Nemandinn hættir þá að vera meðviðburðastjóri allra viðburða. Viðburðir sem nemandinn á haldast óbreyttir þar til stjórnandi færir þá: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "none": "Engir aðgangar viðburðastjóra enn.",
       "name": "Nafn",
       "email": "Netfang",
@@ -112,9 +113,10 @@
       "created": "Aðgangur stofnaður: {name}. Kóði verður sendur á {email}.",
       "managerGranted": "Viðburðastjóraréttindi veitt: {name}",
       "managerRevoked": "Viðburðastjóraréttindi tekin af: {name}",
-      "revokeKeepsEvents": "{name} er enn skráður á {owned} viðburði sem eigandi og {coteaching} sem meðviðburðastjóri. Stjórnendur geta áfram séð um þá og fært umsjón í /admin/events.",
+      "revokeKeepsEvents": "Viðburðastjóraréttindi tekin af: {name}. Fjöldi viðburða sem nemandinn á enn: {count}. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "codeQueued": "Nýr kóði verður sendur á {email}.",
       "deactivated": "Aðgangur gerður óvirkur: {name}",
+      "deactivatedKeepsEvents": "Aðgangur gerður óvirkur: {name}. Fjöldi viðburða sem aðgangurinn á enn: {count}. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "activated": "Aðgangur virkjaður: {name}",
       "adminGranted": "Stjórnandaréttindi veitt: {name}",
       "adminRevoked": "Stjórnandaréttindi tekin af: {name}",
@@ -205,6 +207,12 @@
       "intro": "Viðburðinum hér fyrir neðan, sem þú skráðir þig á, hefur verið aflýst:",
       "signups": "Skráning þín hefur verið felld niður og telst ekki lengur með í skráningunum þínum."
     },
+    "signup_added": {
+      "subject": "Skráning á viðburð: {title}",
+      "intro": "Þér hefur verið bætt á þátttakendalista viðburðarins {title}.",
+      "when": "Hvenær og hvar:",
+      "notRight": "Ef þetta er ekki rétt geturðu afskráð þig á vefnum á meðan skráning er opin, eða haft samband við þann sem sér um viðburðinn. Nánar um viðburðinn:"
+    },
     "teacher_message": {
       "subject": "{subject}",
       "header": "Skilaboð frá {teacher} til þeirra sem eru skráð á viðburðinn {title} ({when}):",
@@ -242,7 +250,7 @@
     "confirm": "Staðfesta innflutning",
     "cancel": "Hætta við",
     "cancelled": "Hætt var við innflutninginn. Ekkert var vistað.",
-    "done": "Innflutningi lokið: {added} nýir, {updated} uppfærðir, {deactivated} óvirkir og {signupsRemoved} skráningar fjarlægðar.",
+    "done": "Innflutningi lokið: {added} nýir, {updated} uppfærðir, {deactivated} óvirkir og {signupsRemoved} skráningar fjarlægðar. Áfangaval sem var hreinsað: {choicesCleared}.",
     "errorsIntro": "Skráin var ekki flutt inn og ekkert var vistað. Lagaðu þessar villur ({count}) og hladdu skránni upp aftur:",
     "uploadHeading": "Hlaða upp nemendalista",
     "formatHelp": "CSV-skrá með þessari fyrirsagnarlínu, aðgreind með semíkommum (eða kommum):",
@@ -257,6 +265,8 @@
       "kennitala": "Lína {line}: kennitala verður að vera 10 tölustafir",
       "name": "Lína {line}: nafn vantar eða er ógilt",
       "email": "Lína {line}: netfangið er ekki gilt",
+      "braut": "Lína {line}: braut má vera í mesta lagi 100 stafir og má ekki innihalda línuskil eða aðra stýristafi",
+      "course": "Lína {line}: áfangi má vera í mesta lagi 30 stafir og má ekki innihalda línuskil eða aðra stýristafi",
       "mismatch": "Lína {line}: nafn, netfang og braut verða að vera eins og í línu {first} fyrir sama nemanda",
       "teacher": "Lína {line}: kennitalan tilheyrir viðburðastjóra",
       "noStudents": "Skráin inniheldur enga nemendur",
@@ -392,6 +402,18 @@
       "choose": "Bæta við meðviðburðastjóra",
       "add": "Bæta við"
     },
+    "transfer": {
+      "heading": "Færa umsjón",
+      "current": "Eigandi núna: {name}",
+      "help": "Aðeins stjórnendur geta fært viðburð til annars virks viðburðastjóra. Nýi eigandinn fær allt sem eigandinn hafði. Fyrri eigandinn missir aðganginn að viðburðinum nema honum sé bætt við sem meðviðburðastjóra. Skráningar og mæting breytast ekki og enginn fær tölvupóst.",
+      "none": "Enginn annar virkur viðburðastjóri er til.",
+      "choose": "Nýr eigandi",
+      "button": "Færa umsjón",
+      "moved": "Umsjón viðburðarins var færð til {name}.",
+      "errors": {
+        "notCandidate": "Aðeins er hægt að færa umsjón til annars virks viðburðastjóra."
+      }
+    },
     "participants": {
       "heading": "Þátttakendur",
       "count": "{count} / {capacity} skráðir",
@@ -475,6 +497,7 @@
       "imageTooLarge": "Myndin er of stór. Hámarkið er 2 MB.",
       "imageUpload": "Ekki tókst að taka við myndinni. Reyndu aftur.",
       "imageType": "Myndin verður að vera JPG, PNG eða WebP.",
+      "imageUnreadable": "Ekki tókst að lesa myndina. Vistaðu hana aftur sem JPG, PNG eða WebP og reyndu á ný.",
       "attendanceMarked": "Ekki er hægt að eyða viðburðinum því mæting hefur verið skráð.",
       "confirmDelete": "Hakaðu við til að staðfesta að þú viljir eyða viðburðinum.",
       "tooManyImages": "Viðburður má mest hafa {max} myndir. Fjarlægðu mynd til að bæta annarri við."
@@ -557,8 +580,52 @@
     "points": "Hver mæting á viðburð gildir sem {points} stig í einum áfanga. Hægt er að fá að hámarki {perCourse} stig dregin frá í hverjum áfanga, í allt að {max} áföngum (samtals {total} stig).",
     "pointsOffice": "Vefurinn heldur ekki utan um fjarvistastigin sjálf. Skrifstofa skólans færir frádráttinn inn í Innu eftir að fresturinn rennur út.",
     "contactHeading": "Spurningar",
-    "contactPlaceholder": "Upplýsingar um hvert á að leita með spurningar koma hér þegar skólinn hefur sent þær.",
+    "contact": "Sendu spurningar um Sæludaga og vefinn á {email}.",
+    "privacyLink": "Svona fer vefurinn með persónuupplýsingar",
     "toEvents": "Skoða viðburði"
+  },
+  "privacy": {
+    "lead": "Hér er útskýrt hvaða upplýsingar Sæludagavefurinn geymir um þig, til hvers þær eru notaðar og hvaða rétt þú átt.",
+    "responsibleHeading": "Ábyrgðaraðili",
+    "responsible": "{school} ber ábyrgð á meðferð persónuupplýsinga á þessum vef.",
+    "schoolFallback": "Skólinn",
+    "storedHeading": "Hvaða upplýsingar eru geymdar",
+    "storedStudents": "Um nemendur:",
+    "stored": {
+      "kennitala": "Kennitala, dulkóðuð. Hún er notuð til að skrá þig inn og til að skrifstofan geti fært fjarvistastig á réttan nemanda.",
+      "profile": "Nafn, skólanetfang, braut og áfangar þínir.",
+      "signups": "Skráningar þínar á viðburði, hvort merkt var við mætingu og á hvaða áfanga þú setur fjarvistastigin.",
+      "code": "Innskráningarkóðinn þinn, aðeins sem tætigildi sem ekki er hægt að lesa kóðann úr.",
+      "login": "Það sem þarf til innskráningar: hvenær kóði var síðast sendur, fjöldi misheppnaðra tilrauna, tímabundin læsing eftir of margar tilraunir og innskráningarlota þín.",
+      "log": "Skrá yfir breytingar á skráningum, mætingu, áfangavali og viðburðastjóraréttindum: hver breytti og hvenær."
+    },
+    "storedTeachers": "Um kennara og aðra viðburðastjóra eru geymd kennitala (dulkóðuð), nafn og netfang.",
+    "storedNoBalance": "Vefurinn geymir ekki fjarvistastöðu þína og sækir engar aðrar upplýsingar um þig.",
+    "sourceHeading": "Hvaðan koma upplýsingarnar",
+    "source": "Skólinn flytur kennitölu, nafn, netfang, braut og áfanga nemenda inn úr nemendaskrá sinni. Annað verður til þegar þú notar vefinn.",
+    "useHeading": "Til hvers eru þær notaðar",
+    "use": "Til þess að þú getir skráð þig á viðburði Sæludaga, að þeir sem sjá um viðburð viti hverjir eru skráðir og geti merkt við mætingu, að hægt sé að senda þér innskráningarkóða og tilkynningar um viðburði sem þú ert á skrá hjá, og að skrifstofa skólans geti fellt niður fjarvistastig fyrir mætingu.",
+    "seesHeading": "Hverjir sjá upplýsingarnar",
+    "sees": {
+      "self": "Þú sérð þínar eigin skráningar, mætingu og áfangaval.",
+      "others": "Aðrir nemendur sjá hvorki nafn þitt né á hvaða viðburði þú ert á skrá. Þeir sjá aðeins hve margir eru skráðir.",
+      "managers": "Þeir sem sjá um viðburð sjá nafn, braut og netfang þeirra sem eru skráðir á hann, og mætingu þeirra. Það eru kennarar, og nemendur sem skólinn hefur falið umsjón viðburðar.",
+      "search": "Þegar bætt er á viðburð er leitað eftir nafni. Þá sjást nafn og braut, og netfang aðeins ef tveir nemendur á sömu braut heita sama nafni.",
+      "admins": "Stjórnendur vefsins hjá skólanum sjá allar upplýsingar. Kennitölur sjá þeir þó aðeins í skránni sem þeir sækja fyrir skrifstofuna.",
+      "kennitala": "Kennitalan þín er hvergi sýnd á vefnum. Hún er aðeins í skránni sem skrifstofa skólans fær til að færa fjarvistastig inn í Innu."
+    },
+    "seesNoOthers": "Upplýsingarnar eru ekki afhentar öðrum.",
+    "keptHeading": "Hve lengi eru þær geymdar",
+    "kept": "Öllum upplýsingum um nemendur er eytt eftir Sæludaga, þegar skrifstofan hefur fengið skrána, og í síðasta lagi sjálfkrafa 30 dögum eftir að fresti til að velja áfanga lýkur. Öryggisafrit eru geymd í 7 daga og eyðast eftir það. Reikningar kennara eru geymdir á milli ára.",
+    "cookiesHeading": "Vafrakökur",
+    "cookies": "Vefurinn notar eina vafraköku. Hún heldur utan um innskráningu þína og val á tungumáli og útliti, og er fyrst sett þegar þú opnar innskráningarsíðuna eða „Fá nýjan kóða“, eða velur tungumál eða útlit. Vefurinn mælir ekki notkun, rekur ekki ferðir þínar og sækir ekkert efni frá öðrum.",
+    "rightsHeading": "Réttur þinn",
+    "rights": "Þú átt rétt á að fá að vita hvaða upplýsingar skólinn geymir um þig og að fá rangar upplýsingar leiðréttar. Þú getur líka beðið um að upplýsingum sé eytt eða andmælt notkun þeirra. Hafðu samband við persónuverndarfulltrúa skólans til þess. Ef þú ert yngri en 18 ára geta forsjáraðilar þínir líka haft samband fyrir þína hönd.",
+    "complaint": "Ef þér finnst skólinn ekki fara rétt með upplýsingarnar geturðu kvartað til Persónuverndar, {site}.",
+    "complaintSite": "personuvernd.is",
+    "contactHeading": "Hafa samband",
+    "contactSite": "Spurningar um Sæludaga og vefinn: {email}",
+    "contactOfficer": "Persónuverndarfulltrúi skólans: {email}"
   },
   "attendance": {
     "open": "Hakaðu við þau sem mættu. Hvert hak vistast strax.",
@@ -576,6 +643,7 @@
       "closed": "Ekki er hægt að breyta mætingu núna.",
       "notSignedUp": "Nemandinn er ekki lengur skráður á viðburðinn. Endurhlaðaðu síðuna.",
       "network": "Ekki tókst að vista. Athugaðu nettenginguna og reyndu aftur, eða notaðu Vista-hnappinn.",
+      "loggedOut": "Innskráningin er útrunnin og merkingin var ekki vistuð. Skráðu þig inn aftur.",
       "own": "Þú getur ekki skráð þína eigin mætingu. Annar viðburðastjóri viðburðarins eða stjórnandi gerir það."
     },
     "own": "Þú. Annar viðburðastjóri viðburðarins eða stjórnandi skráir mætingu þína."
@@ -598,7 +666,8 @@
       "subjectLong": "Efnið má vera að hámarki 150 stafir.",
       "bodyLong": "Textinn má vera að hámarki 5.000 stafir.",
       "characters": "Textinn inniheldur ógild tákn.",
-      "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn."
+      "noRecipients": "Enginn er skráður á viðburðinn, svo enginn myndi fá póstinn.",
+      "cooldown": "Aðeins má senda einn póst á hvern viðburð á 5 mínútna fresti. Reyndu aftur eftir {minutes} mín."
     }
   },
   "points": {
@@ -625,7 +694,7 @@
     }
   },
   "export": {
-    "intro": "Skráin er fyrir skrifstofu skólans, sem færir frádráttinn inn í Innu. Í henni er ein lína fyrir hverja skráða mætingu: kennitala, nafn, braut, áfangi, stig, viðburður og dagsetning.",
+    "intro": "Skráin er fyrir skrifstofu skólans, sem færir frádráttinn inn í Innu. Í henni er ein lína fyrir hverja skráða mætingu: kennitala, nafn, braut, áfangi, stig, viðburður, dagsetning og hvort kennari eða nemandi merkti mætinguna.",
     "provisional": "Bráðabirgðaútgáfa",
     "provisionalUntil": "Nemendur geta enn breytt vali á áfanga til {deadline}, svo skráin getur breyst.",
     "provisionalNoDeadline": "Frestur til að velja áfanga hefur ekki verið settur, svo skráin getur enn breyst.",
@@ -654,7 +723,7 @@
     "eventsOwner": "Viðburður sem nemandi með hlutverk viðburðastjóra á færist til þín.",
     "keptHeading": "Þetta er geymt",
     "kept": "Kennarareikningar, viðburðir og dagsetningar Sæludaganna.",
-    "exportFirst": "Sæktu útflutningsskrána fyrst. Skrifstofan þarf hana til að færa fjarvistarstigin inn.",
+    "exportFirst": "Sæktu útflutningsskrána fyrst. Skrifstofan þarf hana til að færa fjarvistastigin inn.",
     "exportLink": "Fara í útflutning fyrir skrifstofu",
     "warningNoDeadline": "Frestur til að velja áfanga hefur ekki verið settur. Útflutningsskráin er því ekki endanleg og stig geta glatast ef gögnunum er eytt núna.",
     "warningBeforeDeadline": "Fresturinn til að velja áfanga rennur út {deadline}. Útflutningsskráin er því ekki endanleg og stig geta glatast ef gögnunum er eytt núna.",

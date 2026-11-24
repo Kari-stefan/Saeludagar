@@ -1,7 +1,8 @@
 <%
-  // Error pages can render before the user and CSRF middleware have run.
+  // Error pages can render before the user and CSRF middleware have run. BR-70: only a logged-in
+  // user's header makes a token (the logout form needs it); a guest's uses one only if it exists.
   const user = locals.currentUser;
-  const token = locals.csrfToken ? csrfToken() : '';
+  const token = !locals.csrfToken ? '' : user ? csrfToken() : existingCsrfToken();
 -%>
 <!doctype html>
 <html lang="<%= lang %>"<% if (locals.theme) { %> data-theme="<%= theme %>"<% } %>>

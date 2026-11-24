@@ -4,15 +4,17 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { toIso } from '../src/db/index.js';
 import { ROOT_DIR } from '../src/config.js';
-import { createEvent, getEvent, updateEvent, validateEvent } from '../src/services/events.js';
-import { insertEvent, startSite } from './helpers.js';
+import {
+  createEvent, deleteEvent, getEvent, moveEvent, ownerCandidates, updateEvent, validateEvent,
+} from '../src/services/events.js';
+import {
+  GPS_NUMBER, insertEvent, jpegWithMetadata, SECRET, startSite, TEST_IMAGES,
+} from './helpers.js';
 
 // The front page's "Viðburðir sem þú sérð um" section.
 const managedPart = (html) => /id="managed-events"[\s\S]*?<\/section>/.exec(html)?.[0] ?? '';
 
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(200, 1)]);
-const JPG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 2)]);
-const WEBP = Buffer.concat([Buffer.from('RIFF'), Buffer.alloc(4), Buffer.from('WEBP'), Buffer.alloc(200, 3)]);
+const { png: PNG, jpg: JPG, webp: WEBP } = TEST_IMAGES;
 
 let site;
 const people = {};
@@ -386,6 +388,66 @@ describe('event images (BR-27)', () => {
   });
 });
 
+describe('event images without metadata (BR-71)', () => {
+  beforeEach(() => site.db.exec('DELETE FROM events'));
+
+  // Whether a file still holds anything the test put in: a SECRET text or the GPS position.
+  const leaks = (bytes) => {
+    const gps = Buffer.alloc(4);
+    gps.writeUInt32LE(GPS_NUMBER);
+    return bytes.includes(SECRET) || bytes.includes(gps);
+  };
+  const photo = () => jpegWithMetadata(JPG, { orientation: 6 }).bytes;
+  const unreadable = () => JPG.subarray(0, JPG.length - 10); // cut off in the image data
+  const stored = (file) => fs.readFileSync(path.join(site.config.uploadDir, file));
+
+  test('BR-71: an image with GPS metadata is stored and served without it', async () => {
+    assert.ok(leaks(photo()), 'the test photo carries the metadata');
+    const id = await create(as.owner, {}, { bytes: photo(), name: 'IMG_0001.jpg', type: 'image/jpeg' });
+    const [file] = imagesOf(id);
+    assert.ok(!leaks(stored(file)), 'the stored file');
+    assert.deepEqual([...stored(file).subarray(0, 2), ...stored(file).subarray(-2)], [0xff, 0xd8, 0xff, 0xd9]);
+    assert.ok(stored(file).includes(Buffer.from('Exif\0\0', 'latin1')), 'the orientation is kept');
+    const res = await fetch(`${site.baseUrl}/uploads/${file}`);
+    assert.equal(res.status, 200);
+    const served = Buffer.from(await res.arrayBuffer());
+    assert.ok(!leaks(served), 'the served file');
+    assert.deepEqual(served, stored(file));
+  });
+
+  test('BR-71: an image that cannot be read is refused in both languages, and nothing is saved', async () => {
+    const before = uploads().length;
+    const res = await as.owner.postForm('/teacher/events/new', fields(), { bytes: unreadable(), name: 'mynd.jpg', type: 'image/jpeg' });
+    assert.equal(res.status, 400);
+    assert.match(res.html, /<p class="field__error" id="event-images-error">Ekki tókst að lesa myndina\. Vistaðu hana aftur sem JPG, PNG eða WebP og reyndu á ný\.<\/p>/);
+
+    const english = site.browser();
+    await english.login(people.owner.kennitala, people.owner.code);
+    await english.post('/language', { lang: 'en', returnTo: '/' });
+    const inEnglish = await english.postForm('/teacher/events/new', fields(), [{ bytes: PNG }, { bytes: unreadable() }]);
+    assert.equal(inEnglish.status, 400);
+    assert.match(inEnglish.html, /<p class="field__error" id="event-images-error">The image could not be read\. Save it again as JPG, PNG or WebP and try once more\.<\/p>/);
+    assert.equal(uploads().length, before, 'no file is left in the upload folder, not even the good one');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM events').pluck().get(), 0);
+  });
+
+  test('BR-71: the edit form stores added images without metadata and refuses an unreadable one', async () => {
+    const id = await create();
+    const added = await as.owner.postForm(`/teacher/events/${id}/edit`, fields(), { bytes: photo(), name: 'IMG_0002.jpg' });
+    assert.equal(added.status, 303, added.html);
+    const [file] = imagesOf(id);
+    assert.ok(!leaks(stored(file)));
+
+    const before = uploads().length;
+    const refused = await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ title_is: 'Ekki vistað' }), { bytes: unreadable() });
+    assert.equal(refused.status, 400);
+    assert.match(refused.html, /<p class="field__error" id="event-images-error">Ekki tókst að lesa myndina\./);
+    assert.equal(uploads().length, before);
+    assert.deepEqual(imagesOf(id), [file]);
+    assert.equal(eventRow(id).title_is, 'Gönguferð');
+  });
+});
+
 describe('editing and deleting (BR-28 to BR-30)', () => {
   beforeEach(() => site.db.exec('DELETE FROM events; DELETE FROM email_outbox; DELETE FROM audit_log'));
 
@@ -429,8 +491,8 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     await as.owner.postForm(`/teacher/events/${id}/edit`, fields({ title_en: 'Hike', event_date: '2027-03-12', location: 'Fjallið' }));
     const queued = site.db.prepare('SELECT kind, priority, user_id FROM email_outbox ORDER BY user_id').all();
     assert.deepEqual(queued, [
-      { kind: 'event_changed', priority: 0, user_id: people.student.id },
-      { kind: 'event_changed', priority: 0, user_id: people.student2.id },
+      { kind: 'event_changed', priority: 1, user_id: people.student.id },
+      { kind: 'event_changed', priority: 1, user_id: people.student2.id },
     ]);
     const [email] = await site.sendEmails();
     assert.equal(email.subject, 'Breyting á viðburði: Gönguferð / Event changed: Hike');
@@ -466,6 +528,18 @@ describe('editing and deleting (BR-28 to BR-30)', () => {
     const [email] = await site.sendEmails();
     assert.equal(email.subject, 'Viðburði aflýst: Gönguferð / Event cancelled: Gönguferð');
     assert.match(email.text, /hefur verið aflýst:\n\n {2}Gönguferð\n {2}11\. mars 2027, kl\. 10:00–12:00/);
+  });
+
+  test('BR-29: deleting an event that is already gone does not throw and returns no images', async () => {
+    const id = await create();
+    const event = getEvent(site.db, id);
+    register(id, people.student.id);
+    assert.deepEqual(deleteEvent(site.db, event, people.owner.id).images, []);
+    const emails = site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get();
+    const audits = site.db.prepare('SELECT COUNT(*) FROM audit_log').pluck().get();
+    assert.deepEqual(deleteEvent(site.db, event, people.owner.id), { images: [] });
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), emails);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM audit_log').pluck().get(), audits);
   });
 
   test('BR-29: a co-teacher cannot delete; nobody can once attendance is marked; an admin can delete any event', async () => {
@@ -556,6 +630,88 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
     await as.admin.post(`/teacher/events/${id}`, { action: 'remove-coteacher', teacher: String(people.coteacher.id) });
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE event_id = ?').pluck().get(id), 0);
     assert.equal((await as.coteacher.get(`/teacher/events/${id}`)).status, 403, 'removed co-teachers lose access');
+  });
+});
+
+describe('moving an event to another event manager (BR-72)', () => {
+  beforeEach(() => site.db.exec('DELETE FROM email_outbox'));
+  // Each test makes its own accounts and event, so it passes alone.
+  let n = 0;
+  async function setup() {
+    n += 1;
+    const owner = await site.addUser({ name: `Fyrri Eigandi ${n}`, email: `fyrri${n}@example.is` });
+    const target = await site.addUser({ name: `Nýr Eigandi ${n}`, email: `nyr${n}@example.is` });
+    const ownerBrowser = site.browser();
+    await ownerBrowser.login(owner.kennitala, owner.code);
+    const id = insertEvent(site.db, owner.id, { title_is: `Færður viðburður ${n}` });
+    register(id, people.student.id);
+    return { owner, target, ownerBrowser, id };
+  }
+  const move = (browser, id, ownerId) => browser.post(`/teacher/events/${id}`, { action: 'move-event', owner: String(ownerId) });
+
+  test('BR-72: an admin moves an event; the event page and the front page then show the new owner, and the old owner loses access', async () => {
+    const { owner, target, ownerBrowser, id } = await setup();
+    const before = { ...eventRow(id), registrations: site.db.prepare('SELECT * FROM registrations WHERE event_id = ?').all(id) };
+    const res = await move(as.admin, id, target.id);
+    assert.deepEqual([res.status, res.location], [303, `/teacher/events/${id}/edit#owner`]);
+    assert.match((await as.admin.get(`/teacher/events/${id}/edit`)).html, new RegExp(`Umsjón viðburðarins var færð til Nýr Eigandi ${n}\\.`));
+    assert.equal(eventRow(id).owner_id, target.id);
+    assert.deepEqual({ ...eventRow(id), owner_id: owner.id, registrations: site.db.prepare('SELECT * FROM registrations WHERE event_id = ?').all(id) },
+      before, 'nothing else about the event or its sign-ups changes');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0, 'nobody is emailed');
+
+    const page = (await as.student.get(`/events/${id}`)).html;
+    assert.match(page, new RegExp(`Nýr Eigandi ${n}`));
+    assert.doesNotMatch(page, new RegExp(`Fyrri Eigandi ${n}`));
+    const targetBrowser = site.browser();
+    await targetBrowser.login(target.kennitala, target.code);
+    assert.match(managedPart((await targetBrowser.get('/')).html), new RegExp(`Færður viðburður ${n}`));
+    assert.doesNotMatch(managedPart((await ownerBrowser.get('/')).html), new RegExp(`Færður viðburður ${n}`));
+    assert.equal((await targetBrowser.get(`/teacher/events/${id}`)).status, 200);
+    assert.equal((await ownerBrowser.get(`/teacher/events/${id}`)).status, 403);
+  });
+
+  test('BR-72: a co-teacher who becomes the owner is no longer listed as a co-teacher', async () => {
+    const { target, id } = await setup();
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, target.id);
+    assert.equal((await move(as.admin, id, target.id)).status, 303);
+    assert.equal(eventRow(id).owner_id, target.id);
+    assert.deepEqual(getEvent(site.db, id).coteachers, []);
+    assert.doesNotMatch((await as.admin.get(`/teacher/events/${id}/edit`)).html, new RegExp(`<span>Nýr Eigandi ${n}</span>`));
+  });
+
+  test('BR-72: only an admin can move an event; the owner and a co-teacher get 403', async () => {
+    const { owner, target, ownerBrowser, id } = await setup();
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, people.coteacher.id);
+    assert.equal((await move(ownerBrowser, id, target.id)).status, 403);
+    assert.equal((await move(as.coteacher, id, target.id)).status, 403);
+    assert.equal(eventRow(id).owner_id, owner.id);
+  });
+
+  test('BR-72: an inactive account, a student without the role and the current owner are refused', async () => {
+    const { owner, target, id } = await setup();
+    site.db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(target.id);
+    for (const refused of [target.id, people.student.id, owner.id]) {
+      assert.deepEqual(moveEvent(site.db, getEvent(site.db, id), refused), { error: 'events.transfer.errors.notCandidate' });
+      assert.equal((await move(as.admin, id, refused)).status, 303);
+      assert.match((await as.admin.get(`/teacher/events/${id}/edit`)).html, /Aðeins er hægt að færa umsjón til annars virks viðburðastjóra\./);
+      assert.equal(eventRow(id).owner_id, owner.id);
+    }
+    const candidates = ownerCandidates(site.db, getEvent(site.db, id)).map((user) => user.id);
+    assert.ok(!candidates.includes(target.id) && !candidates.includes(people.student.id) && !candidates.includes(owner.id));
+    assert.ok(candidates.includes(people.admin.id) && candidates.includes(people.coteacher.id));
+  });
+
+  test('BR-72: the edit page shows the section to an admin, not to the owner', async () => {
+    const { target, ownerBrowser, id } = await setup();
+    const adminPage = (await as.admin.get(`/teacher/events/${id}/edit`)).html;
+    assert.match(adminPage, /<section id="owner"/);
+    assert.match(adminPage, /<button type="submit" class="button">Færa umsjón<\/button>/);
+    assert.match(adminPage, new RegExp(`<option value="${target.id}">Nýr Eigandi ${n}</option>`));
+    assert.match(adminPage, /name="action" value="move-event"/);
+    const ownerPage = (await ownerBrowser.get(`/teacher/events/${id}/edit`)).html;
+    assert.equal((await ownerBrowser.get(`/teacher/events/${id}/edit`)).status, 200);
+    assert.doesNotMatch(ownerPage, /id="owner"|move-event|Færa umsjón/);
   });
 });
 

@@ -59,7 +59,7 @@ export function publicRouter({ db }) {
     // A date outside the Sæludagar days cannot be chosen in "Sía", and would leave its date field
     // invalid and the whole form unsendable, so it is ignored like any other odd value.
     for (const key of ['from', 'to']) {
-      if (filters[key] < days[0] || filters[key] > days.at(-1)) delete filters[key];
+      if (days.length === 0 || filters[key] < days[0] || filters[key] > days.at(-1)) delete filters[key];
     }
     const others = { search: searchTerm(req.query.q), sort: sortOrder(req.query.sort), braut, filters };
     const student = req.user?.role === 'student';
@@ -114,6 +114,11 @@ export function publicRouter({ db }) {
         total: MAX_SIGNUPS_PER_STUDENT * POINTS_PER_ATTENDANCE,
       },
     });
+  });
+
+  // BR-58: the privacy notice. Public, and it needs nothing but the settings every view has.
+  router.get('/privacy', (req, res) => {
+    res.render('public/privacy');
   });
 
   // §6 event page: published events, and drafts for those who may preview them (BR-22, BR-23).

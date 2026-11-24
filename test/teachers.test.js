@@ -109,6 +109,22 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.equal((await site.browser().login(teacher.kennitala, teacher.code)).location, '/');
   });
 
+  test('BR-11: deactivating a teacher who still owns events says how many and how to move them', async () => {
+    const teacher = await site.addUser({ name: 'Eiríkur Eigandi' });
+    insertEvent(site.db, teacher.id, { title_is: 'Fyrri' });
+    insertEvent(site.db, teacher.id, { title_is: 'Seinni' });
+    await act('deactivate', teacher.id);
+    assert.match((await adminBrowser.get('/admin/teachers')).html,
+      /Aðgangur gerður óvirkur: Eiríkur Eigandi. Fjöldi viðburða sem aðgangurinn á enn: 2. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“./);
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM events WHERE owner_id = ?').pluck().get(teacher.id), 2);
+
+    const empty = await site.addUser({ name: 'Tómas Tómhentur' });
+    await act('deactivate', empty.id);
+    const page = (await adminBrowser.get('/admin/teachers')).html;
+    assert.match(page, /Aðgangur gerður óvirkur: Tómas Tómhentur</);
+    assert.doesNotMatch(page, /Fjöldi viðburða/);
+  });
+
   test('BR-11: a code queued for a teacher who is then deactivated is never sent', async () => {
     const teacher = await site.addUser({ name: 'Bið Kennari' });
     await act('new-code', teacher.id);
@@ -211,7 +227,7 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     assert.match(created.location, /^\/teacher\/events\/\d+$/);
   });
 
-  test('BR-67: admin can revoke Event Manager role without ending student sessions or deleting ownership', async () => {
+  test('BR-67: taking the role from a student keeps their sessions and owned events, removes them as co-teacher, and says how many they still own', async () => {
     const dual = await site.addUser({ role: 'student', name: 'Rósa Revoked' });
     await adminBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(dual.id) });
     const dualBrowser = site.browser();
@@ -235,19 +251,33 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     const ownId = Number(/^\/teacher\/events\/(\d+)$/.exec(ownEvent.location)?.[1]);
     assert.ok(Number.isSafeInteger(ownId));
     const beforeSessions = site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id);
+    const teacher = await site.addUser({ name: 'Kennari Með Viðburði' });
+    for (const title of ['Fyrsti', 'Annar']) {
+      site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(insertEvent(site.db, teacher.id, { title_is: title }), dual.id);
+    }
 
     await adminBrowser.post('/admin/teachers', { action: 'revoke-event-manager', id: String(dual.id) });
     const page = await adminBrowser.get('/admin/teachers');
-    assert.match(page.html, /Viðburðastjóraréttindi tekin af: Rósa Revoked/);
+    assert.match(page.html, /Viðburðastjóraréttindi tekin af: Rósa Revoked. Fjöldi viðburða sem nemandinn á enn: 1. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“./);
     assert.deepEqual(site.db.prepare('SELECT role, is_event_manager FROM users WHERE id = ?').get(dual.id), { role: 'student', is_event_manager: 0 });
-    assert.deepEqual(site.db.prepare(`SELECT action, actor_id, student_id FROM audit_log WHERE action = 'event-manager.revoke' ORDER BY id DESC LIMIT 1`).get(), {
-      action: 'event-manager.revoke', actor_id: admin.id, student_id: dual.id,
+    assert.deepEqual(site.db.prepare(`SELECT action, actor_id, student_id, details FROM audit_log WHERE action = 'event-manager.revoke' ORDER BY id DESC LIMIT 1`).get(), {
+      action: 'event-manager.revoke', actor_id: admin.id, student_id: dual.id, details: JSON.stringify({ owned: 1, coteaching: 2 }),
     });
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE teacher_id = ?').pluck().get(dual.id), 0, 'no longer a co-teacher anywhere');
 
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM sessions WHERE user_id = ?').pluck().get(dual.id), beforeSessions);
     assert.equal((await dualBrowser.get('/my-events')).location, '/#mine-events');
     assert.equal((await dualBrowser.get('/teacher')).status, 403);
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM events WHERE id = ? AND owner_id = ?').pluck().get(ownId, dual.id), 1);
+  });
+
+  test('BR-67: taking the role from a student who owns no events gives the plain message', async () => {
+    const dual = await site.addUser({ role: 'student', name: 'Tóta Tóm' });
+    await act('promote-event-manager', dual.id);
+    await act('revoke-event-manager', dual.id);
+    const page = (await adminBrowser.get('/admin/teachers')).html;
+    assert.match(page, /Viðburðastjóraréttindi tekin af: Tóta Tóm</);
+    assert.doesNotMatch(page, /Fjöldi viðburða/);
   });
 
   test('BR-67: a promoted student Event Manager cannot access admin pages', async () => {
@@ -257,6 +287,17 @@ describe('teacher accounts (BR-10 to BR-12)', () => {
     await dualBrowser.login(dual.kennitala, dual.code);
     assert.equal((await dualBrowser.get('/admin')).status, 403);
     assert.equal((await dualBrowser.post('/admin/teachers', { action: 'promote-event-manager', id: String(student.id) })).status, 403);
+  });
+
+  test('BR-11: sending a teacher a new code twice leaves one waiting email', async () => {
+    site.db.exec('DELETE FROM email_outbox');
+    const row = site.db.prepare("SELECT id FROM users WHERE name = 'Jón Kennari'").get();
+    for (let i = 0; i < 2; i += 1) {
+      const res = await adminBrowser.post('/admin/teachers', { action: 'new-code', id: String(row.id) });
+      assert.equal(res.status, 303);
+    }
+    assert.deepEqual(site.db.prepare('SELECT kind, priority FROM email_outbox WHERE user_id = ?').all(row.id), [{ kind: 'teacher_code', priority: 0 }]);
+    site.db.exec('DELETE FROM email_outbox');
   });
 
   test('the teacher list shows name, email, admin and active, sorted by name', async () => {

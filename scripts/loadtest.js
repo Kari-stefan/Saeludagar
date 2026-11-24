@@ -403,6 +403,8 @@ async function main() {
     KENNITALA_ENC_KEY: keys.kennitalaEncKey,
     KENNITALA_HMAC_KEY: keys.kennitalaHmacKey,
     SCHOOL_NAME: 'Prófunarskóli',
+    CONTACT_EMAIL: 'sambandi@example.is',
+    PRIVACY_EMAIL: 'personuvernd@example.is',
   });
 
   const login = await loginAll(students);

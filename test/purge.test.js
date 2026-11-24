@@ -4,6 +4,7 @@ import { after, before, beforeEach, describe, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { toIso } from '../src/db/index.js';
 import { startAutoPurge } from '../src/jobs/autoPurge.js';
+import { startSessionCleanup } from '../src/jobs/sessionCleanup.js';
 import { audit } from '../src/services/audit.js';
 import { autoPurge, purgeConfirmed, purgeData, purgeStatus } from '../src/services/purge.js';
 import { insertEvent, startSite } from './helpers.js';
@@ -101,7 +102,7 @@ describe('the purge service (BR-55, BR-56)', () => {
   test('BR-55: a purge deletes the students\' sessions and keeps those of teachers and guests', async () => {
     assert.ok(count('sessions', "user_id = " + people.jona.id) > 0);
     assert.ok(count('sessions', 'user_id = ' + people.teacher.id) > 0);
-    await as.guest.get('/');
+    await as.guest.get('/login');
     purgeData(site.db, people.admin.id);
     assert.equal(studentSessions(), 0);
     assert.ok(count('sessions', 'user_id = ' + people.teacher.id) > 0);
@@ -267,6 +268,49 @@ describe('the automatic purge (§8, BR-55)', () => {
       .run(toIso(), toIso());
     await new Promise((resolve) => setTimeout(resolve, 100));
     assert.equal(count('users', 'id = ' + student.lastInsertRowid), 1);
+  });
+});
+
+describe('the scheduled jobs run once when started (§8)', () => {
+  test('§8: the automatic purge checks at once, not only after an hour, and a failure is logged', () => {
+    setTimes(new Date(Date.now() - 60 * DAY));
+    const log = console.log;
+    console.log = () => {};
+    const stop = startAutoPurge(site.db, 60 * 60 * 1000);
+    console.log = log;
+    stop();
+    assert.equal(count('users', "role = 'student'") === 0, true, 'purged before the first interval');
+
+    const errors = [];
+    const error = console.error;
+    console.error = (text) => errors.push(text);
+    try {
+      const stopBroken = startAutoPurge({ transaction() { throw new Error('boom'); } }, 60 * 60 * 1000);
+      stopBroken();
+    } finally {
+      console.error = error;
+    }
+    assert.deepEqual(errors, ['Automatic purge failed: boom']);
+  });
+
+  test('§8: the session cleanup runs at once, then on its interval, and a failure is logged and does not stop it', async () => {
+    let calls = 0;
+    const stop = startSessionCleanup({ clearExpired() { calls += 1; } }, 20);
+    assert.equal(calls, 1, 'ran when started');
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    stop();
+    assert.ok(calls > 1, 'and again on the interval');
+
+    const errors = [];
+    const error = console.error;
+    console.error = (text) => errors.push(text);
+    try {
+      const stopBroken = startSessionCleanup({ clearExpired() { throw new Error('boom'); } }, 60 * 60 * 1000);
+      stopBroken();
+    } finally {
+      console.error = error;
+    }
+    assert.deepEqual(errors, ['Session cleanup failed: boom']);
   });
 });
 

@@ -9,7 +9,7 @@ import { exportCsv, exportFileName, exportRows, exportSummary } from '../src/ser
 import { insertEvent, startSite } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
-const HEADER = 'kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning';
+const HEADER = 'kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning;merkt_af';
 let site;
 const people = {};
 const as = {};
@@ -70,14 +70,14 @@ function seed() {
 const SEEDED_FILE = Buffer.concat([
   Buffer.from([0xef, 0xbb, 0xbf]),
   Buffer.from([
-    'kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning\r\n',
-    "000000-0011;Anna Prófun;Félagsvísindabraut;ÍSLE2MB05;4;'=Excel fyrir byrjendur;2027-03-11\r\n",
-    '000000-0011;Anna Prófun;Félagsvísindabraut;;4;"Spurningakeppni; ""Gettu betur""";2027-03-11\r\n',
-    '000000-0011;Anna Prófun;Félagsvísindabraut;ENSK2LS05;4;Gönguferð á Esjuna;2027-03-12\r\n',
-    '000000-0012;Ásta Prófun;;STÆR2BH05;4;"Spurningakeppni; ""Gettu betur""";2027-03-11\r\n',
-    "000000-0013;Zoë Prófun;Listnámsbraut;;4;'=Excel fyrir byrjendur;2027-03-11\r\n",
-    '000000-0014;Þór Prófun;Náttúrufræðibraut;ENSK2LS05;4;Gönguferð á Esjuna;2027-03-12\r\n',
-    '000000-0015;Örn Prófun;Náttúrufræðibraut;DANS2MO05;4;"Spurningakeppni; ""Gettu betur""";2027-03-11\r\n',
+    'kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning;merkt_af\r\n',
+    "000000-0011;Anna Prófun;Félagsvísindabraut;ÍSLE2MB05;4;'=Excel fyrir byrjendur;2027-03-11;\r\n",
+    '000000-0011;Anna Prófun;Félagsvísindabraut;;4;"Spurningakeppni; ""Gettu betur""";2027-03-11;\r\n',
+    '000000-0011;Anna Prófun;Félagsvísindabraut;ENSK2LS05;4;Gönguferð á Esjuna;2027-03-12;\r\n',
+    '000000-0012;Ásta Prófun;;STÆR2BH05;4;"Spurningakeppni; ""Gettu betur""";2027-03-11;\r\n',
+    "000000-0013;Zoë Prófun;Listnámsbraut;;4;'=Excel fyrir byrjendur;2027-03-11;\r\n",
+    '000000-0014;Þór Prófun;Náttúrufræðibraut;ENSK2LS05;4;Gönguferð á Esjuna;2027-03-12;\r\n',
+    '000000-0015;Örn Prófun;Náttúrufræðibraut;DANS2MO05;4;"Spurningakeppni; ""Gettu betur""";2027-03-11;\r\n',
   ].join(''), 'utf8'),
 ]);
 
@@ -136,14 +136,49 @@ describe('the export file (BR-48, AGENT_START §8)', () => {
 
     const marked = await as.teacher.post(`/teacher/events/${event}/attendance`, { student: people.anna.id, attended: '1' });
     assert.equal(marked.status, 303);
-    assert.deepEqual(lines((await download()).bytes), [HEADER, '000000-0011;Anna Prófun;Félagsvísindabraut;;4;Bakstur;2026-03-11']);
+    assert.deepEqual(lines((await download()).bytes), [HEADER, '000000-0011;Anna Prófun;Félagsvísindabraut;;4;Bakstur;2026-03-11;kennari']);
 
     assert.deepEqual(givePoints(site.db, people.anna.id, 'ENSK2LS05'), { ok: true });
-    assert.deepEqual(lines((await download()).bytes), [HEADER, '000000-0011;Anna Prófun;Félagsvísindabraut;ENSK2LS05;4;Bakstur;2026-03-11']);
+    assert.deepEqual(lines((await download()).bytes), [HEADER, '000000-0011;Anna Prófun;Félagsvísindabraut;ENSK2LS05;4;Bakstur;2026-03-11;kennari']);
 
     const unmarked = await as.teacher.post(`/teacher/events/${event}/attendance`, { student: people.anna.id, attended: '0' });
     assert.equal(unmarked.status, 303);
     assert.deepEqual(lines((await download()).bytes), [HEADER]);
+  });
+
+  test('BR-48: the last column says whether a teacher or a student event manager marked the attendance, and is empty once that account is gone', async () => {
+    const event = insertEvent(site.db, people.teacher.id, { title_is: 'Bakstur', event_date: '2026-03-11' });
+    const marker = await site.addUser({ name: 'Kennari Sem Hættir', email: 'haettir@example.is' });
+    const manager = await site.addUser({ role: 'student', name: 'Sigga Stjórnandi', email: 'sigga@example.is' });
+    site.db.prepare('UPDATE users SET is_event_manager = 1 WHERE id = ?').run(manager.id);
+    for (const account of [marker, manager]) {
+      site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(event, account.id);
+    }
+    signUp(event, 'anna', 0);
+    signUp(event, 'zoe', 0);
+    const markAs = async (account, key) => {
+      const browser = site.browser();
+      await browser.login(account.kennitala, account.code);
+      const res = await browser.post(`/teacher/events/${event}/attendance`, { student: people[key].id, attended: '1' });
+      assert.equal(res.status, 303);
+    };
+    await markAs(marker, 'anna');
+    await markAs(manager, 'zoe');
+    assert.deepEqual(lines((await download()).bytes), [
+      HEADER,
+      '000000-0011;Anna Prófun;Félagsvísindabraut;;4;Bakstur;2026-03-11;kennari',
+      '000000-0013;Zoë Prófun;Listnámsbraut;;4;Bakstur;2026-03-11;nemandi',
+    ]);
+    assert.deepEqual(exportRows(site.db, site.kt).map((row) => row.markedBy), ['kennari', 'nemandi']);
+
+    site.db.prepare('DELETE FROM event_coteachers WHERE teacher_id = ?').run(marker.id);
+    site.db.prepare('DELETE FROM sessions WHERE user_id = ?').run(marker.id);
+    site.db.prepare('DELETE FROM users WHERE id = ?').run(marker.id);
+    assert.deepEqual(lines((await download()).bytes).slice(1), [
+      '000000-0011;Anna Prófun;Félagsvísindabraut;;4;Bakstur;2026-03-11;',
+      '000000-0013;Zoë Prófun;Listnámsbraut;;4;Bakstur;2026-03-11;nemandi',
+    ]);
+    site.db.prepare('DELETE FROM event_coteachers WHERE event_id = ?').run(event);
   });
 
   test('BR-46, BR-40: every row carries 4 points, and no table has a column for a balance', async () => {
@@ -168,7 +203,7 @@ describe('the export file (BR-48, AGENT_START §8)', () => {
     const rows = exportRows(site.db, site.kt);
     assert.deepEqual(rows[3], {
       kennitala: '000000-0012', name: 'Ásta Prófun', braut: '', course: 'STÆR2BH05', points: 4,
-      event: 'Spurningakeppni; "Gettu betur"', date: '2027-03-11',
+      event: 'Spurningakeppni; "Gettu betur"', date: '2027-03-11', markedBy: '',
     });
     assert.deepEqual(rows.map((row) => row.name), [
       'Anna Prófun', 'Anna Prófun', 'Anna Prófun', 'Ásta Prófun', 'Zoë Prófun', 'Þór Prófun', 'Örn Prófun',
@@ -189,24 +224,24 @@ describe('the export file (BR-48, AGENT_START §8)', () => {
     }
     assert.deepEqual(lines((await download()).bytes), [
       HEADER,
-      '000000-0016;Jón Jónsson;;;4;Bakstur;2027-03-11',
-      '000000-0016;Jón Jónsson;;;4;Sund;2027-03-12',
-      '000000-0017;Jón Jónsson;;;4;Bakstur;2027-03-11',
-      '000000-0017;Jón Jónsson;;;4;Sund;2027-03-12',
+      '000000-0016;Jón Jónsson;;;4;Bakstur;2027-03-11;',
+      '000000-0016;Jón Jónsson;;;4;Sund;2027-03-12;',
+      '000000-0017;Jón Jónsson;;;4;Bakstur;2027-03-11;',
+      '000000-0017;Jón Jónsson;;;4;Sund;2027-03-12;',
     ]);
   });
 });
 
 describe('exportCsv (BR-48)', () => {
   const row = (fields) => ({
-    kennitala: '000000-0001', name: 'Nafn', braut: 'Braut', course: 'ENSK2LS05', points: 4, event: 'Viðburður', date: '2027-03-11', ...fields,
+    kennitala: '000000-0001', name: 'Nafn', braut: 'Braut', course: 'ENSK2LS05', points: 4, event: 'Viðburður', date: '2027-03-11', markedBy: '', ...fields,
   });
   const file = (...rows) => `﻿${HEADER}\r\n${rows.map((text) => `${text}\r\n`).join('')}`;
   // The event column as it is written for `value`.
   const eventField = (value) => {
     const text = exportCsv([row({ event: value })]);
     const prefix = `﻿${HEADER}\r\n000000-0001;Nafn;Braut;ENSK2LS05;4;`;
-    const suffix = ';2027-03-11\r\n';
+    const suffix = ';2027-03-11;\r\n';
     assert.ok(text.startsWith(prefix) && text.endsWith(suffix), JSON.stringify(text));
     return text.slice(prefix.length, -suffix.length);
   };
@@ -214,8 +249,8 @@ describe('exportCsv (BR-48)', () => {
   test('BR-48: the header, then one line per row, each ending in CRLF, after a byte order mark', () => {
     assert.equal(exportCsv([]), `﻿${HEADER}\r\n`);
     assert.equal(exportCsv([row(), row({ course: '', braut: '' })]), file(
-      '000000-0001;Nafn;Braut;ENSK2LS05;4;Viðburður;2027-03-11',
-      '000000-0001;Nafn;;;4;Viðburður;2027-03-11',
+      '000000-0001;Nafn;Braut;ENSK2LS05;4;Viðburður;2027-03-11;',
+      '000000-0001;Nafn;;;4;Viðburður;2027-03-11;',
     ));
   });
 
@@ -237,6 +272,12 @@ describe('exportCsv (BR-48)', () => {
     assert.equal(eventField('a=b+c-d@e'), 'a=b+c-d@e');
   });
 
+  test('BR-48, §9: a value starting with "|" or a line break gets the apostrophe, and is quoted where needed', () => {
+    assert.equal(eventField('|cmd'), "'|cmd");
+    assert.equal(eventField('a|b'), 'a|b');
+    assert.equal(eventField('\nx'), '"\'\nx"');
+  });
+
   test('BR-48, §9: a value that needs both gets the apostrophe first and is then quoted', () => {
     assert.equal(eventField('=HYPERLINK("http://example.com";"smella")'), '"\'=HYPERLINK(""http://example.com"";""smella"")"');
     assert.equal(eventField('\rx'), '"\'\rx"');
@@ -245,8 +286,8 @@ describe('exportCsv (BR-48)', () => {
 
   test('BR-48: all four text columns are written safely, and the kennitala, points and date as they are', () => {
     assert.equal(exportCsv([row({ name: '=Nafn', braut: '+Braut', course: '-ÁFA1', event: '@"x"' })]),
-      file(`000000-0001;'=Nafn;'+Braut;'-ÁFA1;4;"'@""x""";2027-03-11`));
-    assert.equal(exportCsv([row({ name: 'Jón; "Nonni"' })]), file('000000-0001;"Jón; ""Nonni""";Braut;ENSK2LS05;4;Viðburður;2027-03-11'));
+      file(`000000-0001;'=Nafn;'+Braut;'-ÁFA1;4;"'@""x""";2027-03-11;`));
+    assert.equal(exportCsv([row({ name: 'Jón; "Nonni"' })]), file('000000-0001;"Jón; ""Nonni""";Braut;ENSK2LS05;4;Viðburður;2027-03-11;'));
   });
 });
 

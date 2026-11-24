@@ -10,9 +10,9 @@ The site is bilingual (Icelandic and English) and will run at saeludagar.is.
 
 ## Status
 
-Milestones 1 to 8 are built, which is every milestone in the build plan. Milestones 1 to 6 gave the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); student sign-up and cancelling within the sign-up window; and the teacher tools (participants, copying emails, messages, the attendance checklist and the printable list). Milestone M5b, added from the project owner's design brief, gave the site the school's logo and red-and-white colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. Milestone M6b, from the owner's improvements brief, made the front page the one place to work: sign-up on the event cards, every filter and order, a "2/4" counter and a limit of 2 sign-ups a day, and the "Nýr viðburður" dialog. Milestone M6c, from the owner's wireframes brief, rebuilt the event page (up to 5 images with arrows, who runs the event, and "Hópur" for those who manage it) and added the "Fjarvistastig" page, where students give the 4 points of each attendance to one of their courses. Milestone 7 added the office export, a CSV file for the school office with one row per attendance, and the audit log page. Milestone 8 added the purge of all student data (by an admin, or by the site itself 30 days after the course-choice deadline), the nightly backup with 7-day rotation, the 1,000-student load test, an accessibility and browser pass, and the [deployment guide](#deployment) below. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up.
+Milestones 1 to 9 are built, which is every milestone in the build plan. Milestones 1 to 6 gave the project scaffold and data model; login, accounts and email; the admin settings, student CSV import and sending codes to every student; events (drafts, preview, publishing, images, co-teachers, and the public front page with the braut filter); student sign-up and cancelling within the sign-up window; and the teacher tools (participants, copying emails, messages, the attendance checklist and the printable list). Milestone M5b, added from the project owner's design brief, gave the site the school's logo and red-and-white colours, light and dark mode, a phone menu, search and sorting on the front page, and an Upplýsingar page. Milestone M6b, from the owner's improvements brief, made the front page the one place to work: sign-up on the event cards, every filter and order, a "2/4" counter and a limit of 2 sign-ups a day, and the "Nýr viðburður" dialog. Milestone M6c, from the owner's wireframes brief, rebuilt the event page (up to 5 images with arrows, who runs the event, and "Hópur" for those who manage it) and added the "Fjarvistastig" page, where students give the 4 points of each attendance to one of their courses. Milestone 7 added the office export, a CSV file for the school office with one row per attendance, and the audit log page. Milestone 8 added the purge of all student data (by an admin, or by the site itself 30 days after the course-choice deadline), the nightly backup with 7-day rotation, the 1,000-student load test, an accessibility and browser pass, and the [deployment guide](#deployment) below. Milestone 9 fixed the findings of an external audit of 23 November 2026: a privacy notice page with the school's contact addresses, event images stored without their metadata (such as the GPS position of a phone photo), no session for a guest who only opens a page, login codes that no message or bulk send can delay, an email to a student who is added to an event by hand, a column in the office export that shows whether a teacher or a student marked the attendance, moving an event to another event manager, and a number of smaller fixes. It also added a check that runs the tests and the package audit on every pull request. Until the school's mail server details arrive, emails are printed in the terminal unless SMTP is set up.
 
-What is left before launch is not new code: the checks in Firefox and Safari listed under [Accessibility and browser checks](#accessibility-and-browser-checks), the project owner's approval, the answers to the open questions in section 15 of AGENT_START.md (the mail server, the server and the domain among them), and the deployment itself. Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
+What is left before launch is not new code: the checks in Firefox and Safari listed under [Accessibility and browser checks](#accessibility-and-browser-checks), the project owner's approval, the data protection officer's review of the privacy notice, the school's two contact addresses (`CONTACT_EMAIL` and `PRIVACY_EMAIL`), a copy of the backups and of the keys outside the server, the answers to the open questions in section 15 of AGENT_START.md (the mail server, the server and the domain among them), and the deployment itself. Target: finished and approved by 1 February 2027, for Sæludagar in March 2027.
 
 ## Documentation
 
@@ -210,6 +210,8 @@ NODE_ENV=production
 PORT=3000
 BASE_URL=https://saeludagar.is
 SCHOOL_NAME=Fjölbrautaskólinn í Breiðholti
+CONTACT_EMAIL=<the school's contact for Sæludagar>
+PRIVACY_EMAIL=<the school's data protection officer>
 TRUST_PROXY=1
 SESSION_SECRET=<the first printed value>
 KENNITALA_ENC_KEY=<the second printed value>
@@ -228,6 +230,8 @@ Leave `DATABASE_PATH`, `UPLOAD_DIR` and `BACKUP_DIR` as they are in `.env.exampl
 What the important ones mean:
 
 - **`TRUST_PROXY=1`** goes with nginx. The session cookie is marked Secure in production, so the site must know that a request came in over HTTPS even though nginx passes it on over plain HTTP. nginx tells it with the `X-Forwarded-Proto` header, and `TRUST_PROXY=1` makes the site believe that header. Never set it without a proxy that sets the header.
+- **`CONTACT_EMAIL` and `PRIVACY_EMAIL`** are shown on the privacy page and on "Upplýsingar". The site refuses to start in production without both.
+- **`HOST`** is not in the list above on purpose. Left empty, the site listens only on `127.0.0.1` in production, which is what nginx needs. Do not set it unless you know why.
 - **The SMTP values** come from the school's kerfisstjóri (open question 4). `SMTP_MAX_PER_MINUTE` must not be above the school's mail limit.
 - **Without SMTP, nobody gets a login code.** In production the site never prints emails in the terminal. With `SMTP_HOST` empty, emails stay queued and are not sent. Set the SMTP values before you send codes to students.
 - **Keep a copy of the three secrets** somewhere other than this server and its backups, for example in the school's password manager. Where that copy goes is not decided (open question 8). Never put them in the repository or in an email.
@@ -299,7 +303,7 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:3000/
 
 ### 6. Close port 3000 to the outside
 
-The site listens on port 3000 on **every network interface**; there is no setting for the address. Anyone who can reach the server could open `http://<server address>:3000` and bypass nginx and HTTPS. So the firewall must block everything except SSH, HTTP and HTTPS. Allow SSH **first**, or you lock yourself out:
+In production the site listens on port 3000 only on `127.0.0.1`, so only nginx on the same machine can reach it (the `HOST` setting changes this; leave it empty). The firewall is a second layer: if `HOST` were ever set to another address, anyone who can reach the server could open `http://<server address>:3000` and bypass nginx and HTTPS. So the firewall must block everything except SSH, HTTP and HTTPS. Allow SSH **first**, or you lock yourself out:
 
 ```
 sudo ufw default deny incoming
@@ -490,15 +494,15 @@ Regular checks: `systemctl status saeludagar`, that a new folder appears in `bac
 
 `npm run loadtest` tests sign-up with 1,000 students. It starts its own temporary server and database on a developer's computer. Never run it against the live site (open question 19). [docs/run.md](docs/run.md), section 11, has the options and what the report means.
 
-The run of 20 November 2026 (a 4-core cloud machine, Node.js 24.20.0) passed: 1,000 students logged in and sent 6,000 sign-ups over 20 seconds, with no 5xx answer, no event over its maximum and no student over 4 sign-ups or over 2 on one day.
+The run of 24 November 2026, after milestone 9 (a 4-core cloud machine, Node.js 24.20.0), passed: 1,000 students logged in and sent 6,000 sign-ups over 20 seconds, with no 5xx answer, no event over its maximum and no student over 4 sign-ups or over 2 on one day.
 
 | Request | Count | p50 | p95 | Slowest |
 |---|---|---|---|---|
-| Login | 1,000 | 114 ms | 189 ms | 236 ms |
-| Front page | 1,000 | 6 ms | 15 ms | 33 ms |
-| Sign-up | 6,000 | 3 ms | 9 ms | 32 ms |
+| Login | 1,000 | 149 ms | 217 ms | 305 ms |
+| Front page | 1,000 | 8 ms | 23 ms | 57 ms |
+| Sign-up | 6,000 | 3 ms | 14 ms | 69 ms |
 
-A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took 1.3 s (p50) and 2.6 s (p95), and a sign-up 0.9 s (p50) and 2.3 s (p95). The school's server will give other numbers.
+A harder run the same day, with every student starting within one second (`--window 1`), also passed, with no 5xx answer and no limit broken. The requests then queue: the front page took about 2 s (p50) and 4 s (p95), and a sign-up 1 s (p50) and 2.9 s (p95). The code from before milestone 9 gave the same times on the same machine that day, so the milestone did not slow sign-up; the run of 20 November, on another cloud machine, was faster (1.3 s and 2.6 s for the front page). The school's server will give other numbers.
 
 ## Data protection
 

@@ -50,7 +50,8 @@
     "export": "Export for the office",
     "purge": "Purge data",
     "audit": "Audit log",
-    "info": "Information"
+    "info": "Information",
+    "privacy": "Privacy"
   },
   "validation": {
     "kennitala": "Kennitala must be 10 digits"
@@ -87,7 +88,7 @@
       "studentToPromote": "Active student",
       "promote": "Grant Event Manager role",
       "listHeading": "Event Manager accounts",
-      "revokeHelp": "The role can only be taken from a student; a teacher is always an Event Manager. If the student still has events, admins keep managing them and can move them to someone else in /admin/events.",
+      "revokeHelp": "The role can only be taken from a student; a teacher is always an Event Manager. The student then stops being a Co-Event Manager of every event. Events the student owns stay as they are until an admin moves them: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "none": "No Event Manager accounts yet.",
       "name": "Name",
       "email": "Email",
@@ -112,9 +113,10 @@
       "created": "Account created: {name}. A code will be sent to {email}.",
       "managerGranted": "Event Manager role granted: {name}",
       "managerRevoked": "Event Manager role removed: {name}",
-      "revokeKeepsEvents": "{name} still appears on {owned} events as owner and {coteaching} as Co-Event Manager. Admins can keep managing these events and reassign them from /admin/events.",
+      "revokeKeepsEvents": "Event Manager role removed: {name}. Events the student still owns: {count}. An admin can move them to another Event Manager: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "codeQueued": "A new code will be sent to {email}.",
       "deactivated": "Account deactivated: {name}",
+      "deactivatedKeepsEvents": "Account deactivated: {name}. Events the account still owns: {count}. An admin can move them to another Event Manager: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "activated": "Account reactivated: {name}",
       "adminGranted": "Admin rights granted: {name}",
       "adminRevoked": "Admin rights removed: {name}",
@@ -205,6 +207,12 @@
       "intro": "The event below, which you signed up for, has been cancelled:",
       "signups": "Your sign-up has been removed and no longer counts towards your sign-ups."
     },
+    "signup_added": {
+      "subject": "Added to an event: {title}",
+      "intro": "You have been added to the participants of the event {title}.",
+      "when": "When and where:",
+      "notRight": "If this is not right, you can cancel on the website while sign-up is open, or contact whoever runs the event. More about the event:"
+    },
     "teacher_message": {
       "subject": "{subject}",
       "header": "A message from {teacher} to everyone signed up for {title} ({when}):",
@@ -242,7 +250,7 @@
     "confirm": "Confirm import",
     "cancel": "Cancel",
     "cancelled": "The import was cancelled. Nothing was saved.",
-    "done": "Import complete: {added} new, {updated} updated, {deactivated} made inactive and {signupsRemoved} sign-ups removed.",
+    "done": "Import complete: {added} new, {updated} updated, {deactivated} made inactive and {signupsRemoved} sign-ups removed. Course choices cleared: {choicesCleared}.",
     "errorsIntro": "The file was not imported, and nothing was saved. Fix these errors ({count}) and upload the file again:",
     "uploadHeading": "Upload the student list",
     "formatHelp": "A CSV file with this header line, separated by semicolons (or commas):",
@@ -257,6 +265,8 @@
       "kennitala": "Line {line}: kennitala must be 10 digits",
       "name": "Line {line}: the name is missing or invalid",
       "email": "Line {line}: the email address is not valid",
+      "braut": "Line {line}: braut can be at most 100 characters and cannot contain line breaks or other control characters",
+      "course": "Line {line}: afangi can be at most 30 characters and cannot contain line breaks or other control characters",
       "mismatch": "Line {line}: name, email and braut must be the same as on line {first} for the same student",
       "teacher": "Line {line}: this kennitala belongs to an Event Manager",
       "noStudents": "The file contains no students",
@@ -392,6 +402,18 @@
       "choose": "Add a Co-Event Manager",
       "add": "Add"
     },
+    "transfer": {
+      "heading": "Transfer management",
+      "current": "Owner now: {name}",
+      "help": "Only admins can move an event to another active Event Manager. The new owner gets everything the owner had. The former owner loses access to the event unless added as a Co-Event Manager. Sign-ups and attendance do not change, and nobody is emailed.",
+      "none": "There is no other active Event Manager.",
+      "choose": "New owner",
+      "button": "Transfer management",
+      "moved": "The event is now managed by {name}.",
+      "errors": {
+        "notCandidate": "An event can only be moved to another active Event Manager."
+      }
+    },
     "participants": {
       "heading": "Participants",
       "count": "{count} / {capacity} signed up",
@@ -475,6 +497,7 @@
       "imageTooLarge": "The image is too large. The limit is 2 MB.",
       "imageUpload": "The image could not be received. Try again.",
       "imageType": "The image must be JPG, PNG or WebP.",
+      "imageUnreadable": "The image could not be read. Save it again as JPG, PNG or WebP and try once more.",
       "attendanceMarked": "The event cannot be deleted because attendance has been marked.",
       "confirmDelete": "Tick the box to confirm that you want to delete the event.",
       "tooManyImages": "An event can have at most {max} images. Remove one to add another."
@@ -557,8 +580,52 @@
     "points": "Each attendance at an event counts as {points} points in one course. At most {perCourse} points can be removed per course, in up to {max} courses ({total} points in total).",
     "pointsOffice": "The site does not keep track of absence points itself. The school office enters the deductions into Inna after the deadline.",
     "contactHeading": "Questions",
-    "contactPlaceholder": "Who to contact with questions will be added here once the school has sent it.",
+    "contact": "Send questions about Sæludagar and the site to {email}.",
+    "privacyLink": "How the site handles personal data",
     "toEvents": "See the events"
+  },
+  "privacy": {
+    "lead": "This page explains what the Sæludagar site stores about you, what it is used for and what rights you have.",
+    "responsibleHeading": "Who is responsible",
+    "responsible": "{school} is responsible for how personal data is handled on this site.",
+    "schoolFallback": "The school",
+    "storedHeading": "What is stored",
+    "storedStudents": "About students:",
+    "stored": {
+      "kennitala": "Your kennitala, encrypted. It is used to log you in and so that the office can remove absence points from the right student.",
+      "profile": "Your name, school email, braut and courses.",
+      "signups": "Your sign-ups for events, whether your attendance was marked, and which course you give the absence points to.",
+      "code": "Your login code, only as a hash that the code cannot be read from.",
+      "login": "What logging in needs: when a code was last sent, the number of failed attempts, a temporary lock after too many attempts, and your login session.",
+      "log": "A log of changes to sign-ups, attendance, course choices and the event-manager role: who made the change and when."
+    },
+    "storedTeachers": "About teachers and other event managers, the site stores the kennitala (encrypted), name and email.",
+    "storedNoBalance": "The site does not store your absence balance and fetches no other information about you.",
+    "sourceHeading": "Where the data comes from",
+    "source": "The school imports students' kennitala, name, email, braut and courses from its student register. Everything else is created when you use the site.",
+    "useHeading": "What it is used for",
+    "use": "So that you can sign up for Sæludagar events, so that those who run an event know who is signed up and can mark attendance, so that you can be sent login codes and notices about events you are signed up for, and so that the school office can remove absence points for attendance.",
+    "seesHeading": "Who sees the data",
+    "sees": {
+      "self": "You see your own sign-ups, attendance and course choices.",
+      "others": "Other students see neither your name nor which events you are signed up for. They see only how many are signed up.",
+      "managers": "Those who run an event see the name, braut and email of the people signed up for it, and their attendance. They are teachers, and students the school has put in charge of an event.",
+      "search": "A student is added to an event by searching for a name. The search shows name and braut, and the email only when two students on the same braut have the same name.",
+      "admins": "The site's administrators at the school see everything. They see kennitölur only in the file they download for the office.",
+      "kennitala": "Your kennitala is never shown on the site. It appears only in the file the school office gets in order to enter absence points into Inna."
+    },
+    "seesNoOthers": "The data is not passed on to anyone else.",
+    "keptHeading": "How long it is kept",
+    "kept": "All data about students is deleted after Sæludagar, once the office has its file, and at the latest automatically 30 days after the deadline for choosing courses. Backups are kept for 7 days and are then deleted. Teacher accounts are kept from year to year.",
+    "cookiesHeading": "Cookies",
+    "cookies": "The site uses one cookie. It keeps you logged in and remembers your choice of language and appearance, and it is first set when you open the login page or “Get a new code”, or choose a language or appearance. The site does not measure use, does not track you and loads nothing from anyone else.",
+    "rightsHeading": "Your rights",
+    "rights": "You have the right to know what the school stores about you and to have wrong information corrected. You can also ask for data to be deleted, or object to its use. Contact the school's data protection officer to do so. If you are under 18, your guardians can also get in touch on your behalf.",
+    "complaint": "If you think the school is not handling the data correctly, you can complain to the Icelandic Data Protection Authority (Persónuvernd), {site}.",
+    "complaintSite": "personuvernd.is",
+    "contactHeading": "Contact",
+    "contactSite": "Questions about Sæludagar and the site: {email}",
+    "contactOfficer": "The school's data protection officer: {email}"
   },
   "attendance": {
     "open": "Tick everyone who came. Each tick saves straight away.",
@@ -576,6 +643,7 @@
       "closed": "Attendance can't be changed now.",
       "notSignedUp": "The student is no longer signed up for the event. Reload the page.",
       "network": "Couldn't save. Check your connection and try again, or use the Save button.",
+      "loggedOut": "Your login has ended, so the tick was not saved. Log in again.",
       "own": "You cannot mark your own attendance. Another Event Manager of this event or an admin does that."
     },
     "own": "You. Another Event Manager of this event or an admin marks your attendance."
@@ -598,7 +666,8 @@
       "subjectLong": "The subject can be at most 150 characters.",
       "bodyLong": "The message can be at most 5,000 characters.",
       "characters": "The text contains characters that aren't allowed.",
-      "noRecipients": "Nobody is signed up for the event, so nobody would get the email."
+      "noRecipients": "Nobody is signed up for the event, so nobody would get the email.",
+      "cooldown": "Only one message can be sent per event every 5 minutes. Try again in {minutes} min."
     }
   },
   "points": {
@@ -625,7 +694,7 @@
     }
   },
   "export": {
-    "intro": "The file is for the school office, which enters the deductions into Inna. It has one row for each recorded attendance: kennitala, name, braut, course, points, event and date.",
+    "intro": "The file is for the school office, which enters the deductions into Inna. It has one row for each recorded attendance: kennitala, name, braut, course, points, event, date and whether a teacher or a student marked the attendance.",
     "provisional": "Provisional",
     "provisionalUntil": "Students can still change their course choices until {deadline}, so the file may change.",
     "provisionalNoDeadline": "The course-choice deadline has not been set, so the file may still change.",

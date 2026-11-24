@@ -4,12 +4,13 @@ import { requireEventAccess, requireTeacher } from '../middleware/auth.js';
 import { verifyCsrf } from '../middleware/csrf.js';
 import { setFlash } from '../middleware/flash.js';
 import { attendanceWindow, setAttendance } from '../services/attendance.js';
-import { queueTeacherMessage, validateMessage } from '../services/email.js';
+import { createMessageCooldown, queueTeacherMessage, validateMessage } from '../services/email.js';
 import {
-  addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, updateEvent, validateEvent,
+  addCoteacher, coteacherCandidates, createEvent, deleteEvent, moveEvent, ownerCandidates, publishEvent, removeCoteacher,
+  updateEvent, validateEvent,
 } from '../services/events.js';
 import {
-  deleteImage, imageType, MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT, saveImage,
+  cleanImage, deleteImage, MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT, saveImage,
 } from '../services/images.js';
 import { brautList } from '../services/import.js';
 import { getSettings } from '../services/settings.js';
@@ -39,11 +40,14 @@ function readImages(req, res, next) {
   });
 }
 
-// The chosen images: { error } or { images: [{ bytes, type }] }. An empty file field counts as none.
+// The chosen images, without their metadata (BR-71): { error } or { images } from cleanImage,
+// ready for saveImage. Nothing is saved yet, so a file of the wrong type or one that cannot be read
+// is a message on the images like any other. An empty file field counts as none.
 function uploadedImages(req) {
   if (req.imageError) return { error: req.imageError };
-  const images = (req.files ?? []).filter((file) => file.size > 0).map((file) => ({ bytes: file.buffer, type: imageType(file.buffer) }));
-  return images.some((image) => !image.type) ? { error: 'events.errors.imageType' } : { images };
+  const images = (req.files ?? []).filter((file) => file.size > 0).map((file) => cleanImage(file.buffer));
+  const failed = images.find((image) => image.error);
+  return failed ? { error: failed.error } : { images };
 }
 
 // A form value that may be sent once or several times, as a list of whole numbers.
@@ -80,6 +84,7 @@ export function teacherRouter({ config, db }) {
     errors,
     access: req.eventAccess ?? 'owner',
     candidates: event && req.eventAccess === 'owner' ? coteacherCandidates(db, event) : [],
+    ownerChoices: event && req.user.isAdmin ? ownerCandidates(db, event) : null, // BR-72: admins only
   });
 
   router.get('/events/new', (req, res) => renderForm(req, res, 200, { values: { brautir: [] } }));
@@ -90,7 +95,7 @@ export function teacherRouter({ config, db }) {
   async function saveImages(images) {
     const names = [];
     try {
-      for (const image of images) names.push(await saveImage(config.uploadDir, image.bytes, image.type));
+      for (const image of images) names.push(await saveImage(config.uploadDir, image));
     } catch (err) {
       await deleteImages(names);
       throw err;
@@ -223,8 +228,10 @@ export function teacherRouter({ config, db }) {
 
   // BR-50: a message to everyone signed up, sent from the noreply address with the teacher as Reply-To.
   const recipientsOf = (event) => eventParticipants(db, event.id).filter((student) => student.active);
-  const renderMessage = (req, res, status, { values = {}, errors = {} } = {}) => res.status(status).render('teacher/message', {
+  const messageCooldown = createMessageCooldown(); // BR-50: one message per event every 5 minutes
+  const renderMessage = (req, res, status, { values = {}, errors = {}, minutes = 0 } = {}) => res.status(status).render('teacher/message', {
     event: req.event,
+    minutes,
     recipients: recipientsOf(req.event).length,
     values,
     errors,
@@ -239,9 +246,12 @@ export function teacherRouter({ config, db }) {
     const recipients = recipientsOf(event);
     if (recipients.length === 0) errors.recipients = 'message.errors.noRecipients';
     if (Object.keys(errors).length > 0) return renderMessage(req, res, 400, { values, errors });
+    const minutes = messageCooldown.minutesLeft(event.id);
+    if (minutes > 0) return renderMessage(req, res, 400, { values, errors: { cooldown: 'message.errors.cooldown' }, minutes });
     const count = queueTeacherMessage(db, {
       event, teacherId: req.user.id, studentIds: recipients.map((student) => student.id), ...values,
     });
+    messageCooldown.start(event.id);
     setFlash(req, 'success', 'message.sent', { count });
     res.redirect(303, `/teacher/events/${event.id}`);
   });
@@ -267,7 +277,8 @@ export function teacherRouter({ config, db }) {
     });
   });
 
-  // Publish (owner, co-teacher or admin); delete and co-teachers (owner or admin only, BR-29, §6).
+  // Publish (owner, co-teacher or admin); delete and co-teachers (owner or admin only, BR-29, §6);
+  // moving the event to another event manager (admin only, BR-72).
   router.post('/events/:id', access('editor'), async (req, res, next) => {
     const { event } = req;
     const body = req.body ?? {};
@@ -277,7 +288,7 @@ export function teacherRouter({ config, db }) {
       setFlash(req, 'success', 'events.published');
       return res.redirect(303, back);
     }
-    if (!['delete', 'add-coteacher', 'remove-coteacher', 'add-student', 'remove-student'].includes(body.action)) {
+    if (!['delete', 'add-coteacher', 'remove-coteacher', 'add-student', 'remove-student', 'move-event'].includes(body.action)) {
       return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
     }
 
@@ -293,6 +304,16 @@ export function teacherRouter({ config, db }) {
     }
 
     if (req.eventAccess !== 'owner') return res.status(403).render('errors/403');
+
+    if (body.action === 'move-event') {
+      if (!req.user.isAdmin) return res.status(403).render('errors/403');
+      const ownerId = Number(body.owner);
+      if (!Number.isSafeInteger(ownerId)) return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
+      const result = moveEvent(db, event, ownerId);
+      if (result.ok) setFlash(req, 'success', 'events.transfer.moved', { name: result.owner.name });
+      else setFlash(req, 'error', result.error);
+      return res.redirect(303, `${back}/edit#owner`);
+    }
 
     if (body.action === 'delete') {
       if (body.confirm !== '1') {

@@ -123,7 +123,7 @@
     <tbody>
       <% for (const student of studentResults) { -%>
       <tr>
-        <td><%= student.name %></td>
+        <td><%= student.name %><% if (student.email) { %> (<%= student.email %>)<% } %></td>
         <td><%= student.braut || '—' %></td>
         <td>
           <form method="post" action="/teacher/events/<%= event.id %>" class="table__actions">
@@ -131,7 +131,7 @@
             <input type="hidden" name="action" value="add-student">
             <input type="hidden" name="student" value="<%= student.id %>">
             <input type="hidden" name="search" value="<%= studentSearch %>">
-            <button type="submit" class="button button--small"><%= t('events.participants.addStudent') %><span class="visually-hidden">: <%= student.name %></span></button>
+            <button type="submit" class="button button--small"><%= t('events.participants.addStudent') %><span class="visually-hidden">: <%= student.name %><% if (student.email) { %> (<%= student.email %>)<% } %></span></button>
           </form>
         </td>
       </tr>

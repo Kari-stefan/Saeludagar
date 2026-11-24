@@ -127,7 +127,7 @@ npm run migrate                                                # create or upgra
 - The tests pass when the summary at the end says `fail 0`. They use temporary databases and never touch `.env` or `data/`.
 - A test that passes with its file can fail when run alone by name, because in some `describe` blocks the tests build on each other (`docs/conventions.md`, Tests). If a test fails alone, run its whole file before you conclude anything.
 - `npm run dev`, `npm run migrate`, `npm run create-admin`, `npm run seed:dev` and `npm run backup` use the developer's `.env` and the database in `data/`; `npm run backup` also writes into `backups/`. `npm run loadtest` uses neither: it starts its own server on a temporary database. `docs/run.md` has the first-time setup, every npm script and every environment variable.
-- There is no linter, formatter, type checker, coverage tool or CI. `npm test` is the only automated check.
+- There is no linter, formatter, type checker or coverage tool. `npm test` is the only automated check of the code; `.github/workflows/ci.yml` runs it, and `npm audit`, on every pull request.
 - There is no deploy command. `README.md` (Deployment) is the guide for the school's Linux server, and deploying is on the "Ask first" list.
 - In a cloud session, `.claude/hooks/cloud-setup.sh` runs at the start: it puts Node.js 24 on PATH and installs the packages, and its one-line result is in your context. `docs/run.md` (section 13) says what a cloud session has and lacks.
 

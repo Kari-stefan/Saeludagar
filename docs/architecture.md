@@ -13,7 +13,7 @@ One Node process, started by `src/server.js`, and nothing else. It runs these pa
 
 All three jobs start only after the port is bound. The SQLite file is `DATABASE_PATH` (default `data/saeludagar.db`), opened by `src/db/index.js` with `journal_mode = WAL`, `foreign_keys = ON`, `busy_timeout = 5000` and `synchronous = NORMAL`. Event images are files in `UPLOAD_DIR` (default `uploads/`). Sessions are rows in the `sessions` table, kept by `src/db/sessionStore.js`.
 
-At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup and the auto-purge check, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
+At startup `src/server.js` never migrates. If the database file is missing it is created empty, and if `PRAGMA user_version` differs from `SCHEMA_VERSION` (`src/db/migrate.js`) the process prints "Run: npm run migrate" and exits with code 1. It also exits with code 1 when `createApp` or `createMailer` throws, for example for a missing `SESSION_SECRET`, in production a missing or malformed `CONTACT_EMAIL` or `PRIVACY_EMAIL` (BR-58), a missing or invalid kennitala key, or an SMTP host without `MAIL_FROM`. On SIGINT or SIGTERM it stops session cleanup and the auto-purge check, waits up to 5 seconds for the email being sent and for open requests, closes the database and exits. A second signal exits at once.
 
 ## How a request is handled
 
@@ -25,10 +25,10 @@ The middleware order in `src/app.js`:
 4. `express-session` (cookie `sid`, rolling, store `SqliteSessionStore`).
 5. `languageMiddleware` puts `t`, the date and fee formatters and `theme` in `res.locals`.
 6. `loadUser(db)` reads the user row on every request and sets `req.user` (or `null`). An inactive user's session keys are removed.
-7. `csrfToken` adds `csrfToken()` to `res.locals`, creating the session token on first use.
+7. `csrfToken` adds `csrfToken()` to `res.locals`, creating the session token on first use, and `existingCsrfToken()`, which never creates one. The header uses the second for a guest, so a guest who only opens pages gets no session or cookie (BR-70); `GET /login` and `GET /login/new-code` create the token before rendering.
 8. `flash` adds `takeFlash()` to `res.locals`.
 9. `express.urlencoded` parses form bodies (limit 100 kb).
-10. `verifyCsrfUnlessUpload` checks the CSRF token on every non-GET request, except multipart requests to the upload routes.
+10. `verifyCsrfUnlessUpload` checks the CSRF token on every non-GET request, except multipart requests to the upload routes and a guest's `POST /language` and `POST /theme` unless they come from another site, by the `Sec-Fetch-Site` header or, without it, an `Origin` header that names another address (BR-70).
 11. The five routers, below.
 12. `notFound` renders the 404 page.
 13. `errorHandler` renders the 403, 404 or 500 page.
@@ -37,7 +37,7 @@ Routers and their guards (guards are in `src/middleware/auth.js`; a guest is red
 
 | Router | Mounted at | Guard |
 |---|---|---|
-| `src/routes/public.js` | `/` | none. Front page, `/info`, `/events/:id`, sign-up and cancel, `/language`, `/theme`. Sign-up checks `req.user` inside the route. |
+| `src/routes/public.js` | `/` | none. Front page, `/info`, `/privacy`, `/events/:id`, sign-up and cancel, `/language`, `/theme`. Sign-up checks `req.user` inside the route. |
 | `src/routes/auth.js` | `/` | none. `/login`, `/login/new-code`, `/logout`. |
 | `src/routes/student.js` | `/` | `requireStudent` on each route: `/points`, `/my-events` (a redirect). |
 | `src/routes/teacher.js` | `/teacher` | `requireTeacher` on the whole router (event manager or admin), plus `requireEventAccess(db, 'editor' or 'owner')` on `/events/:id/...`. |
@@ -51,7 +51,7 @@ The error path: a route that throws, or calls `next(err)`, reaches `errorHandler
 
 - **Routes** (`src/routes/`) read the request, call services, and choose a redirect, a flash message or a view. They do not hold business rules. They hold almost no SQL: the only query in a route is a count in `src/routes/teacher.js` (the attendance save), and `src/middleware/auth.js` reads the user row.
 - **Services** (`src/services/`) hold the rules and nearly all SQL. Each takes `db` (and `kt`, the kennitala crypto, where needed) as its first argument or in a factory. Rules that must not race (sign-up, attendance, giving points, event save and delete, import, purge) run in a single transaction inside the service, so a route cannot skip a check. Services render no views and read no request objects. `src/services/accounts.js` is a factory, `createAccounts({ db, kt, newCodeLimit })`.
-- **DB** (`src/db/`) opens the connection, defines the schema (`schema.sql`), runs migrations (`migrate.js`) and holds the session store. `SCHEMA_VERSION` is 3 and `STEPS` in `migrate.js` upgrade version 1 and 2 data.
+- **DB** (`src/db/`) opens the connection, defines the schema (`schema.sql`), runs migrations (`migrate.js`) and holds the session store. `SCHEMA_VERSION` is 4 and `STEPS` in `migrate.js` upgrade version 1, 2 and 3 data.
 - **Views** (`src/views/`) are EJS files assembled from partials in `src/views/partials/`. There is no layout engine and no database access in views. `src/views/emails/` holds the plain-text email templates, rendered by `renderEmail` in `src/services/email.js`.
 - **i18n** (`src/i18n/index.js`) loads `is.json` and `en.json`, and provides `t()`, the date, time and fee formatters, and `eventText`. A missing English string falls back to Icelandic, then to the key.
 - **Browser scripts** (`public/js/`) only enhance pages that already work as plain forms. They send the same forms the page would send, and the server stays the source of truth.
@@ -70,12 +70,12 @@ Dependencies are passed in, not imported as globals. `createApp({ config, db, se
 **b) The student CSV import** (`/admin/import`, `src/services/import.js`).
 1. `readUpload` (multer, memory storage, 5 MB) reads the file, then `verifyCsrf` runs.
 2. `readStudentCsv` decodes (UTF-8, or Windows-1252 if invalid), checks every line and collects all errors.
-3. `holdImport` keeps the checked students in this process's memory for 10 minutes under a token stored in `req.session.importToken`. `previewImport` shows the counts.
+3. `holdImport` keeps the checked students in this process's memory for 10 minutes under a token stored in `req.session.importToken`. `previewImport` shows the counts. Any new upload first discards the file held from the last one with `takeImport`, also an upload with errors or no file (BR-15).
 4. The confirm post calls `takeImport` and `applyImport`, one transaction. It writes `users` (kennitala as `kennitala_enc` and `kennitala_hmac`) and `student_courses`. Students missing from the file get `active = 0`, their `sessions` rows are deleted, and their sign-ups without attendance are deleted. Both the sign-up removals and `choice.clear` entries (`registrations.course_code` cleared) are written to `audit_log`.
 
 **c) An event from draft to published, with images** (`src/routes/teacher.js`, `src/services/events.js`, `src/services/images.js`).
 1. `POST /teacher/events/new` runs multer (`images` field, up to 5 files of 2 MB, memory), then `verifyCsrf`, then `validateEvent`.
-2. `imageType` reads each file's first bytes. `saveImage` writes `<uuid>.<ext>` to `UPLOAD_DIR`.
+2. `cleanImage` reads each file's type from its first bytes and removes its metadata with `stripMetadata` (BR-71), before anything is saved; a file of another type or one that cannot be read becomes a message on the images. `saveImage` takes only an image from `cleanImage` and writes `<uuid>.<ext>` to `UPLOAD_DIR`.
 3. `createEvent` inserts `events` (status `draft`), `event_brautir` and `event_images`, in one transaction. If it fails the saved files are deleted.
 4. `POST /teacher/events/:id/edit` can add images and remove saved ones. If date, time or location change, `updateEvent` queues an `event_changed` row in `email_outbox` for each signed-up student.
 5. `POST /teacher/events/:id` with `action=publish` calls `publishEvent`, which sets `events.status = 'published'`. Students then see it through `publishedEvents`.
@@ -87,15 +87,15 @@ Dependencies are passed in, not imported as globals. `createApp({ config, db, se
 3. `POST /points` calls `givePoints` or `takePoints` (`src/services/choices.js`). Giving uses the earliest attended `registrations` row with no `course_code`, checks the course is in `student_courses` and under its maximum, sets `course_code`, and writes `choice.set`. Taking back writes `choice.clear`.
 
 **e) An email from queue to sent or printed.**
-1. A service calls `queueEmail` (`src/services/email.js`), which inserts `email_outbox` with `kind`, `priority`, `user_id`, `payload`, `next_try_at`. Login codes are queued with no code (`queueCode`, `sendStudentCodes` in `accounts.js`).
-2. The worker picks the due row with the lowest `priority`, then `id`. For `student_code`, `new_code` and `teacher_code` it generates the code, renders the template, sends, and only then stores `users.code_hash` and deletes the row. Other kinds are rendered from `payload`.
+1. A service calls `queueEmail` (`src/services/email.js`), which inserts `email_outbox` with `kind`, `priority`, `user_id`, `payload`, `next_try_at`. The priority comes from the kind (`EMAIL_PRIORITY` in `email.js`, BR-53): login codes `new_code` and `teacher_code` 0, messages and event notices 1, the bulk `student_code` 2. Login codes are queued with no code (`queueCode`, `sendStudentCodes` in `accounts.js`); `queueCode` deletes any code email still waiting for that person, so a person has at most one (BR-07, BR-08). It inserts the new row before it deletes the old ones, so the new row never gets the id of the one the worker may be sending at that moment (SQLite reuses the highest id); the new row would have the same kind, user and second, so the worker's check could not tell them apart. The teacher message route allows one message per event every 5 minutes, kept in memory (`createMessageCooldown`, BR-50).
+2. The worker picks the due row with the lowest `priority`, then `id`. For `student_code`, `new_code` and `teacher_code` it generates the code, renders the template, sends, and only then stores `users.code_hash` and deletes the row. The worker deletes or updates only the row it read, matched on `id`, `kind`, `user_id` and `created_at`: the row can be deleted while it is being sent (a purge, a deleted recipient, a replaced code), and SQLite can give its id to the next email queued. Other kinds are rendered from `payload`. A failed send is logged with the row id, kind and error codes only, never the mail server's message (§9, item 10); the message is kept in `email_outbox.last_error`.
 3. `createMailer` sends through nodemailer if `SMTP_HOST` is set. Without it, outside production, the email is printed to the console. In production the send throws.
 4. A failure updates `attempts`, `last_error` and `next_try_at` (1, 2, 4, 8, 16 minutes). After 5 retries `next_try_at` is `NULL` and the row stays. An email to an inactive user is deleted unsent.
 
 **f) The office export.**
 1. `GET /admin/export` renders the page with `exportSummary` (`src/services/export.js`), which counts the `registrations` rows with `attended = 1`, counts those with no `course_code`, and reads the course-choice deadline through `choiceWindow`.
 2. `GET /admin/export.csv` calls `exportRows` and passes the rows to `exportCsv`, which builds the file text. The file's format is in `docs/AGENT_START.md` §8 "Absence-system handoff (office export)", not here.
-3. `exportRows` selects one row for each `registrations` row with `attended = 1`, joined to `users` (`student_id`) and `events` (`event_id`). It does not filter on `users.active`. It reads `users.kennitala_enc`, `users.name`, `users.braut`, `registrations.course_code`, `events.title_is` and `events.event_date`. It is the only place in `src/` that calls `decrypt` on a kennitala.
+3. `exportRows` selects one row for each `registrations` row with `attended = 1`, joined to `users` (`student_id`) and `events` (`event_id`). It does not filter on `users.active`. It reads `users.kennitala_enc`, `users.name`, `users.braut`, `registrations.course_code`, `events.title_is`, `events.event_date`, and the `role` of the account in `registrations.attendance_marked_by` (the `merkt_af` column). It is the only place in `src/` that calls `decrypt` on a kennitala.
 4. The route sets `Content-Type: text/csv; charset=utf-8`, `Content-Disposition: attachment` with the file name from `exportFileName`, and `Cache-Control: no-store`.
 
 **g) The purge of student data** (`src/services/purge.js`, BR-55, BR-56).
@@ -133,7 +133,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | `docs/` | `AGENT_START.md` (the specification), `run.md`, this file, `conventions.md`, the five reference files (the original notes and the project owner's briefs) and `example-students.csv` | Documentation. [../CLAUDE.md](../CLAUDE.md) says which file is the home of which topic |
 | `data/`, `uploads/`, `backups/` | Runtime files: database, event images, backups. Only `.gitkeep` is tracked; contents are git-ignored | Nothing; runtime only |
 | `.claude/` | Claude Code settings, the `/milestone` and `/review` commands, the `spec-reviewer` agent and the model-routing hook | Nothing, unless the project owner asks (see [../CLAUDE.md](../CLAUDE.md)) |
-| `.github/workflows/` | `copilot-setup-steps.yml`, which prepares a GitHub Copilot agent's machine (Node.js 24, `npm ci`). It is not a CI check: nothing here tests a change | Nothing else, unless you are asked. The repository has no CI |
+| `.github/workflows/` | `ci.yml`, which runs `npm test` and `npm audit` on every pull request and on pushes to main, and `copilot-setup-steps.yml`, which prepares a GitHub Copilot agent's machine (Node.js 24, `npm ci`) and tests nothing | Nothing else, unless you are asked. Keep the Node.js version the same in both files and in `.claude/hooks/cloud-setup.sh` |
 | Root | `package.json`, `.env.example`, `.gitignore`, `README.md`, `CLAUDE.md` (the `.env` file is git-ignored) | See [../README.md](../README.md) and [../CLAUDE.md](../CLAUDE.md) |
 
 ## Decisions and their reasons
@@ -149,6 +149,7 @@ The audit log (`src/services/audit.js`, table `audit_log`) is written by `signup
 | Lockout and new-code limit counted per account, not per IP | Most students share the school's public IP | `AGENT_START.md` §9 item 7 |
 | Email goes through the `email_outbox` table, with a per-minute limit | The limit defaults to 30, the usual Microsoft 365 per-mailbox limit | `AGENT_START.md` §8 |
 | Console email only outside production | Emails contain login codes | `src/services/email.js` |
+| Image metadata removed by walking the file's structure, without a library and without re-encoding (BR-71) | Phone photos carry the GPS position, time and device, and `/uploads` needs no login. No new dependency; the image data is copied byte for byte, only orientation, colour profile and the PNG `cICP` colour signal are kept, and a file whose structure cannot be walked to its end is refused. `saveImage` takes only what `cleanImage` returned, so raw upload bytes cannot reach `UPLOAD_DIR`. Images uploaded before this were not rewritten | `src/services/images.js` |
 | Images stored outside `public/` under random names | Only names matching `IMAGE_NAME` are served, so nothing else can be asked for under `/uploads`; the file type comes from the first bytes, never the name or browser | `src/services/images.js`, `src/app.js` |
 | Multipart routes verify CSRF after multer | Only multer can read a multipart body, so the token cannot be checked earlier | `src/middleware/csrf.js` |
 | Scripts only enhance pages that work without JavaScript | The server stays the only source of truth | `public/js/card-signup.js`, `public/js/points.js` |

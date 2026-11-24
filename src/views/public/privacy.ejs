@@ -1,0 +1,66 @@
+<%#
+  BR-58: the privacy notice. The wording is a draft for the school's data protection officer to
+  review. The two addresses are CONTACT_EMAIL and PRIVACY_EMAIL; a sentence whose address is
+  empty (development only) is left out.
+-%>
+<%- include('../partials/header', { pageTitle: t('pages.privacy') }) %>
+<%
+  const school = schoolName || t('privacy.schoolFallback');
+  const withEmail = (key, email) => {
+    const [before, after] = t(key).split('{email}');
+    return { before, after, email };
+  };
+  const [complaintBefore, complaintAfter] = t('privacy.complaint').split('{site}');
+  const contacts = [withEmail('privacy.contactSite', contactEmail), withEmail('privacy.contactOfficer', privacyEmail)].filter((line) => line.email);
+-%>
+<article class="prose">
+  <h1><%= t('pages.privacy') %></h1>
+  <p class="lead"><%= t('privacy.lead') %></p>
+
+  <h2><%= t('privacy.responsibleHeading') %></h2>
+  <p><%= t('privacy.responsible', { school }) %></p>
+
+  <h2><%= t('privacy.storedHeading') %></h2>
+  <p><%= t('privacy.storedStudents') %></p>
+  <ul>
+    <% for (const item of ['kennitala', 'profile', 'signups', 'code', 'login', 'log']) { -%>
+    <li><%= t(`privacy.stored.${item}`) %></li>
+    <% } -%>
+  </ul>
+  <p><%= t('privacy.storedTeachers') %></p>
+  <p><%= t('privacy.storedNoBalance') %></p>
+
+  <h2><%= t('privacy.sourceHeading') %></h2>
+  <p><%= t('privacy.source') %></p>
+
+  <h2><%= t('privacy.useHeading') %></h2>
+  <p><%= t('privacy.use') %></p>
+
+  <h2><%= t('privacy.seesHeading') %></h2>
+  <ul>
+    <% for (const item of ['self', 'others', 'managers', 'search', 'admins', 'kennitala']) { -%>
+    <li><%= t(`privacy.sees.${item}`) %></li>
+    <% } -%>
+  </ul>
+  <p><%= t('privacy.seesNoOthers') %></p>
+
+  <h2><%= t('privacy.keptHeading') %></h2>
+  <p><%= t('privacy.kept') %></p>
+
+  <h2><%= t('privacy.cookiesHeading') %></h2>
+  <p><%= t('privacy.cookies') %></p>
+
+  <h2><%= t('privacy.rightsHeading') %></h2>
+  <p><%= t('privacy.rights') %></p>
+  <p><%= complaintBefore %><a href="https://www.personuvernd.is"><%= t('privacy.complaintSite') %></a><%= complaintAfter %></p>
+
+  <% if (contacts.length > 0) { -%>
+  <h2><%= t('privacy.contactHeading') %></h2>
+  <ul>
+    <% for (const line of contacts) { -%>
+    <li><%= line.before %><a href="mailto:<%= line.email %>"><%= line.email %></a><%= line.after %></li>
+    <% } -%>
+  </ul>
+  <% } -%>
+</article>
+<%- include('../partials/footer') %>

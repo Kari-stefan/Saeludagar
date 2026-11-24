@@ -7,11 +7,14 @@ import { choiceWindow } from './choices.js';
 const collator = new Intl.Collator('is');
 const BOM = '﻿';
 const CRLF = '\r\n';
-const HEADER = ['kennitala', 'nafn', 'braut', 'afangi', 'stig', 'vidburdur', 'dagsetning'];
+const HEADER = ['kennitala', 'nafn', 'braut', 'afangi', 'stig', 'vidburdur', 'dagsetning', 'merkt_af'];
+// BR-48: who marked the attendance, by the role of that account; admins are teacher accounts. Empty
+// when the account is gone (attendance_marked_by is then NULL).
+const MARKED_BY = { teacher: 'kennari', student: 'nemandi' };
 
 // A text value a spreadsheet would run as a formula is shown as text instead (CSV injection), and a
 // value holding the delimiter, a quote or a line break is quoted, with its quotes doubled.
-const FORMULA_START = /^[=+\-@\t\r]/;
+const FORMULA_START = /^[=+\-@|\t\r\n]/;
 const NEEDS_QUOTES = /[;"\r\n]/;
 
 function textField(value) {
@@ -24,12 +27,14 @@ function textField(value) {
 // still counts (BR-17). The kennitala is decrypted here and nowhere else (BR-19); it is written as
 // 6 digits, a hyphen and 4 digits, which a spreadsheet keeps as text with any leading zero. Never
 // log it. Sorted by name in Icelandic order, then by student, so that two students with the same
-// name are not mixed, then by date, start time and sign-up.
+// name are not mixed, then by date, start time and sign-up. The last column says whether a teacher
+// or a student event manager marked the attendance.
 export function exportRows(db, kt) {
-  const rows = db.prepare(`SELECT u.kennitala_enc, u.name, u.braut, r.course_code, e.title_is, e.event_date
+  const rows = db.prepare(`SELECT u.kennitala_enc, u.name, u.braut, r.course_code, e.title_is, e.event_date, m.role AS marker_role
     FROM registrations r
     JOIN users u ON u.id = r.student_id
     JOIN events e ON e.id = r.event_id
+    LEFT JOIN users m ON m.id = r.attendance_marked_by
     WHERE r.attended = 1
     ORDER BY u.id, e.event_date, e.start_time, r.id`).all();
   // The sort is stable, so rows with the same name keep the query's order: student, then date and
@@ -45,6 +50,7 @@ export function exportRows(db, kt) {
       points: POINTS_PER_ATTENDANCE, // BR-40; the site stores no balances (BR-46)
       event: row.title_is,
       date: row.event_date,
+      markedBy: MARKED_BY[row.marker_role] ?? '',
     };
   });
 }
@@ -54,7 +60,7 @@ export function exportCsv(rows) {
   const lines = [
     HEADER.join(';'),
     ...rows.map((row) => [
-      row.kennitala, textField(row.name), textField(row.braut), textField(row.course), row.points, textField(row.event), row.date,
+      row.kennitala, textField(row.name), textField(row.braut), textField(row.course), row.points, textField(row.event), row.date, row.markedBy,
     ].join(';')),
   ];
   return BOM + lines.map((line) => line + CRLF).join('');

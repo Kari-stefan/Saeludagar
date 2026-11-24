@@ -25,7 +25,7 @@
 <p class="empty"><%= t('attendance.none') %></p>
 <% } else { -%>
 <p class="attendance-count" data-attendance-count><%= t('attendance.count', { count, total: participants.length }) %></p>
-<form class="attendance" method="post" action="/teacher/events/<%= event.id %>/attendance"<% if (window.open) { %> data-autosave data-error="<%= t('attendance.errors.network') %>"<% } %>>
+<form class="attendance" method="post" action="/teacher/events/<%= event.id %>/attendance"<% if (window.open) { %> data-autosave data-error="<%= t('attendance.errors.network') %>" data-logged-out="<%= t('attendance.errors.loggedOut') %>"<% } %>>
   <input type="hidden" name="_csrf" value="<%= csrfToken() %>">
   <ul class="attendance__list">
     <% for (const student of participants) { const own = student.id === currentUser.id; -%>

@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { ROOT_DIR } from '../src/config.js';
+import { loadConfig, ROOT_DIR } from '../src/config.js';
 import { openDatabase } from '../src/db/index.js';
 import { migrate } from '../src/db/migrate.js';
 import { verifyCode } from '../src/services/codes.js';
@@ -116,6 +116,43 @@ describe('starting the server (src/server.js)', () => {
     const { code, output } = await runServer({ ...base(), SMTP_HOST: 'smtp.example.is', MAIL_FROM: '' });
     assert.equal(code, 1);
     assert.match(output, /MAIL_FROM is not set\. Set it to the school's noreply address/);
+  });
+
+  test('§10: HOST defaults to 127.0.0.1 in production, to no address in development, and HOST overrides both', () => {
+    assert.equal(loadConfig({ NODE_ENV: 'production' }).host, '127.0.0.1');
+    assert.equal(loadConfig({ NODE_ENV: 'development' }).host, undefined);
+    assert.equal(loadConfig({}).host, undefined);
+    assert.equal(loadConfig({ NODE_ENV: 'production', HOST: '10.0.0.5' }).host, '10.0.0.5');
+    assert.equal(loadConfig({ NODE_ENV: 'development', HOST: '127.0.0.1' }).host, '127.0.0.1');
+    assert.equal(loadConfig({ NODE_ENV: 'production', HOST: '' }).host, '127.0.0.1');
+  });
+
+  test('§10: a production start listens on 127.0.0.1 only', async () => {
+    // A production start needs the two contact addresses (BR-58).
+    const server = startServer({
+      ...base(), NODE_ENV: 'production', BASE_URL: 'https://saeludagar.example.is', SMTP_HOST: '',
+      CONTACT_EMAIL: 'sambandi@example.is', PRIVACY_EMAIL: 'personuvernd@example.is',
+    });
+    try {
+      await waitFor(() => /is running at/.test(server.output()) || server.child.exitCode !== null);
+      assert.match(server.output(), /is running at/);
+      const response = await fetch(`http://127.0.0.1:${port}/`).catch(() => null);
+      assert.ok(response, 'the site answers on 127.0.0.1');
+      const other = os.networkInterfaces();
+      const external = Object.values(other).flat().find((i) => !i.internal && i.family === 'IPv4');
+      if (external) {
+        await assert.rejects(
+          new Promise((resolve, reject) => {
+            const sock = net.connect(port, external.address, () => { sock.destroy(); resolve(); });
+            sock.on('error', reject);
+          }),
+          'the site does not answer on a non-loopback address',
+        );
+      }
+    } finally {
+      server.child.kill();
+      await server.exited;
+    }
   });
 
   test('§8: starts the outbox worker, which prints code emails to the console in development', async () => {
