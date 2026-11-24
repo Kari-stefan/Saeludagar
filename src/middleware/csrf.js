@@ -3,18 +3,26 @@ import crypto from 'node:crypto';
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
 // AGENT_START §8: one random token per session. Views call csrfToken() for the _csrf form field;
-// the token is made the first time a page needs it.
+// the token is made the first time a page needs it, which starts the session. BR-70: the header
+// calls existingCsrfToken() for a guest instead, which never makes one, so opening a page does not
+// start a session.
 export function csrfToken(req, res, next) {
   res.locals.csrfToken = () => {
     req.session.csrfToken ??= crypto.randomBytes(32).toString('base64url');
     return req.session.csrfToken;
   };
+  res.locals.existingCsrfToken = () => req.session.csrfToken ?? '';
   next();
 }
+
+// BR-70: the language and theme switches only store a guest's display preference, and a guest
+// may have no token yet, so they are not checked while nobody is logged in.
+const GUEST_PREFERENCE_ROUTES = new Set(['/language', '/theme']);
 
 // Every request that is not a GET must send the token as _csrf or in an X-CSRF-Token header.
 export function verifyCsrf(req, res, next) {
   if (SAFE_METHODS.has(req.method)) return next();
+  if (!req.user && req.method === 'POST' && GUEST_PREFERENCE_ROUTES.has(req.baseUrl + req.path)) return next();
   const expected = req.session.csrfToken;
   const sent = req.body?._csrf ?? req.get('X-CSRF-Token');
   if (expected && typeof sent === 'string' && sameToken(sent, expected)) return next();

@@ -30,7 +30,7 @@ describe('privacy (BR-57, BR-19)', () => {
           assert.match(script, /^<script src="\/js\/[\w-]+\.js" defer><\/script>$/, 'only the site\'s own script files, nothing inline');
         }
       }
-      const cookie = (await site.browser().get('/')).setCookies[0];
+      const cookie = (await site.browser().get('/login')).setCookies[0]; // BR-70: the front page sets none
       assert.match(cookie, /^sid=[^;]+; Path=\/; Expires=[^;]+; HttpOnly; SameSite=Lax$/);
     } finally {
       await site.close();
@@ -40,10 +40,10 @@ describe('privacy (BR-57, BR-19)', () => {
   test('§9 item 1: in production the session cookie is Secure and HSTS is on', async () => {
     const site = await startSite({ NODE_ENV: 'production', TRUST_PROXY: '1' });
     try {
-      const overHttps = await fetch(`${site.baseUrl}/`, { headers: { 'X-Forwarded-Proto': 'https' } });
+      const overHttps = await fetch(`${site.baseUrl}/login`, { headers: { 'X-Forwarded-Proto': 'https' } });
       assert.match(overHttps.headers.getSetCookie()[0], /; Secure/);
       assert.match(overHttps.headers.get('strict-transport-security'), /max-age=\d+/);
-      const overHttp = await fetch(`${site.baseUrl}/`);
+      const overHttp = await fetch(`${site.baseUrl}/login`);
       assert.deepEqual(overHttp.headers.getSetCookie(), [], 'no cookie over plain HTTP');
     } finally {
       await site.close();

@@ -25,10 +25,10 @@ The middleware order in `src/app.js`:
 4. `express-session` (cookie `sid`, rolling, store `SqliteSessionStore`).
 5. `languageMiddleware` puts `t`, the date and fee formatters and `theme` in `res.locals`.
 6. `loadUser(db)` reads the user row on every request and sets `req.user` (or `null`). An inactive user's session keys are removed.
-7. `csrfToken` adds `csrfToken()` to `res.locals`, creating the session token on first use.
+7. `csrfToken` adds `csrfToken()` to `res.locals`, creating the session token on first use, and `existingCsrfToken()`, which never creates one. The header uses the second for a guest, so a guest who only opens pages gets no session or cookie (BR-70); `GET /login` and `GET /login/new-code` create the token before rendering.
 8. `flash` adds `takeFlash()` to `res.locals`.
 9. `express.urlencoded` parses form bodies (limit 100 kb).
-10. `verifyCsrfUnlessUpload` checks the CSRF token on every non-GET request, except multipart requests to the upload routes.
+10. `verifyCsrfUnlessUpload` checks the CSRF token on every non-GET request, except multipart requests to the upload routes and a guest's `POST /language` and `POST /theme` (BR-70).
 11. The five routers, below.
 12. `notFound` renders the 404 page.
 13. `errorHandler` renders the 403, 404 or 500 page.

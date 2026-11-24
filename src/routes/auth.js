@@ -22,6 +22,7 @@ export function authRouter({ accounts }) {
   router.get('/login', (req, res) => {
     const next = eventPath(req.query.next);
     if (req.user) return res.redirect(303, next ?? homePathFor());
+    res.locals.csrfToken(); // BR-70: the form needs a token, so the session starts here; the header's switches get it too
     res.render('public/login', { next });
   });
 
@@ -52,6 +53,7 @@ export function authRouter({ accounts }) {
   // A logged-in user goes to their home page, as on /login, where the confirmation would not show.
   router.get('/login/new-code', (req, res) => {
     if (req.user) return res.redirect(303, homePathFor());
+    res.locals.csrfToken(); // BR-70, as on /login
     res.render('public/new-code');
   });
 

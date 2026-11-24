@@ -57,7 +57,7 @@ There is no linter, formatter, type checker, coverage tool or CI in this reposit
 
 - Escape all data with `<%= %>`. Use `<%- %>` only to include your own partials: every use under `src/views/` is an `include(...)`. Reason: AGENT_START §9 item 5.
 - Start a view with `<%- include('../partials/header', { pageTitle: t('pages.points') }) %>` and end it with `<%- include('../partials/footer') %>`. Put a `<%# ... -%>` comment at the top saying what the page is and which rule it serves. Use the field partial `src/views/partials/field.ejs` for labelled inputs and `form-errors.ejs` plus `flash.ejs` for messages.
-- Views get `t`, `lang`, `formatDate`, `formatDateTime`, `formatFee`, `eventText`, `currentUser`, `csrfToken` and `takeFlash` from middleware (`applyLanguage` in `src/middleware/language.js`), not from the route. A route passes only page data: `res.render('student/points', { points })`. The view path has no extension and is relative to `src/views/`.
+- Views get `t`, `lang`, `formatDate`, `formatDateTime`, `formatFee`, `eventText`, `currentUser`, `csrfToken`, `existingCsrfToken` and `takeFlash` from middleware (`applyLanguage` in `src/middleware/language.js`), not from the route. A route passes only page data: `res.render('student/points', { points })`. The view path has no extension and is relative to `src/views/`.
 - Put the CSRF field in every form that changes state:
 
 ```html
@@ -105,7 +105,7 @@ These need the project owner's approval first; see [../CLAUDE.md](../CLAUDE.md).
 - Helpers in `test/helpers.js`:
   - `startSite(env)` starts the app on a random port with a temporary database and upload folder. Call `site.close()` in `after`.
   - `site.addUser({ role, name, email, isAdmin, code })` inserts an account with a known code and returns `{ id, kennitala, code }`. Kennitölur count up from `0000000001`.
-  - `site.browser()` returns a `Browser` with a cookie jar. `browser.login(kennitala, code)`, `get(url)`, `post(url, form)` (adds the CSRF token from the session's page), `request(method, url, form)` (adds none, for testing a missing token). Each returns `{ status, location, html }`.
+  - `site.browser()` returns a `Browser` with a cookie jar. `browser.login(kennitala, code)`, `get(url)`, `post(url, form)` (adds the CSRF token from the session's page; a guest's front page has none, so it is read from `/login`), `request(method, url, form)` (adds none, for testing a missing token). Each returns `{ status, location, html }`.
   - `browser.postForm(url, fields, files)` posts a multipart form such as the event form. `browser.upload(url, bytes, { token, filename })` posts a CSV file.
   - `site.sendEmails()` runs the outbox worker once and returns the emails sent. `codeFrom(email)` reads the 6-digit code from one.
   - `insertEvent(db, ownerId, fields)` inserts an event and its Sæludagar day and returns its id.
@@ -162,3 +162,4 @@ Commit or push only when you are asked to; the rules are in [../CLAUDE.md](../CL
 - Emails never carry a login code in the outbox payload (`src/services/email.js`); codes are made when the email is sent.
 - Names sort in Icelandic order with `new Intl.Collator('is')`, not with SQL `ORDER BY` or `localeCompare` (`src/services/signups.js`).
 - A session cookie named `sid` is the only cookie (BR-57). The language and theme live in the session, so do not add a cookie for a new preference.
+- Calling `csrfToken()` writes the session, which starts one and sets the cookie. A page a guest can open must not call it, except `/login` and `/login/new-code` (BR-70); give guests a link to `/login` instead of a form.

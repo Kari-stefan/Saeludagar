@@ -244,9 +244,9 @@ describe('the front page and the new pages (BR-62 to BR-64, §6)', () => {
     assert.deepEqual([...browser.cookies.keys()], ['sid'], 'BR-57: still only the session cookie');
   });
 
-  test('BR-62: the theme switch needs the CSRF token and returns only to this site', async () => {
+  test('BR-62, BR-70: a logged-in user\'s theme switch needs the CSRF token and returns only to this site', async () => {
     const browser = site.browser();
-    await browser.get('/');
+    await browser.login(students.sara.kennitala, students.sara.code);
     const noToken = await browser.request('POST', '/theme', { theme: 'dark', returnTo: '/' });
     assert.equal(noToken.status, 403);
     const offSite = await browser.post('/theme', { theme: 'dark', returnTo: 'https://example.com/' });

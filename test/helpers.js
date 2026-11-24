@@ -153,9 +153,12 @@ export class Browser {
     return this.request('GET', url);
   }
 
+  // A guest's front page has no token (BR-70), so a guest's token comes from the login page,
+  // which starts the session the way a real visitor's would.
   async csrfToken(from = '/') {
     const page = await this.get(from);
-    const match = /name="_csrf" value="([^"]+)"/.exec(page.html);
+    let match = /name="_csrf" value="([^"]+)"/.exec(page.html);
+    if (!match && from === '/') match = /name="_csrf" value="([^"]+)"/.exec((await this.get('/login')).html);
     assert.ok(match, `no CSRF token on ${from}`);
     return match[1];
   }

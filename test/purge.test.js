@@ -101,7 +101,7 @@ describe('the purge service (BR-55, BR-56)', () => {
   test('BR-55: a purge deletes the students\' sessions and keeps those of teachers and guests', async () => {
     assert.ok(count('sessions', "user_id = " + people.jona.id) > 0);
     assert.ok(count('sessions', 'user_id = ' + people.teacher.id) > 0);
-    await as.guest.get('/');
+    await as.guest.get('/login');
     purgeData(site.db, people.admin.id);
     assert.equal(studentSessions(), 0);
     assert.ok(count('sessions', 'user_id = ' + people.teacher.id) > 0);
