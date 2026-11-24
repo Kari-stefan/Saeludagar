@@ -6,7 +6,8 @@ import { setFlash } from '../middleware/flash.js';
 import { attendanceWindow, setAttendance } from '../services/attendance.js';
 import { createMessageCooldown, queueTeacherMessage, validateMessage } from '../services/email.js';
 import {
-  addCoteacher, coteacherCandidates, createEvent, deleteEvent, publishEvent, removeCoteacher, updateEvent, validateEvent,
+  addCoteacher, coteacherCandidates, createEvent, deleteEvent, moveEvent, ownerCandidates, publishEvent, removeCoteacher,
+  updateEvent, validateEvent,
 } from '../services/events.js';
 import {
   deleteImage, imageType, MAX_IMAGE_BYTES, MAX_IMAGES_PER_EVENT, saveImage,
@@ -80,6 +81,7 @@ export function teacherRouter({ config, db }) {
     errors,
     access: req.eventAccess ?? 'owner',
     candidates: event && req.eventAccess === 'owner' ? coteacherCandidates(db, event) : [],
+    ownerChoices: event && req.user.isAdmin ? ownerCandidates(db, event) : null, // BR-72: admins only
   });
 
   router.get('/events/new', (req, res) => renderForm(req, res, 200, { values: { brautir: [] } }));
@@ -272,7 +274,8 @@ export function teacherRouter({ config, db }) {
     });
   });
 
-  // Publish (owner, co-teacher or admin); delete and co-teachers (owner or admin only, BR-29, §6).
+  // Publish (owner, co-teacher or admin); delete and co-teachers (owner or admin only, BR-29, §6);
+  // moving the event to another event manager (admin only, BR-72).
   router.post('/events/:id', access('editor'), async (req, res, next) => {
     const { event } = req;
     const body = req.body ?? {};
@@ -282,7 +285,7 @@ export function teacherRouter({ config, db }) {
       setFlash(req, 'success', 'events.published');
       return res.redirect(303, back);
     }
-    if (!['delete', 'add-coteacher', 'remove-coteacher', 'add-student', 'remove-student'].includes(body.action)) {
+    if (!['delete', 'add-coteacher', 'remove-coteacher', 'add-student', 'remove-student', 'move-event'].includes(body.action)) {
       return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
     }
 
@@ -298,6 +301,16 @@ export function teacherRouter({ config, db }) {
     }
 
     if (req.eventAccess !== 'owner') return res.status(403).render('errors/403');
+
+    if (body.action === 'move-event') {
+      if (!req.user.isAdmin) return res.status(403).render('errors/403');
+      const ownerId = Number(body.owner);
+      if (!Number.isSafeInteger(ownerId)) return next(Object.assign(new Error('HTTP 400'), { status: 400 }));
+      const result = moveEvent(db, event, ownerId);
+      if (result.ok) setFlash(req, 'success', 'events.transfer.moved', { name: result.owner.name });
+      else setFlash(req, 'error', result.error);
+      return res.redirect(303, `${back}/edit#owner`);
+    }
 
     if (body.action === 'delete') {
       if (body.confirm !== '1') {

@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import { loadConfig } from '../config.js';
 import { openDatabase } from './index.js';
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 
 // Each step takes a database from one version to the next and keeps its data. schema.sql is what
 // a new database gets, so a step must leave the same tables and indexes as it describes.
@@ -27,6 +27,27 @@ const STEPS = {
     db.exec('INSERT INTO event_images (event_id, file, position) SELECT id, image_file, 0 FROM events WHERE image_file IS NOT NULL');
     db.exec('ALTER TABLE events DROP COLUMN image_file');
     db.exec("UPDATE users SET is_event_manager = 1 WHERE role = 'teacher'");
+  },
+  // M9: the signup_added email (BR-37). SQLite cannot change a CHECK, so email_outbox is rebuilt
+  // with the new list of kinds and every row copied over as it is.
+  3(db) {
+    db.exec(`CREATE TABLE email_outbox_new (
+      id           INTEGER PRIMARY KEY,
+      kind         TEXT    NOT NULL CHECK (kind IN
+                     ('student_code','new_code','teacher_code','teacher_message','event_changed','event_deleted','signup_added')),
+      priority     INTEGER NOT NULL DEFAULT 0,
+      user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,
+      payload      TEXT,
+      created_at   TEXT    NOT NULL,
+      attempts     INTEGER NOT NULL DEFAULT 0,
+      last_error   TEXT,
+      next_try_at  TEXT
+    )`);
+    db.exec(`INSERT INTO email_outbox_new (id, kind, priority, user_id, payload, created_at, attempts, last_error, next_try_at)
+      SELECT id, kind, priority, user_id, payload, created_at, attempts, last_error, next_try_at FROM email_outbox`);
+    db.exec('DROP TABLE email_outbox');
+    db.exec('ALTER TABLE email_outbox_new RENAME TO email_outbox');
+    db.exec('CREATE INDEX email_outbox_due ON email_outbox(priority, next_try_at)');
   },
 };
 

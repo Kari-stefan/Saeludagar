@@ -73,7 +73,7 @@ describe('app shell', () => {
     const csv = await fetch(`${site.baseUrl}/admin/export.csv`, { headers: { cookie }, redirect: 'manual' });
     assert.equal(csv.status, 200);
     assert.match(csv.headers.get('content-type'), /^text\/csv; charset=utf-8$/);
-    assert.match(await csv.text(), /^kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning\r\n/);
+    assert.match(await csv.text(), /^kennitala;nafn;braut;afangi;stig;vidburdur;dagsetning;merkt_af\r\n/);
   });
 
   test('a form body over 100 kB gets the error page without details', async () => {
@@ -180,7 +180,7 @@ describe('database (§7)', () => {
 
   test('migrate creates every table and index and sets the schema version', () => {
     assert.equal(db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
-    assert.equal(SCHEMA_VERSION, 3);
+    assert.equal(SCHEMA_VERSION, 4);
     const names = (type) => db.prepare("SELECT name FROM sqlite_master WHERE type = ? AND name NOT LIKE 'sqlite_%'")
       .pluck().all(type).sort();
     assert.deepEqual(names('table'), [
@@ -197,11 +197,17 @@ describe('database (§7)', () => {
   // later versions changed. Returns a database at that version, without any rows.
   function databaseAt(version) {
     let sql = fs.readFileSync(new URL('../src/db/schema.sql', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+    // Version 4 added the signup_added email kind.
+    const withoutSignupAdded = sql.replace(",'signup_added'", '');
+    assert.ok(withoutSignupAdded !== sql, 'schema.sql still has what version 4 changed');
+    sql = withoutSignupAdded;
     // Version 3 moved each event's one image from events.image_file to the event_images table.
-    const withoutImages = sql.replace(/-- Up to 5 images[\s\S]*?CREATE INDEX event_images_event[^\n]*\n/, '');
-    const withImageFile = withoutImages.replace('  event_date        TEXT    NOT NULL,', '  image_file        TEXT,\n  event_date        TEXT    NOT NULL,');
-    assert.ok(withoutImages !== sql && withImageFile !== withoutImages, 'schema.sql still has what version 3 changed');
-    sql = withImageFile;
+    if (version < 3) {
+      const withoutImages = sql.replace(/-- Up to 5 images[\s\S]*?CREATE INDEX event_images_event[^\n]*\n/, '');
+      const withImageFile = withoutImages.replace('  event_date        TEXT    NOT NULL,', '  image_file        TEXT,\n  event_date        TEXT    NOT NULL,');
+      assert.ok(withoutImages !== sql && withImageFile !== withoutImages, 'schema.sql still has what version 3 changed');
+      sql = withImageFile;
+    }
     // Version 2 added the event-manager role.
     if (version < 2) sql = sql.split('\n').filter((line) => !line.includes('is_event_manager')).join('\n');
     const old = tempDatabase();
@@ -251,7 +257,7 @@ describe('database (§7)', () => {
       const withImage = event.run(teacher, 'Með mynd', '11111111-2222-3333-4444-555555555555.png').lastInsertRowid;
       const without = event.run(teacher, 'Án myndar', null).lastInsertRowid;
 
-      assert.equal(migrate(old.db), 3);
+      assert.equal(migrate(old.db), SCHEMA_VERSION);
       assert.deepEqual(old.db.prepare('SELECT event_id, file, position FROM event_images').all(), [
         { event_id: Number(withImage), file: '11111111-2222-3333-4444-555555555555.png', position: 0 },
       ]);
@@ -261,7 +267,36 @@ describe('database (§7)', () => {
         { name: 'Kennari sem missti réttindin', is_event_manager: 1 }, { name: 'Nemandi með réttindi', is_event_manager: 1 }, { name: 'Nemandi', is_event_manager: 0 },
       ]);
       assert.deepEqual(shape(old.db), shape(db), 'the same tables, columns and indexes as a new database');
-      assert.equal(migrate(old.db), 3, 'running it again changes nothing');
+      assert.equal(migrate(old.db), SCHEMA_VERSION, 'running it again changes nothing');
+    } finally {
+      old.remove();
+    }
+  });
+
+  test('BR-37, BR-53: migrate upgrades a version 3 database: the outbox keeps every row and accepts the signup_added kind', () => {
+    const old = databaseAt(3);
+    try {
+      const user = old.db.prepare(`INSERT INTO users (role, is_event_manager, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
+        VALUES ('student', 0, 'nemandi', 'x', 'Nemandi', 'profun@example.is', 'nu', 'nu')`).run().lastInsertRowid;
+      const queue = old.db.prepare(`INSERT INTO email_outbox (kind, priority, user_id, payload, created_at, attempts, last_error, next_try_at)
+        VALUES (?, ?, ?, ?, '2027-03-01T10:00:00Z', ?, ?, ?)`);
+      assert.throws(() => queue.run('signup_added', 1, user, null, 0, null, '2027-03-01T10:00:00Z'), /CHECK/, 'version 3 has no signup_added');
+      queue.run('student_code', 1, user, null, 0, null, '2027-03-01T10:00:00Z');
+      queue.run('event_changed', 0, user, '{"event":{"id":7}}', 3, 'connection refused', '2027-03-01T10:08:00Z');
+      queue.run('teacher_message', 0, user, '{"subject":"Halló"}', 6, 'gave up', null);
+      const rows = () => old.db.prepare('SELECT * FROM email_outbox ORDER BY id').all();
+      const before = rows();
+      assert.equal(before.length, 3);
+
+      assert.equal(migrate(old.db), SCHEMA_VERSION);
+      assert.equal(old.db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
+      assert.deepEqual(rows(), before, 'every row is kept as it was');
+      queue.run('signup_added', 1, user, '{"event":{"id":7}}', 0, null, '2027-03-01T11:00:00Z');
+      assert.throws(() => queue.run('unknown_kind', 1, user, null, 0, null, '2027-03-01T11:00:00Z'), /CHECK/);
+      assert.deepEqual(shape(old.db), shape(db), 'the same tables, columns and indexes as a new database');
+      const outboxSql = (database) => database.prepare("SELECT sql FROM sqlite_master WHERE name = 'email_outbox'").pluck().get();
+      assert.match(outboxSql(old.db), /'signup_added'/);
+      assert.equal(migrate(old.db), SCHEMA_VERSION, 'running it again changes nothing');
     } finally {
       old.remove();
     }

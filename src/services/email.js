@@ -84,6 +84,7 @@ export const EMAIL_PRIORITY = {
   teacher_message: 1,
   event_changed: 1,
   event_deleted: 1,
+  signup_added: 1,
   student_code: 2,
 };
 

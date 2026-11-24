@@ -371,3 +371,26 @@ export function addCoteacher(db, event, teacherId) {
 export function removeCoteacher(db, event, teacherId) {
   return db.prepare('DELETE FROM event_coteachers WHERE event_id = ? AND teacher_id = ?').run(event.id, teacherId).changes > 0;
 }
+
+// BR-72 "Færa umsjón": the people an admin can move an event to, every active event manager
+// except the owner.
+export function ownerCandidates(db, event) {
+  return db.prepare('SELECT id, name FROM users WHERE is_event_manager = 1 AND active = 1 AND id <> ?').all(event.owner_id)
+    .sort((a, b) => collator.compare(a.name, b.name));
+}
+
+// BR-72: an admin (checked by the route) moves an event to another active event manager, who gets
+// everything the owner had; a co-teacher link of theirs to the event goes. The former owner keeps
+// no access unless added as a co-teacher. Sign-ups, attendance and the event's details stay as
+// they are, and nobody is emailed. The candidate is checked again against the owner as stored.
+// Returns { ok, owner } (the new owner's { id, name }) or { error }.
+export function moveEvent(db, event, ownerId) {
+  return db.transaction(() => {
+    const current = db.prepare('SELECT id, owner_id FROM events WHERE id = ?').get(event.id);
+    const owner = current && ownerCandidates(db, current).find((candidate) => candidate.id === ownerId);
+    if (!owner) return { error: 'events.transfer.errors.notCandidate' };
+    db.prepare('UPDATE events SET owner_id = ? WHERE id = ?').run(owner.id, current.id);
+    db.prepare('DELETE FROM event_coteachers WHERE event_id = ? AND teacher_id = ?').run(current.id, owner.id);
+    return { ok: true, owner };
+  })();
+}

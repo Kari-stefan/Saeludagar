@@ -87,7 +87,7 @@
       "studentToPromote": "Active student",
       "promote": "Grant Event Manager role",
       "listHeading": "Event Manager accounts",
-      "revokeHelp": "The role can only be taken from a student; a teacher is always an Event Manager. If the student still has events, admins keep managing them and can move them to someone else in /admin/events.",
+      "revokeHelp": "The role can only be taken from a student; a teacher is always an Event Manager. The student then stops being a Co-Event Manager of every event. Events the student owns stay as they are until an admin moves them: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "none": "No Event Manager accounts yet.",
       "name": "Name",
       "email": "Email",
@@ -112,9 +112,10 @@
       "created": "Account created: {name}. A code will be sent to {email}.",
       "managerGranted": "Event Manager role granted: {name}",
       "managerRevoked": "Event Manager role removed: {name}",
-      "revokeKeepsEvents": "{name} still appears on {owned} events as owner and {coteaching} as Co-Event Manager. Admins can keep managing these events and reassign them from /admin/events.",
+      "revokeKeepsEvents": "Event Manager role removed: {name}. Events the student still owns: {count}. An admin can move them to another Event Manager: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "codeQueued": "A new code will be sent to {email}.",
       "deactivated": "Account deactivated: {name}",
+      "deactivatedKeepsEvents": "Account deactivated: {name}. Events the account still owns: {count}. An admin can move them to another Event Manager: open the event under “All events”, choose “Edit”, then “Transfer management”.",
       "activated": "Account reactivated: {name}",
       "adminGranted": "Admin rights granted: {name}",
       "adminRevoked": "Admin rights removed: {name}",
@@ -204,6 +205,12 @@
       "subject": "Event cancelled: {title}",
       "intro": "The event below, which you signed up for, has been cancelled:",
       "signups": "Your sign-up has been removed and no longer counts towards your sign-ups."
+    },
+    "signup_added": {
+      "subject": "Added to an event: {title}",
+      "intro": "You have been added to the participants of the event {title}.",
+      "when": "When and where:",
+      "notRight": "If this is not right, you can cancel on the website while sign-up is open, or contact whoever runs the event. More about the event:"
     },
     "teacher_message": {
       "subject": "{subject}",
@@ -391,6 +398,18 @@
       "remove": "Remove",
       "choose": "Add a Co-Event Manager",
       "add": "Add"
+    },
+    "transfer": {
+      "heading": "Transfer management",
+      "current": "Owner now: {name}",
+      "help": "Only admins can move an event to another active Event Manager. The new owner gets everything the owner had. The former owner loses access to the event unless added as a Co-Event Manager. Sign-ups and attendance do not change, and nobody is emailed.",
+      "none": "There is no other active Event Manager.",
+      "choose": "New owner",
+      "button": "Transfer management",
+      "moved": "The event is now managed by {name}.",
+      "errors": {
+        "notCandidate": "An event can only be moved to another active Event Manager."
+      }
     },
     "participants": {
       "heading": "Participants",
@@ -626,7 +645,7 @@
     }
   },
   "export": {
-    "intro": "The file is for the school office, which enters the deductions into Inna. It has one row for each recorded attendance: kennitala, name, braut, course, points, event and date.",
+    "intro": "The file is for the school office, which enters the deductions into Inna. It has one row for each recorded attendance: kennitala, name, braut, course, points, event, date and whether a teacher or a student marked the attendance.",
     "provisional": "Provisional",
     "provisionalUntil": "Students can still change their course choices until {deadline}, so the file may change.",
     "provisionalNoDeadline": "The course-choice deadline has not been set, so the file may still change.",

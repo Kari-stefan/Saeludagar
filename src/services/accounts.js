@@ -65,6 +65,7 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     VALUES ('teacher', ?, 1, ?, ?, ?, ?, ?, ?, ?)`);
   const ownedEvents = db.prepare('SELECT COUNT(*) FROM events WHERE owner_id = ?').pluck();
   const coteaching = db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE teacher_id = ?').pluck();
+  const removeAsCoteacher = db.prepare('DELETE FROM event_coteachers WHERE teacher_id = ?');
 
   // Login steps 1, 3 and 5 (AGENT_START §8). The attempt is counted before the slow scrypt check,
   // in one synchronous transaction, so parallel requests cannot get more than 5 guesses in before
@@ -166,15 +167,17 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     return { teacher };
   });
 
-  // BR-11: deactivating deletes the teacher's sessions (AGENT_START §8). Their events stay.
+  // BR-11: deactivating deletes the teacher's sessions (AGENT_START §8). Their events stay theirs
+  // until an admin moves them (BR-72); `owned` says how many, for the message.
   const setTeacherActive = db.transaction((actorId, teacherId, active) => {
     const row = teacherById.get(teacherId);
     if (!row) return null;
     const teacher = toTeacher(row);
     if (!active && teacher.id === actorId) return { teacher, error: 'admin.teachers.errors.self' };
     setActive.run(active ? 1 : 0, toIso(), teacher.id);
-    if (!active) deleteSessions.run(teacher.id);
-    return { teacher };
+    if (active) return { teacher };
+    deleteSessions.run(teacher.id);
+    return { teacher, owned: ownedEvents.get(teacher.id) };
   });
 
   // BR-11: grant or revoke the admin flag. Takes effect on the teacher's next request.
@@ -200,7 +203,9 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
   });
 
   // Admin-only: take the event-manager role from a student again, keeping the account and its
-  // data. A teacher account always has the role (BR-67).
+  // data. A teacher account always has the role (BR-67). The student stops being a co-teacher of
+  // every event; events they own stay theirs until an admin moves them (BR-72). The audit entry
+  // records the counts from before.
   const revokeEventManager = db.transaction((actorId, userId) => {
     const row = userById.get(userId);
     if (!row || row.is_event_manager !== 1) return null;
@@ -209,6 +214,7 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     setEventManager.run(0, toIso(), row.id);
     const ownership = { owned: ownedEvents.get(row.id), coteaching: coteaching.get(row.id) };
     audit(db, 'event-manager.revoke', actorId, null, row.id, ownership);
+    removeAsCoteacher.run(row.id);
     return { manager: { ...manager, isEventManager: false }, ownership };
   });
 

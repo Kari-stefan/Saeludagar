@@ -168,7 +168,11 @@ export function adminRouter({ config, db, kt, accounts }) {
 
     const person = result.teacher ?? result.manager;
     const { name, email } = person;
+    // BR-11, BR-67: an account that still owns events is told how many, and how to move them (BR-72).
+    const owned = result.owned ?? result.ownership?.owned ?? 0;
+    const keeps = { deactivate: 'admin.teachers.deactivatedKeepsEvents', 'revoke-event-manager': 'admin.teachers.revokeKeepsEvents' };
     if (result.error) setFlash(req, 'error', result.error);
+    else if (owned > 0 && Object.hasOwn(keeps, action)) setFlash(req, 'success', keeps[action], { name, count: owned });
     else setFlash(req, 'success', done[action], { name, email });
     res.redirect(303, '/admin/teachers');
   });

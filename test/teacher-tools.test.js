@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { toIso } from '../src/db/index.js';
 import { attendanceWindow } from '../src/services/attendance.js';
 import { createMessageCooldown, MESSAGE_INTERVAL_MS } from '../src/services/email.js';
+import { searchStudentsForEvent } from '../src/services/signups.js';
 import { insertEvent, startSite } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -90,6 +91,101 @@ describe('participants (BR-37)', () => {
       assert.equal(signup(id, 'asta').added_by, teacher.id);
     } finally {
       site.db.prepare('UPDATE settings SET signup_opens_at = NULL, signup_closes_at = NULL').run();
+    }
+  });
+
+  test('BR-37: namesakes on one braut show their school email in the search, and nobody else does; the kennitala never shows', async () => {
+    const add = async (name, braut, email) => {
+      const account = await site.addUser({ role: 'student', name, email, code: null });
+      site.db.prepare('UPDATE users SET braut = ? WHERE id = ?').run(braut, account.id);
+      return account;
+    };
+    const found = [
+      await add('Jón Jónsson', 'Rafmagnsbraut', 'jon.a@example.is'),
+      await add('JÓN JÓNSSON', 'Rafmagnsbraut', 'jon.b@example.is'),
+      await add('Jón Jónsson', 'Listnámsbraut', 'jon.c@example.is'),
+      await add('Jónína Jónsdóttir', 'Rafmagnsbraut', 'jonina@example.is'),
+      await add('Jón Brautlaus', null, 'jon.d@example.is'),
+      await add('Jón Brautlaus', null, 'jon.e@example.is'),
+    ];
+    const id = event();
+    const page = (await as.teacher.get(`/teacher/events/${id}?search=${encodeURIComponent('jón')}`)).html;
+    const results = page.slice(page.indexOf('Leitarniðurstöður'));
+    for (const email of ['jon.a@example.is', 'jon.b@example.is', 'jon.d@example.is', 'jon.e@example.is']) assert.match(results, new RegExp(email), email);
+    for (const email of ['jon.c@example.is', 'jonina@example.is']) assert.doesNotMatch(results, new RegExp(email), email);
+    assert.match(results, /Jónína Jónsdóttir/);
+    for (const { kennitala } of found) {
+      assert.ok(!page.includes(kennitala) && !page.includes(`${kennitala.slice(0, 6)}-${kennitala.slice(6)}`), 'no kennitala on the page');
+    }
+  });
+
+  test('BR-37: namesakes are found among all matching students, before the list is cut to 20', async () => {
+    const id = event();
+    for (let n = 10; n < 29; n += 1) await site.addUser({ role: 'student', name: `Leitarnafn ${n}`, email: `leit${n}@example.is`, code: null });
+    for (const key of ['x', 'y']) await site.addUser({ role: 'student', name: 'Leitarnafn Ö', email: `leit.${key}@example.is`, code: null });
+    const { students: shown } = searchStudentsForEvent(site.db, id, 'leitarnafn');
+    assert.equal(shown.length, 20);
+    assert.deepEqual(shown.at(-1), { id: shown.at(-1).id, name: 'Leitarnafn Ö', braut: null, email: 'leit.x@example.is' });
+    assert.ok(shown.slice(0, -1).every((student) => !('email' in student)), 'only namesakes carry an email');
+  });
+
+  // The signup_added emails sent to one student.
+  const addedEmails = async (key) => (await site.sendEmails()).filter((email) => email.to.address === `${key}@example.is`);
+
+  test('BR-37: a student added by a teacher gets one bilingual email naming the event, not who added them', async () => {
+    const id = event({ title_is: 'Bakstur í eldhúsinu', title_en: 'Baking in the kitchen', event_date: '2027-03-12', start_time: '13:00', end_time: '15:30', location: 'Eldhús' });
+    const res = await as.teacher.post(`/teacher/events/${id}`, { action: 'add-student', student: String(students.asta.id) });
+    assert.equal(res.status, 303);
+    assert.deepEqual(site.db.prepare('SELECT kind, priority, user_id FROM email_outbox').all(),
+      [{ kind: 'signup_added', priority: 1, user_id: students.asta.id }]);
+    const emails = await addedEmails('asta');
+    assert.equal(emails.length, 1);
+    const [email] = emails;
+    assert.equal(email.subject, 'Skráning á viðburð: Bakstur í eldhúsinu / Added to an event: Baking in the kitchen');
+    const [is, en] = email.text.split('----------------------------------------');
+    assert.match(is, /Halló Ásta Prófun,[\s\S]*Þér hefur verið bætt á þátttakendalista viðburðarins Bakstur í eldhúsinu\./);
+    assert.match(is, /Eldhús/);
+    assert.match(is, /afskráð þig á vefnum á meðan skráning er opin/);
+    assert.match(is, new RegExp(`/events/${id}\\n`));
+    assert.match(en, /Hello Ásta Prófun,[\s\S]*You have been added to the participants of the event Baking in the kitchen\./);
+    assert.match(en, /cancel on the website while sign-up is open/);
+    assert.doesNotMatch(email.text, /Kennari Prófun|kennari@example\.is/);
+  });
+
+  test('BR-37, BR-68: a student added by a student event manager gets the email, which never names that student', async () => {
+    const manager = await site.addUser({ role: 'student', name: 'Sigga Stjórnandi', email: 'sigga@example.is' });
+    site.db.prepare('UPDATE users SET is_event_manager = 1 WHERE id = ?').run(manager.id);
+    const id = event({ title_is: 'Skák' });
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, manager.id);
+    const browser = site.browser();
+    await browser.login(manager.kennitala, manager.code);
+    assert.equal((await browser.post(`/teacher/events/${id}`, { action: 'add-student', student: String(students.bjarni.id) })).status, 303);
+    assert.equal(signup(id, 'bjarni').added_by, manager.id);
+    const emails = await addedEmails('bjarni');
+    assert.equal(emails.length, 1);
+    assert.match(emails[0].subject, /^Skráning á viðburð: Skák \/ Added to an event: Skák$/);
+    assert.doesNotMatch(emails[0].text, /Sigga|sigga@example\.is/);
+  });
+
+  test('BR-37: a refused add queues no email', async () => {
+    const id = event();
+    register(id, 'asta');
+    await as.teacher.post(`/teacher/events/${id}`, { action: 'add-student', student: String(students.asta.id) });
+    const draft = event({ status: 'draft', event_date: '2027-03-13' });
+    await as.teacher.post(`/teacher/events/${draft}`, { action: 'add-student', student: String(students.orn.id) });
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0);
+  });
+
+  test('BR-37, BR-03: a student deactivated before the email goes out gets none', async () => {
+    const id = event();
+    await as.teacher.post(`/teacher/events/${id}`, { action: 'add-student', student: String(students.orn.id) });
+    assert.equal(site.db.prepare("SELECT COUNT(*) FROM email_outbox WHERE kind = 'signup_added'").pluck().get(), 1);
+    site.db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(students.orn.id);
+    try {
+      assert.deepEqual(await addedEmails('orn'), []);
+      assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0, 'the outbox drops it');
+    } finally {
+      site.db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(students.orn.id);
     }
   });
 

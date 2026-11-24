@@ -1,0 +1,20 @@
+<%# BR-37: a teacher, an admin or a student event manager added the student to an event. It never says who (BR-68). Icelandic then English (BR-52). -%>
+<% languages.forEach(({ t, formatDate, formatTimeRange, eventText }, index) => { -%>
+<% if (index > 0) { -%>
+
+----------------------------------------
+
+<% } -%>
+<%= t('emails.common.greeting', { name }) %>
+
+<%= t('emails.signup_added.intro', { title: eventText(event, 'title') }) %>
+
+<%= t('emails.signup_added.when') %>
+  <%= formatDate(event.event_date) %>, <%= formatTimeRange(event.start_time, event.end_time) %>
+  <%= event.location %>
+
+<%= t('emails.signup_added.notRight') %>
+<%= eventUrl %>
+
+<%= t('emails.common.noReply') %>
+<% }) -%>

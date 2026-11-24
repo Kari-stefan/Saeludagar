@@ -1,4 +1,4 @@
--- Schema version 3 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
+-- Schema version 4 (docs/AGENT_START.md §7). Applied by src/db/migrate.js.
 -- Timestamps are ISO-8601 UTC text; event dates are 'YYYY-MM-DD' and times 'HH:MM'.
 
 -- Exactly one row (id = 1).
@@ -121,8 +121,8 @@ CREATE INDEX sessions_user ON sessions(user_id);
 CREATE TABLE email_outbox (
   id           INTEGER PRIMARY KEY,
   kind         TEXT    NOT NULL CHECK (kind IN
-                 ('student_code','new_code','teacher_code','teacher_message','event_changed','event_deleted')),
-  priority     INTEGER NOT NULL DEFAULT 0,   -- 0 = send first; 1 = bulk (student_code)
+                 ('student_code','new_code','teacher_code','teacher_message','event_changed','event_deleted','signup_added')),
+  priority     INTEGER NOT NULL DEFAULT 0,   -- 0 = login codes a person asked for; 1 = messages and notices; 2 = bulk (student_code) (BR-53)
   user_id      INTEGER REFERENCES users(id) ON DELETE CASCADE,  -- recipient
   payload      TEXT,                         -- JSON; never contains a login code
   created_at   TEXT    NOT NULL,

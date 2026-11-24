@@ -87,7 +87,7 @@
       "studentToPromote": "Virkur nemandi",
       "promote": "Gera að viðburðastjóra",
       "listHeading": "Aðgangar viðburðastjóra",
-      "revokeHelp": "Réttindin er aðeins hægt að taka af nemanda; kennari er alltaf viðburðastjóri. Ef nemandinn á enn viðburði sjá stjórnendur áfram um þá og geta fært umsjón í /admin/events.",
+      "revokeHelp": "Réttindin er aðeins hægt að taka af nemanda; kennari er alltaf viðburðastjóri. Nemandinn hættir þá að vera meðviðburðastjóri allra viðburða. Viðburðir sem nemandinn á haldast óbreyttir þar til stjórnandi færir þá: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "none": "Engir aðgangar viðburðastjóra enn.",
       "name": "Nafn",
       "email": "Netfang",
@@ -112,9 +112,10 @@
       "created": "Aðgangur stofnaður: {name}. Kóði verður sendur á {email}.",
       "managerGranted": "Viðburðastjóraréttindi veitt: {name}",
       "managerRevoked": "Viðburðastjóraréttindi tekin af: {name}",
-      "revokeKeepsEvents": "{name} er enn skráður á {owned} viðburði sem eigandi og {coteaching} sem meðviðburðastjóri. Stjórnendur geta áfram séð um þá og fært umsjón í /admin/events.",
+      "revokeKeepsEvents": "Viðburðastjóraréttindi tekin af: {name}. Fjöldi viðburða sem nemandinn á enn: {count}. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "codeQueued": "Nýr kóði verður sendur á {email}.",
       "deactivated": "Aðgangur gerður óvirkur: {name}",
+      "deactivatedKeepsEvents": "Aðgangur gerður óvirkur: {name}. Fjöldi viðburða sem aðgangurinn á enn: {count}. Stjórnandi getur fært þá til annars viðburðastjóra: opnaðu viðburðinn undir „Allir viðburðir“, veldu „Breyta“ og svo „Færa umsjón“.",
       "activated": "Aðgangur virkjaður: {name}",
       "adminGranted": "Stjórnandaréttindi veitt: {name}",
       "adminRevoked": "Stjórnandaréttindi tekin af: {name}",
@@ -204,6 +205,12 @@
       "subject": "Viðburði aflýst: {title}",
       "intro": "Viðburðinum hér fyrir neðan, sem þú skráðir þig á, hefur verið aflýst:",
       "signups": "Skráning þín hefur verið felld niður og telst ekki lengur með í skráningunum þínum."
+    },
+    "signup_added": {
+      "subject": "Skráning á viðburð: {title}",
+      "intro": "Þér hefur verið bætt á þátttakendalista viðburðarins {title}.",
+      "when": "Hvenær og hvar:",
+      "notRight": "Ef þetta er ekki rétt geturðu afskráð þig á vefnum á meðan skráning er opin, eða haft samband við þann sem sér um viðburðinn. Nánar um viðburðinn:"
     },
     "teacher_message": {
       "subject": "{subject}",
@@ -391,6 +398,18 @@
       "remove": "Fjarlægja",
       "choose": "Bæta við meðviðburðastjóra",
       "add": "Bæta við"
+    },
+    "transfer": {
+      "heading": "Færa umsjón",
+      "current": "Eigandi núna: {name}",
+      "help": "Aðeins stjórnendur geta fært viðburð til annars virks viðburðastjóra. Nýi eigandinn fær allt sem eigandinn hafði. Fyrri eigandinn missir aðganginn að viðburðinum nema honum sé bætt við sem meðviðburðastjóra. Skráningar og mæting breytast ekki og enginn fær tölvupóst.",
+      "none": "Enginn annar virkur viðburðastjóri er til.",
+      "choose": "Nýr eigandi",
+      "button": "Færa umsjón",
+      "moved": "Umsjón viðburðarins var færð til {name}.",
+      "errors": {
+        "notCandidate": "Aðeins er hægt að færa umsjón til annars virks viðburðastjóra."
+      }
     },
     "participants": {
       "heading": "Þátttakendur",
@@ -626,7 +645,7 @@
     }
   },
   "export": {
-    "intro": "Skráin er fyrir skrifstofu skólans, sem færir frádráttinn inn í Innu. Í henni er ein lína fyrir hverja skráða mætingu: kennitala, nafn, braut, áfangi, stig, viðburður og dagsetning.",
+    "intro": "Skráin er fyrir skrifstofu skólans, sem færir frádráttinn inn í Innu. Í henni er ein lína fyrir hverja skráða mætingu: kennitala, nafn, braut, áfangi, stig, viðburður, dagsetning og hvort kennari eða nemandi merkti mætinguna.",
     "provisional": "Bráðabirgðaútgáfa",
     "provisionalUntil": "Nemendur geta enn breytt vali á áfanga til {deadline}, svo skráin getur breyst.",
     "provisionalNoDeadline": "Frestur til að velja áfanga hefur ekki verið settur, svo skráin getur enn breyst.",

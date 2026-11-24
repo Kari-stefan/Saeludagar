@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { toIso } from '../src/db/index.js';
 import { ROOT_DIR } from '../src/config.js';
-import { createEvent, getEvent, updateEvent, validateEvent } from '../src/services/events.js';
+import { createEvent, getEvent, moveEvent, ownerCandidates, updateEvent, validateEvent } from '../src/services/events.js';
 import { insertEvent, startSite } from './helpers.js';
 
 // The front page's "Viðburðir sem þú sérð um" section.
@@ -556,6 +556,88 @@ describe('co-teachers and who manages what (§3, §6, §8)', () => {
     await as.admin.post(`/teacher/events/${id}`, { action: 'remove-coteacher', teacher: String(people.coteacher.id) });
     assert.equal(site.db.prepare('SELECT COUNT(*) FROM event_coteachers WHERE event_id = ?').pluck().get(id), 0);
     assert.equal((await as.coteacher.get(`/teacher/events/${id}`)).status, 403, 'removed co-teachers lose access');
+  });
+});
+
+describe('moving an event to another event manager (BR-72)', () => {
+  beforeEach(() => site.db.exec('DELETE FROM email_outbox'));
+  // Each test makes its own accounts and event, so it passes alone.
+  let n = 0;
+  async function setup() {
+    n += 1;
+    const owner = await site.addUser({ name: `Fyrri Eigandi ${n}`, email: `fyrri${n}@example.is` });
+    const target = await site.addUser({ name: `Nýr Eigandi ${n}`, email: `nyr${n}@example.is` });
+    const ownerBrowser = site.browser();
+    await ownerBrowser.login(owner.kennitala, owner.code);
+    const id = insertEvent(site.db, owner.id, { title_is: `Færður viðburður ${n}` });
+    register(id, people.student.id);
+    return { owner, target, ownerBrowser, id };
+  }
+  const move = (browser, id, ownerId) => browser.post(`/teacher/events/${id}`, { action: 'move-event', owner: String(ownerId) });
+
+  test('BR-72: an admin moves an event; the event page and the front page then show the new owner, and the old owner loses access', async () => {
+    const { owner, target, ownerBrowser, id } = await setup();
+    const before = { ...eventRow(id), registrations: site.db.prepare('SELECT * FROM registrations WHERE event_id = ?').all(id) };
+    const res = await move(as.admin, id, target.id);
+    assert.deepEqual([res.status, res.location], [303, `/teacher/events/${id}/edit#owner`]);
+    assert.match((await as.admin.get(`/teacher/events/${id}/edit`)).html, new RegExp(`Umsjón viðburðarins var færð til Nýr Eigandi ${n}\\.`));
+    assert.equal(eventRow(id).owner_id, target.id);
+    assert.deepEqual({ ...eventRow(id), owner_id: owner.id, registrations: site.db.prepare('SELECT * FROM registrations WHERE event_id = ?').all(id) },
+      before, 'nothing else about the event or its sign-ups changes');
+    assert.equal(site.db.prepare('SELECT COUNT(*) FROM email_outbox').pluck().get(), 0, 'nobody is emailed');
+
+    const page = (await as.student.get(`/events/${id}`)).html;
+    assert.match(page, new RegExp(`Nýr Eigandi ${n}`));
+    assert.doesNotMatch(page, new RegExp(`Fyrri Eigandi ${n}`));
+    const targetBrowser = site.browser();
+    await targetBrowser.login(target.kennitala, target.code);
+    assert.match(managedPart((await targetBrowser.get('/')).html), new RegExp(`Færður viðburður ${n}`));
+    assert.doesNotMatch(managedPart((await ownerBrowser.get('/')).html), new RegExp(`Færður viðburður ${n}`));
+    assert.equal((await targetBrowser.get(`/teacher/events/${id}`)).status, 200);
+    assert.equal((await ownerBrowser.get(`/teacher/events/${id}`)).status, 403);
+  });
+
+  test('BR-72: a co-teacher who becomes the owner is no longer listed as a co-teacher', async () => {
+    const { target, id } = await setup();
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, target.id);
+    assert.equal((await move(as.admin, id, target.id)).status, 303);
+    assert.equal(eventRow(id).owner_id, target.id);
+    assert.deepEqual(getEvent(site.db, id).coteachers, []);
+    assert.doesNotMatch((await as.admin.get(`/teacher/events/${id}/edit`)).html, new RegExp(`<span>Nýr Eigandi ${n}</span>`));
+  });
+
+  test('BR-72: only an admin can move an event; the owner and a co-teacher get 403', async () => {
+    const { owner, target, ownerBrowser, id } = await setup();
+    site.db.prepare('INSERT INTO event_coteachers (event_id, teacher_id) VALUES (?, ?)').run(id, people.coteacher.id);
+    assert.equal((await move(ownerBrowser, id, target.id)).status, 403);
+    assert.equal((await move(as.coteacher, id, target.id)).status, 403);
+    assert.equal(eventRow(id).owner_id, owner.id);
+  });
+
+  test('BR-72: an inactive account, a student without the role and the current owner are refused', async () => {
+    const { owner, target, id } = await setup();
+    site.db.prepare('UPDATE users SET active = 0 WHERE id = ?').run(target.id);
+    for (const refused of [target.id, people.student.id, owner.id]) {
+      assert.deepEqual(moveEvent(site.db, getEvent(site.db, id), refused), { error: 'events.transfer.errors.notCandidate' });
+      assert.equal((await move(as.admin, id, refused)).status, 303);
+      assert.match((await as.admin.get(`/teacher/events/${id}/edit`)).html, /Aðeins er hægt að færa umsjón til annars virks viðburðastjóra\./);
+      assert.equal(eventRow(id).owner_id, owner.id);
+    }
+    const candidates = ownerCandidates(site.db, getEvent(site.db, id)).map((user) => user.id);
+    assert.ok(!candidates.includes(target.id) && !candidates.includes(people.student.id) && !candidates.includes(owner.id));
+    assert.ok(candidates.includes(people.admin.id) && candidates.includes(people.coteacher.id));
+  });
+
+  test('BR-72: the edit page shows the section to an admin, not to the owner', async () => {
+    const { target, ownerBrowser, id } = await setup();
+    const adminPage = (await as.admin.get(`/teacher/events/${id}/edit`)).html;
+    assert.match(adminPage, /<section id="owner"/);
+    assert.match(adminPage, /<button type="submit" class="button">Færa umsjón<\/button>/);
+    assert.match(adminPage, new RegExp(`<option value="${target.id}">Nýr Eigandi ${n}</option>`));
+    assert.match(adminPage, /name="action" value="move-event"/);
+    const ownerPage = (await ownerBrowser.get(`/teacher/events/${id}/edit`)).html;
+    assert.equal((await ownerBrowser.get(`/teacher/events/${id}/edit`)).status, 200);
+    assert.doesNotMatch(ownerPage, /id="owner"|move-event|Færa umsjón/);
   });
 });
 

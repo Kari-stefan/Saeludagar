@@ -61,6 +61,31 @@
   <% } -%>
 </section>
 <% } -%>
+<% if (!isNew && ownerChoices) { -%>
+<%# BR-72: admins only. The route checks this again. -%>
+<section id="owner" aria-labelledby="owner-heading">
+  <h2 id="owner-heading"><%= t('events.transfer.heading') %></h2>
+  <p><%= t('events.transfer.current', { name: event.owner_name }) %></p>
+  <p><%= t('events.transfer.help') %></p>
+  <% if (ownerChoices.length === 0) { -%>
+  <p><%= t('events.transfer.none') %></p>
+  <% } else { -%>
+  <form class="form" method="post" action="/teacher/events/<%= event.id %>">
+    <input type="hidden" name="_csrf" value="<%= token %>">
+    <input type="hidden" name="action" value="move-event">
+    <div class="field">
+      <label class="field__label" for="new-owner"><%= t('events.transfer.choose') %></label>
+      <select class="field__input" id="new-owner" name="owner">
+        <% for (const manager of ownerChoices) { -%>
+        <option value="<%= manager.id %>"><%= manager.name %></option>
+        <% } -%>
+      </select>
+    </div>
+    <button type="submit" class="button"><%= t('events.transfer.button') %></button>
+  </form>
+  <% } -%>
+</section>
+<% } -%>
 <script src="/js/image-preview.js" defer></script>
 <% } -%>
 <%- include('../partials/footer') %>
