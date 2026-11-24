@@ -102,13 +102,18 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
   // The outbox worker generates the code when it sends the email (AGENT_START §8). A person never
   // has more than one code email waiting (BR-07, BR-08): an older one would overwrite the newer
   // code when it was sent. Rows that used up their retries (next_try_at NULL) stay for the failed count.
-  const dropWaitingCodes = db.prepare(`DELETE FROM email_outbox WHERE user_id = ? AND next_try_at IS NOT NULL
-    AND kind IN ('student_code', 'new_code', 'teacher_code')`);
+  // The new row goes in before the older ones are deleted: SQLite gives a new row the highest id
+  // plus one, so deleting first could hand it the id of the email the worker is sending right now.
+  // With the same kind, user and second, the worker could not tell the two apart (src/jobs/outbox.js)
+  // and would delete the new one unsent once the old email had gone.
+  const dropOlderCodes = db.prepare(`DELETE FROM email_outbox WHERE user_id = ? AND next_try_at IS NOT NULL
+    AND kind IN ('student_code', 'new_code', 'teacher_code') AND id < ?`);
+  const lastRowId = db.prepare('SELECT last_insert_rowid()').pluck();
   const queueCode = db.transaction((userId, kind) => {
     const now = toIso();
     setCodeRequested.run(now, now, userId);
-    dropWaitingCodes.run(userId);
     queueEmail(db, { kind, userId });
+    dropOlderCodes.run(userId, lastRowId.get());
   });
 
   // BR-08: at most one new code per kennitala every 10 minutes, for active accounts only
@@ -233,10 +238,12 @@ export function createAccounts({ db, kt, newCodeLimit = true }) {
     COUNT(*) FILTER (WHERE next_try_at IS NULL) AS failed FROM email_outbox WHERE kind = 'student_code'`);
   const activeStudents = db.prepare("SELECT COUNT(*) FROM users WHERE role = 'student' AND active = 1").pluck();
   const activeStudentIds = db.prepare("SELECT id FROM users WHERE role = 'student' AND active = 1").pluck();
-  // Students of the latest send whose email has gone: still active (the worker drops emails to
-  // inactive accounts unsent) and with no student_code row left, waiting or failed.
+  // Students of the latest send whose code has gone: still active (the worker drops emails to
+  // inactive accounts unsent) and with no code email left, waiting or failed. A new_code that
+  // replaced the bulk email, or that was waiting when the send was made, counts as left too.
   const sentOf = db.prepare(`SELECT COUNT(*) FROM users WHERE id IN (SELECT value FROM json_each(?)) AND active = 1
-    AND NOT EXISTS (SELECT 1 FROM email_outbox WHERE kind = 'student_code' AND user_id = users.id)`).pluck();
+    AND NOT EXISTS (SELECT 1 FROM email_outbox WHERE kind IN ('student_code', 'new_code', 'teacher_code')
+      AND user_id = users.id)`).pluck();
 
   // The students of the latest send, for the "sent" count on the page. Only this process knows
   // them, so the count is gone after a restart; queued and failed always come from the outbox.

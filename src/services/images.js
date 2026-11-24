@@ -59,9 +59,10 @@ export async function deleteImage(uploadDir, name) {
 
 // BR-71: the image without EXIF, XMP, IPTC, comments, thumbnails and anything after its end, or
 // null when its structure cannot be walked to the end. It works on the file's structure only: the
-// image data is copied byte for byte, never decoded. The orientation (as a one-tag EXIF block) and
-// the colour profile are kept. Stripping a stripped image gives the same bytes. Every length in
-// the file is checked against the bytes that are really there before it is used.
+// image data is copied byte for byte, never decoded. The orientation (as a one-tag EXIF block),
+// the colour profile and, in PNG, the cICP colour signal are kept. Stripping a stripped image gives
+// the same bytes. Every length in the file is checked against the bytes that are really there
+// before it is used.
 export function stripMetadata(bytes, type) {
   if (type === 'jpg') return stripJpeg(bytes);
   if (type === 'png') return stripPng(bytes);
@@ -117,8 +118,10 @@ const keepOrientation = (orientation) => orientation !== null && orientation >= 
 
 // JPEG: walk the segments from SOI to EOI. Kept: the tables, frames and scans, APP0 JFIF (without
 // its thumbnail), APP2 ICC_PROFILE and APP14 Adobe. Dropped: every other APPn (Exif, XMP, IPTC,
-// JFXX thumbnails), COM, fill bytes and anything after EOI.
+// JFXX thumbnails), COM, the reserved JPG and JPGn segments, fill bytes and anything after EOI. A
+// restart marker or TEM outside a scan is not valid there, so the file is refused.
 const isRst = (marker) => marker >= 0xd0 && marker <= 0xd7;
+const isReserved = (marker) => marker === 0xc8 || (marker >= 0xf0 && marker <= 0xfd);
 const startsWith = (payload, text) => payload.length >= text.length && payload.toString('latin1', 0, text.length) === text;
 
 function stripJpeg(bytes) {
@@ -135,10 +138,7 @@ function stripJpeg(bytes) {
     pos += 1;
     if (marker === 0xd9) break; // EOI
     if (marker === 0x00 || marker === 0xd8) return null;
-    if (isRst(marker) || marker === 0x01) {
-      segments.push(Buffer.from([0xff, marker]));
-      continue;
-    }
+    if (isRst(marker) || marker === 0x01) return null; // inside a scan they are part of its data
     if (pos + 2 > bytes.length) return null;
     const length = bytes.readUInt16BE(pos);
     if (length < 2 || pos + length > bytes.length) return null;
@@ -157,8 +157,8 @@ function stripJpeg(bytes) {
       if (startsWith(payload, 'ICC_PROFILE\0')) segments.push(segment);
     } else if (marker === 0xee) {
       if (startsWith(payload, 'Adobe')) segments.push(segment);
-    } else if ((marker >= 0xe3 && marker <= 0xef) || marker === 0xfe) {
-      // other APPn and COM: dropped
+    } else if ((marker >= 0xe3 && marker <= 0xef) || marker === 0xfe || isReserved(marker)) {
+      // other APPn, COM and the reserved segments: dropped
     } else {
       segments.push(segment);
     }
@@ -194,7 +194,7 @@ function stripJpeg(bytes) {
 
 // PNG: walk the chunks from IHDR to IEND and keep only those needed to show the image.
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-const PNG_KEPT = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs', 'acTL', 'fcTL', 'fdAT']);
+const PNG_KEPT = new Set(['IHDR', 'PLTE', 'IDAT', 'IEND', 'tRNS', 'gAMA', 'cHRM', 'sRGB', 'iCCP', 'sBIT', 'bKGD', 'pHYs', 'acTL', 'fcTL', 'fdAT', 'cICP']);
 
 function pngChunk(type, data) {
   const chunk = Buffer.alloc(12 + data.length);

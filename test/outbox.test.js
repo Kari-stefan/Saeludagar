@@ -68,6 +68,46 @@ describe('email outbox worker (AGENT_START §8)', () => {
     assert.deepEqual(order, ['kennari2@example.is', 'kennari1@example.is']);
   });
 
+  // A row deleted while its email is being sent (a purge, a deleted student, a replaced code) can
+  // have its id given to the next email queued, since SQLite reuses the highest id.
+  function replaceDuringSend(onSend) {
+    const sent = [];
+    let ids;
+    const outbox = worker(async (message) => {
+      sent.push({ to: message.to.address, row: db.prepare('SELECT id, attempts, last_error FROM email_outbox').get() ?? null });
+      if (sent.length > 1) return;
+      const [first] = rows();
+      db.prepare('DELETE FROM email_outbox WHERE id = ?').run(first.id);
+      queueEmail(db, { kind: 'new_code', userId: users[1].id });
+      ids = [first.id, rows()[0].id];
+      onSend();
+    });
+    queueEmail(db, { kind: 'teacher_code', userId: users[0].id });
+    return { outbox, sent, ids: () => ids };
+  }
+
+  test('§8: an email queued while the row being sent is deleted, and given its id, is still sent', async () => {
+    const { outbox, sent, ids } = replaceDuringSend(() => {});
+    await outbox.runOnce();
+    const [oldId, newId] = ids();
+    assert.equal(newId, oldId, 'the new row really got the id of the one being sent');
+    assert.deepEqual(sent.map((email) => email.to), ['kennari1@example.is', 'kennari2@example.is'], 'the new email was not deleted unsent');
+    assert.deepEqual(rows(), []);
+  });
+
+  test('§8: a failed send does not mark a new email that was given the id of the deleted row', async (t) => {
+    t.mock.method(console, 'error', () => {});
+    const { outbox, sent, ids } = replaceDuringSend(() => {
+      throw new Error('Connection refused');
+    });
+    await outbox.runOnce();
+    const [oldId, newId] = ids();
+    assert.equal(newId, oldId, 'the new row really got the id of the one being sent');
+    assert.equal(sent.length, 2, 'the new email was still due, so it was sent in the same run');
+    assert.deepEqual(sent[1].row, { id: newId, attempts: 0, last_error: null }, 'not marked with the failure');
+    assert.deepEqual(rows(), []);
+  });
+
   test('BR-53: sends at most SMTP_MAX_PER_MINUTE emails a minute', async () => {
     const sent = [];
     const outbox = worker(async (message) => sent.push(message));

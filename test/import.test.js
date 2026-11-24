@@ -152,6 +152,28 @@ describe('the import page (BR-14 to BR-18)', () => {
     assert.equal(studentCount(), 0);
   });
 
+  test('BR-15: a new upload with errors, or with no file, also discards the held file', async () => {
+    const withoutFile = async () => {
+      const form = new FormData();
+      form.append('_csrf', await admin.csrfToken());
+      return admin.request('POST', '/admin/import', form);
+    };
+    const uploads = {
+      'an error line': () => admin.upload('/admin/import', csv('123;Páll;pall@example.is;Starfsbraut;')),
+      'no file': withoutFile,
+    };
+    for (const [name, second] of Object.entries(uploads)) {
+      const first = await admin.upload('/admin/import', csv('0000000301;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05'));
+      assert.equal(first.status, 200);
+      const token = tokenFrom(first.html);
+      assert.equal((await second()).status, 400, name);
+      const confirm = await admin.post('/admin/import', { action: 'confirm', token });
+      assert.equal(confirm.status, 400, `${name}: the first file cannot be confirmed`);
+      assert.equal(takeImport(token), null, `${name}: the first held file is gone`);
+      assert.equal(studentCount(), 0, name);
+    }
+  });
+
   test('BR-16: a file with several bad rows lists every error and saves nothing', async () => {
     const res = await admin.upload('/admin/import', csv(
       '0000000301;Jóna Jónsdóttir;jona@example.is;Rafmagnsbraut;STÆR2BH05',

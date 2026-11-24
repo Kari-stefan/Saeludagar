@@ -81,13 +81,14 @@ export function adminRouter({ config, db, kt, accounts }) {
     const body = req.body ?? {};
 
     if (req.is('multipart/form-data')) {
+      // Any new upload, also one with errors or without a file, discards the file held from the
+      // last one (BR-15), so its kennitölur do not stay in memory until the hold runs out.
+      if (req.session.importToken) takeImport(req.session.importToken);
+      delete req.session.importToken;
       if (req.uploadError) return renderImport(res, 400, { uploadError: req.uploadError });
       if (!req.file) return renderImport(res, 400, { uploadError: 'import.errors.noFile' });
       const { students, errors } = readStudentCsv(req.file.buffer, { db, kt });
       if (errors.length > 0) return renderImport(res, 400, { errors });
-      // A new upload replaces the file held from the last one (BR-15), so its kennitölur do not
-      // stay in memory until the hold runs out.
-      if (req.session.importToken) takeImport(req.session.importToken);
       const token = holdImport(students);
       req.session.importToken = token;
       return renderImport(res, 200, { preview: previewImport(db, kt, students), token });

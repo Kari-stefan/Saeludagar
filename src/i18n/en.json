@@ -596,7 +596,8 @@
       "profile": "Your name, school email, braut and courses.",
       "signups": "Your sign-ups for events, whether your attendance was marked, and which course you give the absence points to.",
       "code": "Your login code, only as a hash that the code cannot be read from.",
-      "log": "A log of changes to sign-ups, attendance and course choices: who made the change and when."
+      "login": "What logging in needs: when a code was last sent, the number of failed attempts, a temporary lock after too many attempts, and your login session.",
+      "log": "A log of changes to sign-ups, attendance, course choices and the event-manager role: who made the change and when."
     },
     "storedTeachers": "About teachers and other event managers, the site stores the kennitala (encrypted), name and email.",
     "storedNoBalance": "The site does not store your absence balance and fetches no other information about you.",
@@ -610,14 +611,14 @@
       "others": "Other students see neither your name nor which events you are signed up for. They see only how many are signed up.",
       "managers": "Those who run an event see the name, braut and email of the people signed up for it, and their attendance. They are teachers, and students the school has put in charge of an event.",
       "search": "A student is added to an event by searching for a name. The search shows name and braut, and the email only when two students on the same braut have the same name.",
-      "admins": "The site's administrators at the school see everything except kennitölur.",
+      "admins": "The site's administrators at the school see everything. They see kennitölur only in the file they download for the office.",
       "kennitala": "Your kennitala is never shown on the site. It appears only in the file the school office gets in order to enter absence points into Inna."
     },
     "seesNoOthers": "The data is not passed on to anyone else.",
     "keptHeading": "How long it is kept",
     "kept": "All data about students is deleted after Sæludagar, once the office has its file, and at the latest automatically 30 days after the deadline for choosing courses. Backups are kept for 7 days and are then deleted. Teacher accounts are kept from year to year.",
     "cookiesHeading": "Cookies",
-    "cookies": "The site uses one cookie. It keeps you logged in and remembers your choice of language and appearance, and it is first set when you open the login page or choose a language or appearance. The site does not measure use, does not track you and loads nothing from anyone else.",
+    "cookies": "The site uses one cookie. It keeps you logged in and remembers your choice of language and appearance, and it is first set when you open the login page or “Get a new code”, or choose a language or appearance. The site does not measure use, does not track you and loads nothing from anyone else.",
     "rightsHeading": "Your rights",
     "rights": "You have the right to know what the school stores about you and to have wrong information corrected. You can also ask for data to be deleted, or object to its use. Contact the school's data protection officer to do so. If you are under 18, your guardians can also get in touch on your behalf.",
     "complaint": "If you think the school is not handling the data correctly, you can complain to the Icelandic Data Protection Authority (Persónuvernd), {site}.",

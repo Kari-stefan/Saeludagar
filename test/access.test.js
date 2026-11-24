@@ -166,7 +166,7 @@ describe('guests get no session from opening a page (BR-70)', () => {
 
   test('BR-70: a guest who opens pages gets no Set-Cookie, and the sessions table stays empty', async () => {
     const browser = site.browser();
-    const pages = [['/', 200], ['/info', 200], [`/events/${eventId}`, 200], ['/no-such-page', 404], [`/events/${draftId}`, 404], ['/admin', 303]];
+    const pages = [['/', 200], ['/info', 200], [`/events/${eventId}`, 200], ['/no-such-page', 404], [`/events/${draftId}`, 404], ['/admin', 303], ['/privacy', 200]];
     for (const [path, status] of pages) {
       const res = collect(await browser.get(path));
       assert.equal(res.status, status, path);
@@ -217,6 +217,49 @@ describe('guests get no session from opening a page (BR-70)', () => {
     const [token] = tokensIn(login.html);
     assert.deepEqual(tokensIn(collect(await browser.get('/info')).html), Array(4).fill(token), 'then they carry the session\'s token');
     assert.equal(sessionRows(), before + 1, 'still one session row');
+  });
+
+  test('BR-70, §9 item 3: a guest\'s language or theme switch from another site is refused, sets no cookie and starts no session', async () => {
+    const refused = [{ 'Sec-Fetch-Site': 'cross-site' }, { 'Sec-Fetch-Site': 'same-site' }, { Origin: 'https://other.example.is' },
+      { 'Sec-Fetch-Site': 'cross-site', Origin: site.baseUrl }, { 'Sec-Fetch-Site': 'cross-site', Origin: 'null' }];
+    for (const headers of refused) {
+      for (const [path, form] of [['/language', { lang: 'en', returnTo: '/' }], ['/theme', { theme: 'dark', returnTo: '/' }]]) {
+        const browser = site.browser();
+        const before = sessionRows();
+        const res = collect(await browser.request('POST', path, form, headers));
+        assert.equal(res.status, 403, `${path} ${JSON.stringify(headers)}`);
+        assert.match(res.html, /Eyðublaðið er útrunnið/);
+        assert.deepEqual(res.setCookies, [], `${path}: no cookie`);
+        assert.equal(sessionRows(), before, `${path}: no session row`);
+        assert.doesNotMatch((await browser.get('/')).html, /<html lang="en"|data-theme="dark"/, 'nothing changed');
+      }
+    }
+
+    // A visitor who has a session (the cookie is sent, as a same-site request would send it) keeps
+    // it, and their choice stays as it was.
+    const visitor = site.browser();
+    await visitor.get('/login');
+    const sid = visitor.sessionId;
+    for (const [path, form] of [['/language', { lang: 'en', returnTo: '/' }], ['/theme', { theme: 'dark', returnTo: '/' }]]) {
+      const res = collect(await visitor.request('POST', path, form, { 'Sec-Fetch-Site': 'same-site' }));
+      assert.equal(res.status, 403, path);
+      assert.equal(visitor.sessionId, sid, `${path}: the same session`);
+    }
+    assert.doesNotMatch((await visitor.get('/')).html, /<html lang="en"|data-theme="dark"/, 'nothing changed');
+  });
+
+  test('BR-70: a guest\'s language or theme switch from the site\'s own page is accepted without a token', async () => {
+    // The site's own forms send "Origin: null" (its pages say Referrer-Policy: no-referrer), and a
+    // browser without Sec-Fetch-Site sends only that.
+    for (const headers of [{ 'Sec-Fetch-Site': 'same-origin' }, { Origin: site.baseUrl }, { 'Sec-Fetch-Site': 'same-origin', Origin: site.baseUrl },
+      { Origin: 'null' }, { 'Sec-Fetch-Site': 'same-origin', Origin: 'null' }]) {
+      const browser = site.browser();
+      const lang = collect(await browser.request('POST', '/language', { lang: 'en', returnTo: '/info' }, headers));
+      assert.deepEqual([lang.status, lang.location], [303, '/info'], JSON.stringify(headers));
+      const theme = collect(await browser.request('POST', '/theme', { theme: 'dark', returnTo: '/' }, headers));
+      assert.deepEqual([theme.status, theme.location], [303, '/'], JSON.stringify(headers));
+      assert.match((await browser.get('/')).html, /<html lang="en" data-theme="dark">/);
+    }
   });
 
   test('BR-70, §9 item 3: a logged-in user\'s language or theme switch without a token is refused, and so is any other guest POST', async () => {

@@ -29,7 +29,11 @@ const STEPS = {
     db.exec("UPDATE users SET is_event_manager = 1 WHERE role = 'teacher'");
   },
   // M9: the signup_added email (BR-37). SQLite cannot change a CHECK, so email_outbox is rebuilt
-  // with the new list of kinds and every row copied over as it is.
+  // with the new list of kinds and every row copied over as it is. Then each row gets its kind's
+  // new priority (BR-53): before M9 messages and notices were 0 and the bulk student_code 1, so
+  // mail queued before the upgrade would go ahead of new login codes. The values are those of
+  // EMAIL_PRIORITY in src/services/email.js, written out here because a migration must not
+  // depend on application code that can change after it.
   3(db) {
     db.exec(`CREATE TABLE email_outbox_new (
       id           INTEGER PRIMARY KEY,
@@ -48,6 +52,8 @@ const STEPS = {
     db.exec('DROP TABLE email_outbox');
     db.exec('ALTER TABLE email_outbox_new RENAME TO email_outbox');
     db.exec('CREATE INDEX email_outbox_due ON email_outbox(priority, next_try_at)');
+    db.exec(`UPDATE email_outbox SET priority = CASE kind
+      WHEN 'new_code' THEN 0 WHEN 'teacher_code' THEN 0 WHEN 'student_code' THEN 2 ELSE 1 END`);
   },
 };
 

@@ -124,6 +124,27 @@ describe('JPEG metadata (BR-71)', () => {
     assert.deepEqual(cleanImage(cases['cut off in the scan data']), { error: 'events.errors.imageUnreadable' });
   });
 
+  test('BR-71: the reserved JPG and JPGn segments (0xC8, 0xF0 to 0xFD) are removed', () => {
+    const head = jpg.subarray(0, 20); // SOI and APP0
+    const reserved = [0xc8, ...Array.from({ length: 14 }, (_, n) => 0xf0 + n)];
+    const bytes = Buffer.concat([head, ...reserved.map((marker) => jpegSegment(marker, latin1(`${SECRET}-${marker}`))), jpg.subarray(20)]);
+    assert.ok(leaks(bytes));
+    const stripped = stripMetadata(bytes, 'jpg');
+    assert.deepEqual(stripped, jpg);
+    assert.deepEqual(stripMetadata(stripped, 'jpg'), stripped, 'stripping twice equals stripping once');
+  });
+
+  test('BR-71: a restart marker or TEM outside a scan is refused, also a file full of them', () => {
+    const head = jpg.subarray(0, 20);
+    for (const marker of [0xd0, 0xd7, 0x01]) {
+      const bytes = Buffer.concat([head, Buffer.from([0xff, marker]), jpg.subarray(20)]);
+      assert.equal(stripMetadata(bytes, 'jpg'), null, marker.toString(16));
+    }
+    const flood = Buffer.concat([head, Buffer.alloc(2 * 1024 * 1024 - 400, Buffer.from([0xff, 0xd0])), jpg.subarray(20)]);
+    assert.deepEqual(cleanImage(flood), { error: 'events.errors.imageUnreadable' });
+    assert.deepEqual(stripMetadata(TEST_IMAGES.progressiveJpg, 'jpg'), TEST_IMAGES.progressiveJpg, 'restart markers inside a scan still work');
+  });
+
   test('BR-71: a malformed metadata block inside a good JPEG is dropped, and the orientation counts as absent', () => {
     const rest = jpg.subarray(20);
     const head = jpg.subarray(0, 20);
@@ -212,6 +233,14 @@ describe('PNG metadata (BR-71)', () => {
     };
     for (const [name, bytes] of Object.entries(cases)) assert.equal(stripMetadata(bytes, 'png'), null, name);
     assert.deepEqual(cleanImage(cases['cut off before IEND']), { error: 'events.errors.imageUnreadable' });
+  });
+
+  test('BR-71: the cICP colour signal is kept like the colour profile, and stripping twice equals stripping once', () => {
+    const cicp = chunk('cICP', Buffer.from([9, 16, 0, 1]));
+    const bytes = Buffer.concat([SIGNATURE, ihdr[2], cicp, chunk('tEXt', latin1(`Comment\0${SECRET}-TEXT`)), ...image]);
+    const stripped = stripMetadata(bytes, 'png');
+    assert.deepEqual(stripped, Buffer.concat([SIGNATURE, ihdr[2], cicp, ...image]));
+    assert.deepEqual(stripMetadata(stripped, 'png'), stripped);
   });
 
   test('BR-71: a malformed eXIf inside a good PNG is dropped, and the orientation counts as absent', () => {

@@ -273,7 +273,7 @@ describe('database (§7)', () => {
     }
   });
 
-  test('BR-37, BR-53: migrate upgrades a version 3 database: the outbox keeps every row and accepts the signup_added kind', () => {
+  test('BR-37, BR-53: migrate upgrades a version 3 database: the outbox keeps every row, with its kind\'s new priority, and accepts the signup_added kind', () => {
     const old = databaseAt(3);
     try {
       const user = old.db.prepare(`INSERT INTO users (role, is_event_manager, kennitala_hmac, kennitala_enc, name, email, created_at, updated_at)
@@ -284,13 +284,19 @@ describe('database (§7)', () => {
       queue.run('student_code', 1, user, null, 0, null, '2027-03-01T10:00:00Z');
       queue.run('event_changed', 0, user, '{"event":{"id":7}}', 3, 'connection refused', '2027-03-01T10:08:00Z');
       queue.run('teacher_message', 0, user, '{"subject":"Halló"}', 6, 'gave up', null);
+      queue.run('new_code', 0, user, null, 0, null, '2027-03-01T10:01:00Z');
+      queue.run('teacher_code', 0, user, null, 1, 'timeout', '2027-03-01T10:02:00Z');
       const rows = () => old.db.prepare('SELECT * FROM email_outbox ORDER BY id').all();
       const before = rows();
-      assert.equal(before.length, 3);
+      assert.equal(before.length, 5);
+      assert.deepEqual(before.map((row) => row.priority), [1, 0, 0, 0, 0], 'the priorities before M9');
 
       assert.equal(migrate(old.db), SCHEMA_VERSION);
       assert.equal(old.db.pragma('user_version', { simple: true }), SCHEMA_VERSION);
-      assert.deepEqual(rows(), before, 'every row is kept as it was');
+      // BR-53: each waiting email gets its kind's new priority, so mail queued before the upgrade
+      // does not go ahead of new login codes; every other column is kept as it was.
+      const priorities = [2, 1, 1, 0, 0]; // student_code, event_changed, teacher_message, new_code, teacher_code
+      assert.deepEqual(rows(), before.map((row, n) => ({ ...row, priority: priorities[n] })));
       queue.run('signup_added', 1, user, '{"event":{"id":7}}', 0, null, '2027-03-01T11:00:00Z');
       assert.throws(() => queue.run('unknown_kind', 1, user, null, 0, null, '2027-03-01T11:00:00Z'), /CHECK/);
       assert.deepEqual(shape(old.db), shape(db), 'the same tables, columns and indexes as a new database');
