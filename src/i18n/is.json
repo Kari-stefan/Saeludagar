@@ -609,14 +609,14 @@
     "sees": {
       "self": "Þú sérð þínar eigin skráningar, mætingu og áfangaval.",
       "others": "Aðrir nemendur sjá hvorki nafn þitt né á hvaða viðburði þú ert á skrá. Þeir sjá aðeins hve margir eru skráðir.",
-      "managers": "Þeir sem sjá um viðburð sjá nafn, braut og netfang þeirra sem eru skráðir á hann, og mætingu þeirra. Það eru kennarar, og nemendur sem skólinn hefur falið umsjón viðburðar.",
-      "search": "Þegar bætt er á viðburð er leitað eftir nafni. Þá sjást nafn og braut, og netfang aðeins ef tveir nemendur á sömu braut heita sama nafni.",
+      "managers": "Þeir sem sjá um viðburð sjá nafn, braut og netfang þeirra sem eru skráðir á hann, og mætingu þeirra. Það eru eigandi viðburðarins, meðviðburðastjórar hans og stjórnendur vefsins. Viðburðastjóri getur verið kennari, eða nemandi sem skólinn hefur falið umsjón viðburðar. Aðrir kennarar sjá ekki hverjir eru skráðir.",
+      "search": "Þegar bætt er á viðburð er leitað eftir nafni meðal allra nemenda. Þá sjást nafn og braut, og netfang aðeins ef tveir nemendur á sömu braut heita sama nafni.",
       "admins": "Stjórnendur vefsins hjá skólanum sjá allar upplýsingar. Kennitölur sjá þeir þó aðeins í skránni sem þeir sækja fyrir skrifstofuna.",
       "kennitala": "Kennitalan þín er hvergi sýnd á vefnum. Hún er aðeins í skránni sem skrifstofa skólans fær til að færa fjarvistastig inn í Innu."
     },
     "seesNoOthers": "Upplýsingarnar eru ekki afhentar öðrum.",
     "keptHeading": "Hve lengi eru þær geymdar",
-    "kept": "Öllum upplýsingum um nemendur er eytt eftir Sæludaga, þegar skrifstofan hefur fengið skrána, og í síðasta lagi sjálfkrafa 30 dögum eftir að fresti til að velja áfanga lýkur. Öryggisafrit eru geymd í 7 daga og eyðast eftir það. Reikningar kennara eru geymdir á milli ára.",
+    "kept": "Skólinn eyðir öllum upplýsingum um nemendur eftir Sæludaga, þegar skrifstofan hefur fengið skrána. Hafi skólinn sett frest til að velja áfanga eyðir vefurinn þeim sjálfkrafa 30 dögum eftir að fresturinn rennur út, hafi þeim ekki verið eytt fyrr. Öryggisafrit eru geymd í 7 daga og eyðast eftir það. Reikningar kennara og viðburðirnir sjálfir eru geymdir á milli ára.",
     "cookiesHeading": "Vafrakökur",
     "cookies": "Vefurinn notar eina vafraköku. Hún heldur utan um innskráningu þína og val á tungumáli og útliti, og er fyrst sett þegar þú opnar innskráningarsíðuna eða „Fá nýjan kóða“, eða velur tungumál eða útlit. Vefurinn mælir ekki notkun, rekur ekki ferðir þínar og sækir ekkert efni frá öðrum.",
     "rightsHeading": "Réttur þinn",

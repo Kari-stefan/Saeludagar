@@ -127,6 +127,20 @@ describe('the privacy notice (BR-58)', () => {
     }
   });
 
+  test('BR-58: the notice says who sees participants and when student data is deleted', async () => {
+    const site = await startSite();
+    try {
+      const is = (await site.browser().get('/privacy')).html;
+      assert.match(is, /meðviðburðastjórar hans og stjórnendur vefsins/);
+      assert.match(is, /Hafi skólinn sett frest til að velja áfanga/);
+      const en = (await (await english(site)).get('/privacy')).html;
+      assert.match(en, /its Co-Event Managers and the site(?:'|&#39;)s administrators/);
+      assert.match(en, /If the school has set a deadline for choosing courses/);
+    } finally {
+      await site.close();
+    }
+  });
+
   test('BR-58: without a school name the text says "Skólinn" and "The school"', async () => {
     const site = await startSite({ SCHOOL_NAME: '' });
     try {
